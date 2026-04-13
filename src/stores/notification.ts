@@ -7,17 +7,14 @@ export { useNotificationsStore } from '@guebbit/vue-toolkit';
  * Extract the IToastType parameter type from useNotificationsStore.addMessage.
  * This avoids depending on the non-exported IToastType enum directly.
  */
-type NotificationsStoreReturn = ReturnType<
+type AddMessageParameters = Parameters<
     ReturnType<typeof import('@guebbit/vue-toolkit').useNotificationsStore>['addMessage']
-> extends void
-    ? Parameters<ReturnType<typeof import('@guebbit/vue-toolkit').useNotificationsStore>['addMessage']>
-    : never;
-
-type ToastTypeParameter = NonNullable<NotificationsStoreReturn[1]>;
+>;
+type ToastTypeParameter = NonNullable<AddMessageParameters[1]>;
 
 /**
  * Toast type constants matching @guebbit/vue-toolkit IToastType enum values.
- * Used because the package does not export the IToastType enum directly.
+ * Naming follows the upstream IToastType enum member names for consistency.
  */
 export const TOAST_TYPE = {
     PRIMARY: 'primary' as ToastTypeParameter,
