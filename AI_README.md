@@ -115,7 +115,7 @@ src/
 
 ### 3.3 Naming Conventions (enforced by ESLint)
 
-| Artefact         | Convention       | Example           |
+| Artifact         | Convention       | Example           |
 | ---------------- | ---------------- | ----------------- |
 | Vue components   | `PascalCase.vue` | `HealthBadge.vue` |
 | TypeScript files | `camelCase.ts`   | `notification.ts` |
