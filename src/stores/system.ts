@@ -3,6 +3,9 @@ import { ref } from 'vue';
 import type { IHealthResponse, IOpenAiModelObject } from '@/api/types';
 import { healthCheck, listModels } from '@/api/manna';
 
+/**
+ * Pinia store managing backend health status and available model list.
+ */
 export const useSystemStore = defineStore('system', () => {
     const health = ref<IHealthResponse | undefined>(undefined);
     const healthLoading = ref(false);
@@ -11,6 +14,10 @@ export const useSystemStore = defineStore('system', () => {
     const models = ref<IOpenAiModelObject[]>([]);
     const modelsLoading = ref(false);
 
+    /**
+     * Fetches the backend health status and updates reactive state.
+     * Sets `healthError` on failure.
+     */
     async function fetchHealth(): Promise<void> {
         healthLoading.value = true;
         healthError.value = undefined;
@@ -24,6 +31,10 @@ export const useSystemStore = defineStore('system', () => {
         }
     }
 
+    /**
+     * Fetches the list of available models from the backend.
+     * Silently resets to an empty array on failure.
+     */
     async function fetchModels(): Promise<void> {
         modelsLoading.value = true;
         try {

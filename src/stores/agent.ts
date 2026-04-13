@@ -5,6 +5,7 @@ import type { ModelProfile } from '@/api/types';
 import { runTask, ApiError } from '@/api/manna';
 import { useNotificationStore } from './notification';
 
+/** A historical record of a submitted agent task and its outcome. */
 export interface ITaskHistoryEntry {
     id: string;
     task: string;
@@ -14,10 +15,21 @@ export interface ITaskHistoryEntry {
     timestamp: string;
 }
 
+/**
+ * Pinia store managing autonomous agent task submissions and history.
+ */
 export const useAgentStore = defineStore('agent', () => {
     const taskHistory = ref<ITaskHistoryEntry[]>([]);
     const loading = ref(false);
 
+    /**
+     * Submits an agent task to the backend and records the result in history.
+     *
+     * @param task       - The natural-language task description.
+     * @param profile    - Optional model profile for inference routing.
+     * @param allowWrite - Whether the agent may modify files (default `false`).
+     * @returns The created history entry, or `undefined` on failure.
+     */
     async function submitTask(
         task: string,
         profile?: ModelProfile,

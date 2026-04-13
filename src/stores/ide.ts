@@ -8,6 +8,10 @@ import type {
 import { autocomplete, lintConventions, pageReview, ApiError } from '@/api/manna';
 import { useNotificationStore } from './notification';
 
+/**
+ * Pinia store managing IDE code-intelligence operations
+ * (autocomplete, lint, and page review).
+ */
 export const useIdeStore = defineStore('ide', () => {
     const autocompleteResult = ref<IAutocompleteResponse | undefined>(undefined);
     const lintResult = ref<ILintConventionsResponse | undefined>(undefined);
@@ -19,6 +23,13 @@ export const useIdeStore = defineStore('ide', () => {
         review: false
     });
 
+    /**
+     * Requests an AI code completion from the backend.
+     *
+     * @param prefix   - The code text before the cursor.
+     * @param suffix   - Optional code text after the cursor.
+     * @param language - Optional language identifier for context.
+     */
     async function submitAutocomplete(
         prefix: string,
         suffix?: string,
@@ -38,6 +49,11 @@ export const useIdeStore = defineStore('ide', () => {
         }
     }
 
+    /**
+     * Submits source code for convention-aware linting analysis.
+     *
+     * @param parameters - The lint request options (content, language, model, etc.).
+     */
     async function submitLint(parameters: {
         content: string;
         language?: string;
@@ -60,6 +76,11 @@ export const useIdeStore = defineStore('ide', () => {
         }
     }
 
+    /**
+     * Submits source code for an AI-powered page-level review.
+     *
+     * @param parameters - The review request options (content, language, model, etc.).
+     */
     async function submitReview(parameters: {
         content: string;
         language?: string;

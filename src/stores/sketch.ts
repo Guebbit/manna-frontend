@@ -4,6 +4,9 @@ import type { IInkResponse, IInkAndColorResponse, SketchState } from '@/api/type
 import { inkSketch, inkAndColor, ApiError } from '@/api/manna';
 import { useNotificationStore } from './notification';
 
+/**
+ * Pinia store managing sketch analysis operations (inking and colourisation).
+ */
 export const useSketchStore = defineStore('sketch', () => {
     const inkResult = ref<IInkResponse | undefined>(undefined);
     const inkAndColorResult = ref<IInkAndColorResponse | undefined>(undefined);
@@ -14,6 +17,13 @@ export const useSketchStore = defineStore('sketch', () => {
         inkAndColor: false
     });
 
+    /**
+     * Submits a sketch image for AI inking analysis.
+     * Sets `comingSoon` when the endpoint returns 404 (feature not yet deployed).
+     *
+     * @param image - The sketch image file.
+     * @param model - Optional model override.
+     */
     async function submitInk(image: File, model?: string): Promise<void> {
         const notificationStore = useNotificationStore();
         loading.ink = true;
@@ -32,6 +42,14 @@ export const useSketchStore = defineStore('sketch', () => {
         }
     }
 
+    /**
+     * Submits a sketch image for combined inking and colourisation.
+     * Sets `comingSoon` when the endpoint returns 404 (feature not yet deployed).
+     *
+     * @param image       - The sketch image file.
+     * @param model       - Optional model override.
+     * @param sketchState - Optional detected state of the sketch.
+     */
     async function submitInkAndColor(
         image: File,
         model?: string,
