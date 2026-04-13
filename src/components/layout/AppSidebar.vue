@@ -70,6 +70,7 @@ const navItems = [
     { title: 'Agent Task', icon: 'mdi-robot', to: '/agent' },
     { title: 'Code Tools', icon: 'mdi-code-braces', to: '/code' },
     { title: 'Upload & Analyze', icon: 'mdi-upload', to: '/upload' },
+    { title: 'Graph Builder', icon: 'mdi-graph', to: '/graph' },
 
     { title: 'Settings', icon: 'mdi-cog', to: '/settings' }
 ];

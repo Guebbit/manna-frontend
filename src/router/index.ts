@@ -35,6 +35,11 @@ const router = createRouter({
                 },
 
                 {
+                    path: 'graph',
+                    name: 'graph-builder',
+                    component: () => import('@/views/GraphBuilderView.vue')
+                },
+                {
                     path: 'settings',
                     name: 'settings',
                     component: () => import('@/views/SettingsView.vue')

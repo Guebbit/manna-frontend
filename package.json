@@ -37,6 +37,7 @@
         "axios": "^1.13.6",
         "axios-mock-adapter": "^2.1.0",
         "highlight.js": "^11.11.1",
+        "litegraph.js": "^0.7.18",
         "marked": "^15.0.7",
         "marked-highlight": "^2.2.1",
         "pinia": "^3.0.4",
