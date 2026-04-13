@@ -4,8 +4,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
 import type { IOpenAiChatMessage } from '@/api/types';
 import { streamChat } from '@/api/manna';
-import { useNotificationsStore, TOAST_TYPE } from './notification';
+export { useNotificationsStore } from '@guebbit/vue-toolkit';
 import { ApiError } from '@/api/manna';
+
 
 /** A single chat conversation with its messages and metadata. */
 export interface IConversation {
@@ -127,14 +128,10 @@ export const useChatStore = defineStore('chat', () => {
             if (error instanceof ApiError && error.retryAfterSeconds) {
                 notificationStore.addMessage(
                     `Rate limited. Retry in ${String(error.retryAfterSeconds)}s`,
-                    TOAST_TYPE.DANGER,
-                    8000
                 );
             } else {
                 notificationStore.addMessage(
                     error instanceof Error ? error.message : 'Failed to send message',
-                    TOAST_TYPE.DANGER,
-                    8000
                 );
             }
         });

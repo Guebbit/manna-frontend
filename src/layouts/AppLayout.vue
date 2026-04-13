@@ -44,7 +44,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useTheme } from 'vuetify';
 import { useSystemStore } from '@/stores/system';
-import { useNotificationsStore } from '@/stores/notification';
+export { useNotificationsStore } from '@guebbit/vue-toolkit';
 import AppSidebar from '@/components/layout/AppSidebar.vue';
 
 const systemStore = useSystemStore();
