@@ -5,7 +5,7 @@ import { inkSketch, inkAndColor, ApiError } from '@/api/manna';
 import { useNotificationStore } from './notification';
 
 /**
- * Pinia store managing sketch analysis operations (inking and colourisation).
+ * Pinia store managing sketch analysis operations (inking and colorization).
  */
 export const useSketchStore = defineStore('sketch', () => {
     const inkResult = ref<IInkResponse | undefined>(undefined);
@@ -43,7 +43,7 @@ export const useSketchStore = defineStore('sketch', () => {
     }
 
     /**
-     * Submits a sketch image for combined inking and colourisation.
+     * Submits a sketch image for combined inking and colorization.
      * Sets `comingSoon` when the endpoint returns 404 (feature not yet deployed).
      *
      * @param image       - The sketch image file.

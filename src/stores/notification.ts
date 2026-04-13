@@ -43,7 +43,7 @@ export const useNotificationStore = defineStore('notification', () => {
     function success(message: string): void {
         push('success', message);
     }
-    /** Pushes an error notification with an extended 8 000 ms timeout. */
+    /** Pushes an error notification with an extended 8000 ms timeout. */
     function error(message: string): void {
         push('error', message, 8000);
     }

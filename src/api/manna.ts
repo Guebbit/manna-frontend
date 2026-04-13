@@ -348,10 +348,10 @@ export async function inkSketch(parameters: {
 }
 
 /**
- * Uploads a sketch image for combined inking and colourisation.
+ * Uploads a sketch image for combined inking and colorization.
  *
  * @param parameters - The sketch image, optional model, and detected sketch state.
- * @returns The colourisation description and detected state.
+ * @returns The colorization description and detected state.
  */
 export async function inkAndColor(parameters: {
     image: File;
