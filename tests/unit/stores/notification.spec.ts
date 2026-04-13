@@ -1,30 +1,30 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
-import { useNotificationStore } from '@/stores/notification';
+import { useNotificationsStore, TOAST_TYPE } from '@/stores/notification';
 
-describe('useNotificationStore', () => {
+describe('useNotificationsStore', () => {
     beforeEach(() => {
         setActivePinia(createPinia());
     });
 
-    it('starts with no notifications', () => {
-        const store = useNotificationStore();
-        expect(store.notifications).toEqual([]);
+    it('starts with no messages', () => {
+        const store = useNotificationsStore();
+        expect(store.messages).toEqual([]);
     });
 
-    it('pushes a success notification', () => {
-        const store = useNotificationStore();
-        store.success('It works!');
-        expect(store.notifications).toHaveLength(1);
-        expect(store.notifications[0].type).toBe('success');
-        expect(store.notifications[0].message).toBe('It works!');
+    it('adds a success message', () => {
+        const store = useNotificationsStore();
+        store.addMessage('It works!', TOAST_TYPE.SUCCESS);
+        expect(store.messages).toHaveLength(1);
+        expect(store.messages[0].type).toBe(TOAST_TYPE.SUCCESS);
+        expect(store.messages[0].message).toBe('It works!');
     });
 
-    it('removes a notification by id', () => {
-        const store = useNotificationStore();
-        store.error('Oops');
-        const id = store.notifications[0].id;
-        store.remove(id);
-        expect(store.notifications).toHaveLength(0);
+    it('hides a message by id', () => {
+        const store = useNotificationsStore();
+        store.addMessage('Oops', TOAST_TYPE.DANGER);
+        const id = store.messages[0].id;
+        store.hideMessage(id);
+        expect(store.messages).toHaveLength(0);
     });
 });

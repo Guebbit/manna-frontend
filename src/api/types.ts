@@ -163,32 +163,6 @@ export interface IReadPdfResponse {
     text: string;
 }
 
-/* ─── Sketch /ink ────────────────────────────────────────────── */
-
-/** Response body from the /ink endpoint. */
-export interface IInkResponse {
-    requestId: string;
-    model: string;
-    originalName: string;
-    inkingDescription: string;
-    latencyMs: number;
-}
-
-/* ─── Sketch /ink-and-color ──────────────────────────────────── */
-
-/** Detected state of the uploaded sketch image. */
-export type SketchState = 'sketch' | 'inked' | 'unknown';
-
-/** Response body from the /ink-and-color endpoint. */
-export interface IInkAndColorResponse {
-    requestId: string;
-    model: string;
-    originalName: string;
-    detectedState: SketchState;
-    colorizationDescription: string;
-    latencyMs: number;
-}
-
 /* ─── OpenAI Compat /v1/models ──────────────────────────────── */
 
 /** A single model object in the OpenAI-compatible model list. */

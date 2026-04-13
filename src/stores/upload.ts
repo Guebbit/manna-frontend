@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { reactive, ref } from 'vue';
 import type { IImageClassifyResponse, ISpeechToTextResponse, IReadPdfResponse } from '@/api/types';
 import { uploadImageClassify, uploadSpeechToText, uploadReadPdf, ApiError } from '@/api/manna';
-import { useNotificationStore } from './notification';
+import { useNotificationsStore, TOAST_TYPE } from './notification';
 
 /**
  * Pinia store managing file upload operations
@@ -27,13 +27,13 @@ export const useUploadStore = defineStore('upload', () => {
      * @param model  - Optional model override.
      */
     async function classifyImage(file: File, prompt?: string, model?: string): Promise<void> {
-        const notificationStore = useNotificationStore();
+        const notificationStore = useNotificationsStore();
         loading.imageClassify = true;
         try {
             imageClassifyResult.value = await uploadImageClassify({ file, prompt, model });
         } catch (error: unknown) {
             if (error instanceof ApiError) {
-                notificationStore.error(error.message);
+                notificationStore.addMessage(error.message, TOAST_TYPE.DANGER, 8000);
             }
             imageClassifyResult.value = undefined;
         } finally {
@@ -55,7 +55,7 @@ export const useUploadStore = defineStore('upload', () => {
         language?: string,
         prompt?: string
     ): Promise<void> {
-        const notificationStore = useNotificationStore();
+        const notificationStore = useNotificationsStore();
         loading.speechToText = true;
         try {
             speechToTextResult.value = await uploadSpeechToText({
@@ -66,7 +66,7 @@ export const useUploadStore = defineStore('upload', () => {
             });
         } catch (error: unknown) {
             if (error instanceof ApiError) {
-                notificationStore.error(error.message);
+                notificationStore.addMessage(error.message, TOAST_TYPE.DANGER, 8000);
             }
             speechToTextResult.value = undefined;
         } finally {
@@ -80,13 +80,13 @@ export const useUploadStore = defineStore('upload', () => {
      * @param file - The PDF file to read.
      */
     async function readPdf(file: File): Promise<void> {
-        const notificationStore = useNotificationStore();
+        const notificationStore = useNotificationsStore();
         loading.readPdf = true;
         try {
             readPdfResult.value = await uploadReadPdf({ file });
         } catch (error: unknown) {
             if (error instanceof ApiError) {
-                notificationStore.error(error.message);
+                notificationStore.addMessage(error.message, TOAST_TYPE.DANGER, 8000);
             }
             readPdfResult.value = undefined;
         } finally {

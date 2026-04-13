@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
 import type { ModelProfile } from '@/api/types';
 import { runTask, ApiError } from '@/api/manna';
-import { useNotificationStore } from './notification';
+import { useNotificationsStore, TOAST_TYPE } from './notification';
 
 /** A historical record of a submitted agent task and its outcome. */
 export interface ITaskHistoryEntry {
@@ -35,7 +35,7 @@ export const useAgentStore = defineStore('agent', () => {
         profile?: ModelProfile,
         allowWrite = false
     ): Promise<ITaskHistoryEntry | undefined> {
-        const notificationStore = useNotificationStore();
+        const notificationStore = useNotificationsStore();
         loading.value = true;
         try {
             const response = await runTask({ task, profile, allowWrite });
@@ -51,12 +51,16 @@ export const useAgentStore = defineStore('agent', () => {
             return entry;
         } catch (error: unknown) {
             if (error instanceof ApiError && error.retryAfterSeconds) {
-                notificationStore.error(
-                    `Rate limited. Retry in ${String(error.retryAfterSeconds)}s`
+                notificationStore.addMessage(
+                    `Rate limited. Retry in ${String(error.retryAfterSeconds)}s`,
+                    TOAST_TYPE.DANGER,
+                    8000
                 );
             } else {
-                notificationStore.error(
-                    error instanceof Error ? error.message : 'Agent task failed'
+                notificationStore.addMessage(
+                    error instanceof Error ? error.message : 'Agent task failed',
+                    TOAST_TYPE.DANGER,
+                    8000
                 );
             }
             return undefined;

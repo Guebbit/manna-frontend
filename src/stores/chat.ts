@@ -3,7 +3,7 @@ import { ref, computed } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
 import type { IOpenAiChatMessage } from '@/api/types';
 import { streamChat } from '@/api/manna';
-import { useNotificationStore } from './notification';
+import { useNotificationsStore, TOAST_TYPE } from './notification';
 import { ApiError } from '@/api/manna';
 
 /** A single chat conversation with its messages and metadata. */
@@ -69,7 +69,7 @@ export const useChatStore = defineStore('chat', () => {
      * @returns Resolves when the full assistant reply has been received.
      */
     async function sendMessage(content: string, allowWrite = false): Promise<void> {
-        const notificationStore = useNotificationStore();
+        const notificationStore = useNotificationsStore();
         let conversationReference = activeConversation.value;
 
         if (!conversationReference) {
@@ -107,12 +107,16 @@ export const useChatStore = defineStore('chat', () => {
         } catch (error: unknown) {
             conversationReference.messages.splice(assistantIndex, 1);
             if (error instanceof ApiError && error.retryAfterSeconds) {
-                notificationStore.error(
-                    `Rate limited. Retry in ${String(error.retryAfterSeconds)}s`
+                notificationStore.addMessage(
+                    `Rate limited. Retry in ${String(error.retryAfterSeconds)}s`,
+                    TOAST_TYPE.DANGER,
+                    8000
                 );
             } else {
-                notificationStore.error(
-                    error instanceof Error ? error.message : 'Failed to send message'
+                notificationStore.addMessage(
+                    error instanceof Error ? error.message : 'Failed to send message',
+                    TOAST_TYPE.DANGER,
+                    8000
                 );
             }
         } finally {

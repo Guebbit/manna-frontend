@@ -6,7 +6,7 @@ import type {
     IPageReviewResponse
 } from '@/api/types';
 import { autocomplete, lintConventions, pageReview, ApiError } from '@/api/manna';
-import { useNotificationStore } from './notification';
+import { useNotificationsStore, TOAST_TYPE } from './notification';
 
 /**
  * Pinia store managing IDE code-intelligence operations
@@ -35,13 +35,13 @@ export const useIdeStore = defineStore('ide', () => {
         suffix?: string,
         language?: string
     ): Promise<void> {
-        const notificationStore = useNotificationStore();
+        const notificationStore = useNotificationsStore();
         loading.autocomplete = true;
         try {
             autocompleteResult.value = await autocomplete({ prefix, suffix, language });
         } catch (error: unknown) {
             if (error instanceof ApiError) {
-                notificationStore.error(error.message);
+                notificationStore.addMessage(error.message, TOAST_TYPE.DANGER, 8000);
             }
             autocompleteResult.value = undefined;
         } finally {
@@ -62,13 +62,13 @@ export const useIdeStore = defineStore('ide', () => {
         model?: string;
         maxFindings?: number;
     }): Promise<void> {
-        const notificationStore = useNotificationStore();
+        const notificationStore = useNotificationsStore();
         loading.lint = true;
         try {
             lintResult.value = await lintConventions(parameters);
         } catch (error: unknown) {
             if (error instanceof ApiError) {
-                notificationStore.error(error.message);
+                notificationStore.addMessage(error.message, TOAST_TYPE.DANGER, 8000);
             }
             lintResult.value = undefined;
         } finally {
@@ -88,13 +88,13 @@ export const useIdeStore = defineStore('ide', () => {
         projectContext?: string;
         model?: string;
     }): Promise<void> {
-        const notificationStore = useNotificationStore();
+        const notificationStore = useNotificationsStore();
         loading.review = true;
         try {
             reviewResult.value = await pageReview(parameters);
         } catch (error: unknown) {
             if (error instanceof ApiError) {
-                notificationStore.error(error.message);
+                notificationStore.addMessage(error.message, TOAST_TYPE.DANGER, 8000);
             }
             reviewResult.value = undefined;
         } finally {

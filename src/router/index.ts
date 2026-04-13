@@ -33,11 +33,7 @@ const router = createRouter({
                     name: 'upload',
                     component: () => import('@/views/UploadAnalyzeView.vue')
                 },
-                {
-                    path: 'sketch',
-                    name: 'sketch',
-                    component: () => import('@/views/SketchStudioView.vue')
-                },
+
                 {
                     path: 'settings',
                     name: 'settings',
