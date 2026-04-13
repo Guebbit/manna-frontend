@@ -213,22 +213,29 @@ function agentEventColor(type: AgentStreamEvent['type']): string {
 
 function agentEventSummary(event: AgentStreamEvent): string {
     switch (event.type) {
-        case 'step':
+        case 'step': {
             return `Step ${String(event.data.step)}: ${event.data.action} — ${event.data.thought}`;
-        case 'tool':
+        }
+        case 'tool': {
             return event.data.error
                 ? `Tool ${event.data.tool} error: ${event.data.error}`
                 : `Tool ${event.data.tool} executed`;
-        case 'route':
+        }
+        case 'route': {
             return `Routed to ${event.data.profile} (${event.data.model})`;
-        case 'done':
+        }
+        case 'done': {
             return 'Agent completed';
-        case 'error':
+        }
+        case 'error': {
             return `Error: ${event.data.error}`;
-        case 'max_steps':
+        }
+        case 'max_steps': {
             return `Max steps reached: ${event.data.summary}`;
-        default:
+        }
+        default: {
             return '';
+        }
     }
 }
 

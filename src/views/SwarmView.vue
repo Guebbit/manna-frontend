@@ -282,28 +282,38 @@ function eventColor(type: SwarmStreamEvent['type']): string {
 
 function eventSummary(event: SwarmStreamEvent): string {
     switch (event.type) {
-        case 'decomposed':
+        case 'decomposed': {
             return `Decomposed into ${event.data.subtaskCount} subtasks`;
-        case 'subtask_start':
+        }
+        case 'subtask_start': {
             return `Subtask ${event.data.subtaskId} started (${event.data.profile})`;
-        case 'subtask_done':
+        }
+        case 'subtask_done': {
             return `Subtask ${event.data.subtaskId} done in ${formatDuration(event.data.durationMs)}`;
-        case 'subtask_error':
+        }
+        case 'subtask_error': {
             return `Subtask ${event.data.subtaskId} failed: ${event.data.error}`;
-        case 'step':
+        }
+        case 'step': {
             return `Step ${event.data.step}: ${event.data.action}`;
-        case 'tool':
+        }
+        case 'tool': {
             return event.data.error
                 ? `Tool ${event.data.tool} error: ${event.data.error}`
                 : `Tool ${event.data.tool} executed`;
-        case 'route':
+        }
+        case 'route': {
             return `Routed to ${event.data.profile} (${event.data.model})`;
-        case 'done':
+        }
+        case 'done': {
             return `Completed in ${formatDuration(event.data.totalDurationMs)}`;
-        case 'error':
+        }
+        case 'error': {
             return `Error: ${event.data.error}`;
-        default:
+        }
+        default: {
             return '';
+        }
     }
 }
 
