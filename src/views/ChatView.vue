@@ -180,7 +180,7 @@ watch(
     () => {
         const conv = chatStore.activeConversation;
         if (!conv || conv.messages.length === 0) return '';
-        const last = conv.messages.at(-1);
+        const last: (typeof conv.messages)[number] | undefined = conv.messages.at(-1);
         if (!last) return '';
         return typeof last.content === 'string' ? last.content : '';
     },
