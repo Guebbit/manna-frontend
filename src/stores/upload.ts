@@ -4,6 +4,10 @@ import type { IImageClassifyResponse, ISpeechToTextResponse, IReadPdfResponse } 
 import { uploadImageClassify, uploadSpeechToText, uploadReadPdf, ApiError } from '@/api/manna';
 import { useNotificationStore } from './notification';
 
+/**
+ * Pinia store managing file upload operations
+ * (image classification, speech-to-text, and PDF reading).
+ */
 export const useUploadStore = defineStore('upload', () => {
     const imageClassifyResult = ref<IImageClassifyResponse | undefined>(undefined);
     const speechToTextResult = ref<ISpeechToTextResponse | undefined>(undefined);
@@ -15,6 +19,13 @@ export const useUploadStore = defineStore('upload', () => {
         readPdf: false
     });
 
+    /**
+     * Uploads an image for AI-powered classification.
+     *
+     * @param file   - The image file to classify.
+     * @param prompt - Optional prompt to guide the classification.
+     * @param model  - Optional model override.
+     */
     async function classifyImage(file: File, prompt?: string, model?: string): Promise<void> {
         const notificationStore = useNotificationStore();
         loading.imageClassify = true;
@@ -30,6 +41,14 @@ export const useUploadStore = defineStore('upload', () => {
         }
     }
 
+    /**
+     * Uploads an audio file for speech-to-text transcription.
+     *
+     * @param file     - The audio file to transcribe.
+     * @param model    - Optional model override.
+     * @param language - Optional language hint for the transcription engine.
+     * @param prompt   - Optional prompt to guide transcription.
+     */
     async function transcribeAudio(
         file: File,
         model?: string,
@@ -55,6 +74,11 @@ export const useUploadStore = defineStore('upload', () => {
         }
     }
 
+    /**
+     * Uploads a PDF file for text extraction.
+     *
+     * @param file - The PDF file to read.
+     */
     async function readPdf(file: File): Promise<void> {
         const notificationStore = useNotificationStore();
         loading.readPdf = true;

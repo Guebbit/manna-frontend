@@ -1,3 +1,8 @@
+/**
+ * Retrieves the Manna backend base URL from localStorage, environment, or fallback default.
+ *
+ * @returns The configured backend URL string.
+ */
 export function getMannaBaseUrl(): string {
     return (
         localStorage.getItem('manna-base-url') ??
@@ -6,6 +11,11 @@ export function getMannaBaseUrl(): string {
     );
 }
 
+/**
+ * Persists a custom Manna backend base URL to localStorage.
+ *
+ * @param url - The new backend URL to store.
+ */
 export function setMannaBaseUrl(url: string): void {
     localStorage.setItem('manna-base-url', url);
 }

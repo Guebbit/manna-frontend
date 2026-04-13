@@ -6,6 +6,7 @@ import { streamChat } from '@/api/manna';
 import { useNotificationStore } from './notification';
 import { ApiError } from '@/api/manna';
 
+/** A single chat conversation with its messages and metadata. */
 export interface IConversation {
     id: string;
     title: string;
@@ -14,6 +15,9 @@ export interface IConversation {
     createdAt: string;
 }
 
+/**
+ * Pinia store managing chat conversations and streaming message delivery.
+ */
 export const useChatStore = defineStore('chat', () => {
     const conversations = ref<IConversation[]>([]);
     const activeConversationId = ref<string | undefined>(undefined);
@@ -23,6 +27,12 @@ export const useChatStore = defineStore('chat', () => {
         conversations.value.find((c) => c.id === activeConversationId.value)
     );
 
+    /**
+     * Creates a new conversation, adds it to the top of the list, and activates it.
+     *
+     * @param model - The model identifier to use for this conversation (default `'manna'`).
+     * @returns The UUID of the newly created conversation.
+     */
     function newConversation(model = 'manna'): string {
         const id = uuidv4();
         conversations.value.unshift({
@@ -36,6 +46,11 @@ export const useChatStore = defineStore('chat', () => {
         return id;
     }
 
+    /**
+     * Removes a conversation by ID and switches the active conversation if needed.
+     *
+     * @param id - The UUID of the conversation to delete.
+     */
     function deleteConversation(id: string): void {
         const index = conversations.value.findIndex((c) => c.id === id);
         if (index === -1) return;
@@ -45,6 +60,14 @@ export const useChatStore = defineStore('chat', () => {
         }
     }
 
+    /**
+     * Sends a user message and streams the assistant reply into the active conversation.
+     * Creates a new conversation if none is active.
+     *
+     * @param content    - The user's plain-text message.
+     * @param allowWrite - When `true`, grants the backend write-access to the filesystem.
+     * @returns Resolves when the full assistant reply has been received.
+     */
     async function sendMessage(content: string, allowWrite = false): Promise<void> {
         const notificationStore = useNotificationStore();
         let conversationReference = activeConversation.value;
