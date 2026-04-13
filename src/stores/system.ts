@@ -1,11 +1,18 @@
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
-import type { IHealthResponse, IOpenAiModelObject } from '@/api/types';
-import { healthCheck, listModels } from '@/api/manna';
+import type {
+    IHealthResponse,
+    IOpenAiModelObject,
+    IInfoMode,
+    IInfoModel,
+    IHelpResponse
+} from '@/api/types';
+import { healthCheck, listModels, fetchInfoModes, fetchInfoModels, fetchHelp } from '@/api/manna';
 
 /**
- * Pinia store managing backend health status and available model list.
+ * Pinia store managing backend health status, available model list,
+ * routing modes, Ollama model metadata, and API help reference.
  */
 export const useSystemStore = defineStore('system', () => {
     const { getLoading, setLoading } = useCoreStore();
@@ -21,6 +28,16 @@ export const useSystemStore = defineStore('system', () => {
 
     const models = ref<IOpenAiModelObject[]>([]);
     const modelsLoading = computed(() => getLoading('system-models'));
+
+    const modes = ref<IInfoMode[]>([]);
+    const modesLoading = computed(() => getLoading('system-modes'));
+
+    const infoModels = ref<IInfoModel[]>([]);
+    const infoModelsLoading = computed(() => getLoading('system-info-models'));
+    const ollamaBaseUrl = ref('');
+
+    const help = ref<IHelpResponse | undefined>(undefined);
+    const helpLoading = computed(() => getLoading('system-help'));
 
     /**
      * Fetches the backend health status and updates reactive state.
@@ -44,7 +61,7 @@ export const useSystemStore = defineStore('system', () => {
     };
 
     /**
-     * Fetches the list of available models from the backend.
+     * Fetches the list of available models from the OpenAI-compatible endpoint.
      * Silently resets to an empty array on failure.
      */
     const fetchModels = () =>
@@ -61,13 +78,79 @@ export const useSystemStore = defineStore('system', () => {
             models.value = [];
         });
 
+    /**
+     * Fetches the agent routing profiles from `/info/modes`.
+     * Silently resets to an empty array on failure.
+     */
+    const fetchModes = () =>
+        fetchAny(
+            () =>
+                fetchInfoModes().then((response) => {
+                    modes.value = response.modes;
+                }),
+            {
+                lastUpdateKey: 'modes',
+                loadingKey: '-modes'
+            }
+        ).catch(() => {
+            modes.value = [];
+        });
+
+    /**
+     * Fetches the Ollama model list from `/info/models`.
+     * Silently resets to an empty array on failure.
+     */
+    const fetchInfoModelsAction = () =>
+        fetchAny(
+            () =>
+                fetchInfoModels().then((response) => {
+                    infoModels.value = response.models;
+                    ollamaBaseUrl.value = response.ollamaBaseUrl;
+                }),
+            {
+                lastUpdateKey: 'info-models',
+                loadingKey: '-info-models'
+            }
+        ).catch(() => {
+            infoModels.value = [];
+            ollamaBaseUrl.value = '';
+        });
+
+    /**
+     * Fetches the API help reference from `/help`.
+     * Silently ignores failures.
+     */
+    const fetchHelpAction = () =>
+        fetchAny(
+            () =>
+                fetchHelp().then((response) => {
+                    help.value = response;
+                }),
+            {
+                lastUpdateKey: 'help',
+                loadingKey: '-help'
+            }
+        ).catch(() => {
+            help.value = undefined;
+        });
+
     return {
         health,
         healthLoading,
         healthError,
         models,
         modelsLoading,
+        modes,
+        modesLoading,
+        infoModels,
+        infoModelsLoading,
+        ollamaBaseUrl,
+        help,
+        helpLoading,
         fetchHealth,
-        fetchModels
+        fetchModels,
+        fetchModes,
+        fetchInfoModels: fetchInfoModelsAction,
+        fetchHelp: fetchHelpAction
     };
 });

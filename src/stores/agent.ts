@@ -2,8 +2,8 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
 import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
-import type { ModelProfile } from '@/api/types';
-import { runTask, ApiError } from '@/api/manna';
+import type { ModelProfile, AgentStreamEvent } from '@/api/types';
+import { runTask, runTaskStream, ApiError } from '@/api/manna';
 import { useNotificationsStore, TOAST_TYPE } from './notification';
 
 /** A historical record of a submitted agent task and its outcome. */
@@ -27,6 +27,8 @@ export const useAgentStore = defineStore('agent', () => {
     });
 
     const taskHistory = ref<ITaskHistoryEntry[]>([]);
+    const streaming = ref(false);
+    const streamEvents = ref<AgentStreamEvent[]>([]);
 
     /**
      * Submits an agent task to the backend and records the result in history.
@@ -75,9 +77,74 @@ export const useAgentStore = defineStore('agent', () => {
         });
     };
 
+    /**
+     * Submits an agent task via SSE streaming, populates `streamEvents` reactively,
+     * and records the final result in history when the `done` event arrives.
+     *
+     * @param task       - The natural-language task description.
+     * @param profile    - Optional model profile for inference routing.
+     * @param allowWrite - Whether the agent may modify files (default `false`).
+     * @returns The created history entry on success, or `undefined` on failure.
+     */
+    const submitTaskStream = async (
+        task: string,
+        profile?: ModelProfile,
+        allowWrite = false
+    ): Promise<ITaskHistoryEntry | undefined> => {
+        const notificationStore = useNotificationsStore();
+        streaming.value = true;
+        streamEvents.value = [];
+
+        try {
+            for await (const event of runTaskStream({ task, profile, allowWrite })) {
+                streamEvents.value.push(event);
+
+                if (event.type === 'done') {
+                    const entry: ITaskHistoryEntry = {
+                        id: uuidv4(),
+                        task,
+                        result: event.data.result,
+                        profile,
+                        allowWrite,
+                        timestamp: new Date().toISOString()
+                    };
+                    taskHistory.value.unshift(entry);
+                    return entry;
+                }
+
+                if (event.type === 'error') {
+                    notificationStore.addMessage(event.data.error, TOAST_TYPE.DANGER, 8000);
+                    return undefined;
+                }
+            }
+        } catch (error: unknown) {
+            if (error instanceof ApiError && error.retryAfterSeconds) {
+                notificationStore.addMessage(
+                    `Rate limited. Retry in ${String(error.retryAfterSeconds)}s`,
+                    TOAST_TYPE.DANGER,
+                    8000
+                );
+            } else {
+                notificationStore.addMessage(
+                    error instanceof Error ? error.message : 'Agent stream failed',
+                    TOAST_TYPE.DANGER,
+                    8000
+                );
+            }
+            return undefined;
+        } finally {
+            streaming.value = false;
+        }
+
+        return undefined;
+    };
+
     return {
         taskHistory,
         loading,
-        submitTask
+        streaming,
+        streamEvents,
+        submitTask,
+        submitTaskStream
     };
 });

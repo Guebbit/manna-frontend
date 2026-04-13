@@ -40,14 +40,58 @@
                     <v-card-actions>
                         <v-btn
                             color="primary"
-                            :loading="agentStore.loading"
-                            :disabled="!taskInput.trim()"
+                            :loading="agentStore.loading && !agentStore.streaming"
+                            :disabled="!taskInput.trim() || agentStore.streaming"
                             @click="submit"
                         >
                             <v-icon start>mdi-play</v-icon>
                             Run Task
                         </v-btn>
+                        <v-btn
+                            color="secondary"
+                            :loading="agentStore.streaming"
+                            :disabled="!taskInput.trim() || (agentStore.loading && !agentStore.streaming)"
+                            @click="submitStream"
+                        >
+                            <v-icon start>mdi-antenna</v-icon>
+                            Stream
+                        </v-btn>
                     </v-card-actions>
+                </v-card>
+
+                <!-- Stream Event Feed -->
+                <v-card v-if="agentStore.streaming || streamFinished" class="mt-4">
+                    <v-card-title class="d-flex align-center">
+                        <v-icon start>mdi-antenna</v-icon>
+                        Live Events
+                        <v-progress-circular
+                            v-if="agentStore.streaming"
+                            indeterminate
+                            size="16"
+                            class="ml-2"
+                        />
+                    </v-card-title>
+                    <v-card-text>
+                        <v-timeline density="compact" side="end">
+                            <v-timeline-item
+                                v-for="(event, index) in agentStore.streamEvents"
+                                :key="index"
+                                :dot-color="agentEventColor(event.type)"
+                                size="small"
+                            >
+                                <div class="d-flex align-center ga-2">
+                                    <v-chip
+                                        :color="agentEventColor(event.type)"
+                                        size="x-small"
+                                        label
+                                    >
+                                        {{ event.type }}
+                                    </v-chip>
+                                    <span class="text-body-2">{{ agentEventSummary(event) }}</span>
+                                </div>
+                            </v-timeline-item>
+                        </v-timeline>
+                    </v-card-text>
                 </v-card>
 
                 <!-- Result -->
@@ -98,7 +142,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useAgentStore, type ITaskHistoryEntry } from '@/stores/agent';
-import type { ModelProfile } from '@/api/types';
+import type { ModelProfile, AgentStreamEvent } from '@/api/types';
 import MarkdownRenderer from '@/components/shared/MarkdownRenderer.vue';
 import CopyButton from '@/components/shared/CopyButton.vue';
 
@@ -108,6 +152,7 @@ const taskInput = ref('');
 const selectedProfile = ref<ModelProfile | 'auto'>('auto');
 const allowWrite = ref(false);
 const latestResult = ref<ITaskHistoryEntry | undefined>(undefined);
+const streamFinished = ref(false);
 
 const profileOptions = [
     { title: 'Auto (router decides)', value: 'auto' },
@@ -131,11 +176,66 @@ async function submit(): Promise<void> {
     const task = taskInput.value.trim();
     if (!task) return;
 
+    streamFinished.value = false;
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
     const result = await agentStore.submitTask(task, profile, allowWrite.value);
     if (result) {
         latestResult.value = result;
         taskInput.value = '';
+    }
+}
+
+async function submitStream(): Promise<void> {
+    const task = taskInput.value.trim();
+    if (!task) return;
+
+    streamFinished.value = false;
+    const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
+    const result = await agentStore.submitTaskStream(task, profile, allowWrite.value);
+    streamFinished.value = true;
+    if (result) {
+        latestResult.value = result;
+        taskInput.value = '';
+    }
+}
+
+function agentEventColor(type: AgentStreamEvent['type']): string {
+    const colors: Record<AgentStreamEvent['type'], string> = {
+        step: 'purple',
+        tool: 'orange',
+        route: 'teal',
+        done: 'success',
+        error: 'error',
+        max_steps: 'warning'
+    };
+    return colors[type] ?? 'grey';
+}
+
+function agentEventSummary(event: AgentStreamEvent): string {
+    switch (event.type) {
+        case 'step': {
+            return `Step ${String(event.data.step)}: ${event.data.action} — ${event.data.thought}`;
+        }
+        case 'tool': {
+            return event.data.error
+                ? `Tool ${event.data.tool} error: ${event.data.error}`
+                : `Tool ${event.data.tool} executed`;
+        }
+        case 'route': {
+            return `Routed to ${event.data.profile} (${event.data.model})`;
+        }
+        case 'done': {
+            return 'Agent completed';
+        }
+        case 'error': {
+            return `Error: ${event.data.error}`;
+        }
+        case 'max_steps': {
+            return `Max steps reached: ${event.data.summary}`;
+        }
+        default: {
+            return '';
+        }
     }
 }
 

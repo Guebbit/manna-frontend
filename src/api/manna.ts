@@ -14,7 +14,14 @@ import type {
     IHealthResponse,
     IOpenAiModelListResponse,
     IOpenAiChatCompletionRequest,
-    IOpenAiChatCompletionResponse
+    IOpenAiChatCompletionResponse,
+    AgentStreamEvent,
+    ISwarmRequest,
+    ISwarmResponse,
+    SwarmStreamEvent,
+    IInfoModesResponse,
+    IInfoModelsResponse,
+    IHelpResponse
 } from './types';
 
 /* ─── Error class ────────────────────────────────────────────── */
@@ -328,3 +335,165 @@ export async function uploadReadPdf(parameters: { file: File }): Promise<IReadPd
 }
 
 
+
+/* ─── SSE helper ─────────────────────────────────────────────── */
+
+/**
+ * Shared SSE parser: yields typed events from a streaming `text/event-stream` response.
+ * Expects `event: <type>\ndata: <json>\n\n` framing from the backend.
+ *
+ * @param response - A successful fetch Response with a readable body.
+ * @yields Parsed SSE event objects with `type` and `data` properties.
+ */
+async function* parseSseStream<T extends { type: string; data: unknown }>(
+    response: Response
+): AsyncGenerator<T> {
+    if (!response.body) throw new ApiError('Response body is missing', 500);
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        // Split on double-newline (SSE block delimiter)
+        const blocks = buffer.split('\n\n');
+        buffer = blocks.pop() ?? '';
+
+        for (const block of blocks) {
+            if (!block.trim()) continue;
+            const lines = block.split('\n');
+            let eventType = '';
+            let dataLine = '';
+
+            for (const line of lines) {
+                if (line.startsWith('event: ')) {
+                    eventType = line.slice(7).trim();
+                } else if (line.startsWith('data: ')) {
+                    dataLine = line.slice(6).trim();
+                }
+            }
+
+            if (!eventType || !dataLine) continue;
+            try {
+                const parsed = JSON.parse(dataLine);
+                yield { type: eventType, data: parsed } as T;
+            } catch {
+                /* skip malformed SSE frames */
+            }
+        }
+    }
+}
+
+/* ─── Agent streaming ────────────────────────────────────────── */
+
+/**
+ * Submits an agent task and streams lifecycle events as they arrive via SSE.
+ *
+ * @param parameters - The task description, profile, and write-access flag.
+ * @yields Typed `AgentStreamEvent` objects (step, tool, route, done, error, max_steps).
+ * @throws {ApiError} When the initial HTTP response is not OK.
+ */
+export async function* runTaskStream(
+    parameters: IRunRequest
+): AsyncGenerator<AgentStreamEvent> {
+    const response = await fetch(`${baseUrl()}/run/stream`, {
+        method: 'POST',
+        headers: JSON_HEADERS,
+        body: JSON.stringify(parameters)
+    });
+
+    if (!response.ok) {
+        let errorMessage = response.statusText;
+        try {
+            const body = await response.json();
+            errorMessage = body.error ?? errorMessage;
+        } catch {
+            /* ignore */
+        }
+        throw new ApiError(errorMessage, response.status);
+    }
+
+    yield* parseSseStream<AgentStreamEvent>(response);
+}
+
+/* ─── Swarm ──────────────────────────────────────────────────── */
+
+/**
+ * Submits a multi-agent swarm task and waits for the complete JSON result.
+ *
+ * @param parameters - The task, profile, write-access flag, and optional subtask limit.
+ * @returns The swarm result including subtask breakdown and timing.
+ */
+export async function runSwarm(parameters: ISwarmRequest): Promise<ISwarmResponse> {
+    const response = await fetch(`${baseUrl()}/run/swarm`, {
+        method: 'POST',
+        headers: JSON_HEADERS,
+        body: JSON.stringify(parameters)
+    });
+    return handleResponse<ISwarmResponse>(response);
+}
+
+/**
+ * Submits a multi-agent swarm task and streams lifecycle events via SSE.
+ *
+ * @param parameters - The task, profile, write-access flag, and optional subtask limit.
+ * @yields Typed `SwarmStreamEvent` objects.
+ * @throws {ApiError} When the initial HTTP response is not OK.
+ */
+export async function* runSwarmStream(
+    parameters: ISwarmRequest
+): AsyncGenerator<SwarmStreamEvent> {
+    const response = await fetch(`${baseUrl()}/run/swarm/stream`, {
+        method: 'POST',
+        headers: JSON_HEADERS,
+        body: JSON.stringify(parameters)
+    });
+
+    if (!response.ok) {
+        let errorMessage = response.statusText;
+        try {
+            const body = await response.json();
+            errorMessage = body.error ?? errorMessage;
+        } catch {
+            /* ignore */
+        }
+        throw new ApiError(errorMessage, response.status);
+    }
+
+    yield* parseSseStream<SwarmStreamEvent>(response);
+}
+
+/* ─── Info endpoints ─────────────────────────────────────────── */
+
+/**
+ * Fetches the list of Manna agent routing profiles with resolved model names.
+ *
+ * @returns Mode list including profile names, model identifiers, and descriptions.
+ */
+export async function fetchInfoModes(): Promise<IInfoModesResponse> {
+    const response = await fetch(`${baseUrl()}/info/modes`);
+    return handleResponse<IInfoModesResponse>(response);
+}
+
+/**
+ * Fetches the list of models currently available on the connected Ollama instance.
+ *
+ * @returns Model list with metadata (name, size, digest, modified date).
+ */
+export async function fetchInfoModels(): Promise<IInfoModelsResponse> {
+    const response = await fetch(`${baseUrl()}/info/models`);
+    return handleResponse<IInfoModelsResponse>(response);
+}
+
+/**
+ * Fetches a structured JSON overview of all available Manna API endpoints.
+ *
+ * @returns API reference including endpoint descriptors and parameter schemas.
+ */
+export async function fetchHelp(): Promise<IHelpResponse> {
+    const response = await fetch(`${baseUrl()}/help`);
+    return handleResponse<IHelpResponse>(response);
+}

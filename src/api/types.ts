@@ -231,3 +231,179 @@ export interface IOpenAiChatCompletionResponse {
     choices: IOpenAiChatCompletionChoice[];
     usage: IOpenAiUsage;
 }
+
+/* ─── Agent /run/stream SSE events ──────────────────────────── */
+
+/** SSE event: agent step completed */
+export interface IAgentStepEvent {
+    step: number;
+    action: string;
+    thought: string;
+}
+
+/** SSE event: tool executed */
+export interface IAgentToolEvent {
+    tool: string;
+    result?: string;
+    error?: string;
+}
+
+/** SSE event: model profile routed */
+export interface IAgentRouteEvent {
+    profile: string;
+    model: string;
+    reason: string;
+}
+
+/** SSE event: agent finished */
+export interface IAgentDoneEvent {
+    result: string;
+}
+
+/** SSE event: agent error */
+export interface IAgentErrorEvent {
+    error: string;
+}
+
+/** SSE event: agent max steps exhausted */
+export interface IAgentMaxStepsEvent {
+    task: string;
+    summary: string;
+}
+
+/** Discriminated union of all SSE events from /run/stream */
+export type AgentStreamEvent =
+    | { type: 'step'; data: IAgentStepEvent }
+    | { type: 'tool'; data: IAgentToolEvent }
+    | { type: 'route'; data: IAgentRouteEvent }
+    | { type: 'done'; data: IAgentDoneEvent }
+    | { type: 'error'; data: IAgentErrorEvent }
+    | { type: 'max_steps'; data: IAgentMaxStepsEvent };
+
+/* ─── Swarm ─────────────────────────────────────────────────── */
+
+/** Request body for the /run/swarm endpoint. */
+export interface ISwarmRequest {
+    task: string;
+    allowWrite?: boolean;
+    profile?: ModelProfile;
+    maxSubtasks?: number;
+}
+
+/** A single subtask result from a swarm execution. */
+export interface ISwarmSubtaskResult {
+    id: string;
+    description: string;
+    profile: string;
+    success: boolean;
+    answer: string;
+    durationMs: number;
+    error?: string;
+}
+
+/** Response body from the /run/swarm endpoint. */
+export interface ISwarmResponse {
+    result: string;
+    subtaskResults: ISwarmSubtaskResult[];
+    decomposition: {
+        reasoning: string;
+        subtaskCount: number;
+    };
+    totalDurationMs: number;
+}
+
+/** SSE event: swarm decomposition complete */
+export interface ISwarmDecomposedEvent {
+    subtaskCount: number;
+    reasoning: string;
+    subtasks: Array<{ id: string; description: string; profile: string }>;
+}
+
+/** SSE event: subtask started */
+export interface ISwarmSubtaskStartEvent {
+    subtaskId: string;
+    profile: string;
+}
+
+/** SSE event: subtask completed */
+export interface ISwarmSubtaskDoneEvent {
+    subtaskId: string;
+    durationMs: number;
+}
+
+/** SSE event: subtask failed */
+export interface ISwarmSubtaskErrorEvent {
+    subtaskId: string;
+    error: string;
+}
+
+/** SSE event: swarm finished */
+export interface ISwarmDoneEvent {
+    result: string;
+    totalDurationMs: number;
+    subtaskCount: number;
+}
+
+/** Discriminated union of all SSE events from /run/swarm/stream */
+export type SwarmStreamEvent =
+    | { type: 'decomposed'; data: ISwarmDecomposedEvent }
+    | { type: 'subtask_start'; data: ISwarmSubtaskStartEvent }
+    | { type: 'subtask_done'; data: ISwarmSubtaskDoneEvent }
+    | { type: 'subtask_error'; data: ISwarmSubtaskErrorEvent }
+    | { type: 'step'; data: IAgentStepEvent }
+    | { type: 'tool'; data: IAgentToolEvent }
+    | { type: 'route'; data: IAgentRouteEvent }
+    | { type: 'done'; data: ISwarmDoneEvent }
+    | { type: 'error'; data: IAgentErrorEvent };
+
+/* ─── Info endpoints ────────────────────────────────────────── */
+
+/** A single Manna agent routing profile. */
+export interface IInfoMode {
+    profile: string;
+    model: string;
+    envVar: string;
+    description: string;
+}
+
+/** Response body from GET /info/modes. */
+export interface IInfoModesResponse {
+    count: number;
+    modes: IInfoMode[];
+}
+
+/** A single model from the connected Ollama instance. */
+export interface IInfoModel {
+    name: string;
+    size: number | null;
+    digest: string | null;
+    modifiedAt: string | null;
+    details: Record<string, unknown> | null;
+}
+
+/** Response body from GET /info/models. */
+export interface IInfoModelsResponse {
+    count: number;
+    ollamaBaseUrl: string;
+    models: IInfoModel[];
+}
+
+/** A single endpoint descriptor in the help response. */
+export interface IHelpEndpoint {
+    method: string;
+    path: string;
+    summary: string;
+    params: Array<{
+        name: string;
+        type: string;
+        required: boolean;
+        description: string;
+    }>;
+}
+
+/** Response body from GET /help. */
+export interface IHelpResponse {
+    description: string;
+    endpointCount: number;
+    endpoints: IHelpEndpoint[];
+}
