@@ -19,7 +19,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-const props = defineProps<{
+defineProps<{
     accept?: string;
     label?: string;
     hint?: string;
@@ -53,8 +53,6 @@ function onFileSelect(event: Event): void {
     // Reset so the same file can be re-selected
     target.value = '';
 }
-
-void props;
 </script>
 
 <style scoped>
