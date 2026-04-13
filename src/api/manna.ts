@@ -14,10 +14,7 @@ import type {
     IHealthResponse,
     IOpenAiModelListResponse,
     IOpenAiChatCompletionRequest,
-    IOpenAiChatCompletionResponse,
-    IInkResponse,
-    IInkAndColorResponse,
-    SketchState
+    IOpenAiChatCompletionResponse
 } from './types';
 
 /* ─── Error class ────────────────────────────────────────────── */
@@ -330,36 +327,4 @@ export async function uploadReadPdf(parameters: { file: File }): Promise<IReadPd
     return uploadFile<IReadPdfResponse>('/upload/read-pdf', parameters.file);
 }
 
-/* ─── Sketch (multipart) ─────────────────────────────────────── */
 
-/**
- * Uploads a sketch image for AI inking analysis.
- *
- * @param parameters - The sketch image file and optional model override.
- * @returns The inking description and metadata.
- */
-export async function inkSketch(parameters: {
-    image: File;
-    model?: string;
-}): Promise<IInkResponse> {
-    const extra: Record<string, string> = {};
-    if (parameters.model) extra.model = parameters.model;
-    return uploadFile<IInkResponse>('/ink', parameters.image, 'image', extra);
-}
-
-/**
- * Uploads a sketch image for combined inking and colorization.
- *
- * @param parameters - The sketch image, optional model, and detected sketch state.
- * @returns The colorization description and detected state.
- */
-export async function inkAndColor(parameters: {
-    image: File;
-    model?: string;
-    sketchState?: SketchState;
-}): Promise<IInkAndColorResponse> {
-    const extra: Record<string, string> = {};
-    if (parameters.model) extra.model = parameters.model;
-    if (parameters.sketchState) extra.sketchState = parameters.sketchState;
-    return uploadFile<IInkAndColorResponse>('/ink-and-color', parameters.image, 'image', extra);
-}

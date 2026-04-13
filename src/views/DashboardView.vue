@@ -104,7 +104,6 @@ const quickActions = [
     { label: 'Chat', icon: 'mdi-chat', to: '/chat' },
     { label: 'Agent', icon: 'mdi-robot', to: '/agent' },
     { label: 'Code', icon: 'mdi-code-braces', to: '/code' },
-    { label: 'Upload', icon: 'mdi-upload', to: '/upload' },
-    { label: 'Sketch', icon: 'mdi-palette', to: '/sketch' }
+    { label: 'Upload', icon: 'mdi-upload', to: '/upload' }
 ];
 </script>

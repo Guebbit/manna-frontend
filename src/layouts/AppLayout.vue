@@ -23,17 +23,16 @@
 
         <!-- Global notification snackbars -->
         <v-snackbar
-            v-for="notification in notificationStore.notifications"
+            v-for="notification in notificationStore.messages"
             :key="notification.id"
-            :model-value="true"
+            :model-value="notification.visible"
             :color="notification.type"
-            :timeout="notification.timeout"
             location="bottom right"
-            @update:model-value="notificationStore.remove(notification.id)"
+            @update:model-value="notificationStore.hideMessage(notification.id)"
         >
             {{ notification.message }}
             <template #actions>
-                <v-btn variant="text" @click="notificationStore.remove(notification.id)">
+                <v-btn variant="text" @click="notificationStore.hideMessage(notification.id)">
                     Close
                 </v-btn>
             </template>
@@ -45,11 +44,11 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useTheme } from 'vuetify';
 import { useSystemStore } from '@/stores/system';
-import { useNotificationStore } from '@/stores/notification';
+import { useNotificationsStore } from '@/stores/notification';
 import AppSidebar from '@/components/layout/AppSidebar.vue';
 
 const systemStore = useSystemStore();
-const notificationStore = useNotificationStore();
+const notificationStore = useNotificationsStore();
 const theme = useTheme();
 
 const drawerOpen = ref(true);
