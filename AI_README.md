@@ -9,13 +9,13 @@
 
 Every contribution must respect the five SOLID principles:
 
-| Principle | Guideline |
-|-----------|-----------|
-| **Single Responsibility** | Each file, class, function, and Vue component must do exactly **one thing**. Stores handle state, API modules handle HTTP, components handle presentation. Never mix concerns. |
-| **Open/Closed** | Design for extension, not modification. Use TypeScript interfaces (prefixed `I`) and composition over inheritance so new features plug in without rewriting existing code. |
-| **Liskov Substitution** | Any implementation of an interface must be safely swappable. Never narrow a return type or broaden a precondition in a subtype. |
-| **Interface Segregation** | Keep interfaces small and focused. Prefer many specific interfaces over one large "god" interface. Split request/response types per endpoint (see `src/api/types.ts`). |
-| **Dependency Inversion** | Depend on abstractions, not concretions. Stores consume API functions via imports from `@/api/manna`, never by constructing HTTP calls directly. Pass dependencies as function arguments where possible. |
+| Principle                 | Guideline                                                                                                                                                                                                |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Single Responsibility** | Each file, class, function, and Vue component must do exactly **one thing**. Stores handle state, API modules handle HTTP, components handle presentation. Never mix concerns.                           |
+| **Open/Closed**           | Design for extension, not modification. Use TypeScript interfaces (prefixed `I`) and composition over inheritance so new features plug in without rewriting existing code.                               |
+| **Liskov Substitution**   | Any implementation of an interface must be safely swappable. Never narrow a return type or broaden a precondition in a subtype.                                                                          |
+| **Interface Segregation** | Keep interfaces small and focused. Prefer many specific interfaces over one large "god" interface. Split request/response types per endpoint (see `src/api/types.ts`).                                   |
+| **Dependency Inversion**  | Depend on abstractions, not concretions. Stores consume API functions via imports from `@/api/manna`, never by constructing HTTP calls directly. Pass dependencies as function arguments where possible. |
 
 ---
 
@@ -32,23 +32,23 @@ Every contribution must respect the five SOLID principles:
 ### 2.2 Functions
 
 - **Small** — a function should fit on one screen (~20–30 lines). If it does not, extract a helper.
-- **Do one thing** — if you can describe a function with "it does X *and* Y", split it.
+- **Do one thing** — if you can describe a function with "it does X _and_ Y", split it.
 - **Few arguments** — aim for 0–2 arguments. When 3+ are needed, group them in a typed object (interface).
 - **No side effects** — a function named `getX` must not mutate state. Side-effecting functions should be clearly named (`saveX`, `pushNotification`, `deleteConversation`).
-- **Command/Query Separation** — functions either *return* data or *change* state, not both.
+- **Command/Query Separation** — functions either _return_ data or _change_ state, not both.
 
 ### 2.3 Comments
 
-> "A comment is a failure to express yourself in code." — but when you *do* comment, make it count.
+> "A comment is a failure to express yourself in code." — but when you _do_ comment, make it count.
 
 #### Required comments
 
-| Where | Format | Example |
-|-------|--------|---------|
-| **Every exported function** | JSDoc `/** */` block describing *what* it does, each `@param`, and `@returns` | See §2.4 below |
-| **Every exported interface / type** | Short `/** */` one-liner above the declaration | `/** Server health-check payload. */` |
-| **Non-obvious logic** | Inline `//` explaining *why*, never *what* | `// Retry header may be absent on 5xx` |
-| **Section dividers** (API, stores) | `/* ─── Section ─── */` banner | Already used in `src/api/manna.ts` |
+| Where                               | Format                                                                        | Example                                |
+| ----------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------- |
+| **Every exported function**         | JSDoc `/** */` block describing _what_ it does, each `@param`, and `@returns` | See §2.4 below                         |
+| **Every exported interface / type** | Short `/** */` one-liner above the declaration                                | `/** Server health-check payload. */`  |
+| **Non-obvious logic**               | Inline `//` explaining _why_, never _what_                                    | `// Retry header may be absent on 5xx` |
+| **Section dividers** (API, stores)  | `/* ─── Section ─── */` banner                                                | Already used in `src/api/manna.ts`     |
 
 #### Forbidden comments
 
@@ -87,16 +87,16 @@ async function sendMessage(content: string, allowWrite = false): Promise<void> {
 
 ### 3.1 Technology Stack
 
-| Layer | Tool |
-|-------|------|
+| Layer     | Tool                                                 |
+| --------- | ---------------------------------------------------- |
 | Framework | Vue 3 (Composition API + `<script setup lang="ts">`) |
-| State | Pinia (setup-style `defineStore`) |
-| UI | Vuetify 3 + Material Design Icons (`@mdi/font`) |
-| HTTP | Native `fetch` via `src/api/manna.ts` |
-| Router | Vue Router 4 (lazy-loaded views) |
-| Testing | Vitest (unit) · Cypress (E2E) |
-| Linting | ESLint (flat config) · Prettier · Spectral (OpenAPI) |
-| Build | Vite |
+| State     | Pinia (setup-style `defineStore`)                    |
+| UI        | Vuetify 3 + Material Design Icons (`@mdi/font`)      |
+| HTTP      | Native `fetch` via `src/api/manna.ts`                |
+| Router    | Vue Router 4 (lazy-loaded views)                     |
+| Testing   | Vitest (unit) · Cypress (E2E)                        |
+| Linting   | ESLint (flat config) · Prettier · Spectral (OpenAPI) |
+| Build     | Vite                                                 |
 
 ### 3.2 Directory Layout
 
@@ -115,15 +115,15 @@ src/
 
 ### 3.3 Naming Conventions (enforced by ESLint)
 
-| Artefact | Convention | Example |
-|----------|-----------|---------|
-| Vue components | `PascalCase.vue` | `HealthBadge.vue` |
-| TypeScript files | `camelCase.ts` | `notification.ts` |
-| Test files | `*.spec.ts` | `chat.spec.ts` |
-| Interfaces | `I` + PascalCase | `IConversation` |
-| Enums | `E` + PascalCase | `EStatus` |
-| Constants | `UPPER_CASE` | `JSON_HEADERS` |
-| Functions | `camelCase` | `fetchHealth` |
+| Artefact         | Convention       | Example           |
+| ---------------- | ---------------- | ----------------- |
+| Vue components   | `PascalCase.vue` | `HealthBadge.vue` |
+| TypeScript files | `camelCase.ts`   | `notification.ts` |
+| Test files       | `*.spec.ts`      | `chat.spec.ts`    |
+| Interfaces       | `I` + PascalCase | `IConversation`   |
+| Enums            | `E` + PascalCase | `EStatus`         |
+| Constants        | `UPPER_CASE`     | `JSON_HEADERS`    |
+| Functions        | `camelCase`      | `fetchHealth`     |
 
 ### 3.4 Formatting (Prettier)
 
@@ -145,16 +145,16 @@ npm run complete:check   # build + unit tests + lint + prettier check
 
 ## 4. Quick Reference — Do / Don't
 
-| ✅ Do | ❌ Don't |
-|-------|---------|
-| Write JSDoc on every exported symbol | Leave functions undocumented |
-| Keep functions ≤ 30 lines | Write "god" functions |
-| Use typed interfaces for 3+ params | Pass many positional args |
-| Name booleans `isX` / `hasX` | Name booleans `flag`, `check` |
+| ✅ Do                                        | ❌ Don't                           |
+| -------------------------------------------- | ---------------------------------- |
+| Write JSDoc on every exported symbol         | Leave functions undocumented       |
+| Keep functions ≤ 30 lines                    | Write "god" functions              |
+| Use typed interfaces for 3+ params           | Pass many positional args          |
+| Name booleans `isX` / `hasX`                 | Name booleans `flag`, `check`      |
 | Handle errors via `ApiError` + notifications | Use bare `try/catch` that swallows |
-| One responsibility per file | Mix API calls, state, and UI logic |
-| Run `npm run complete:check` before pushing | Push without checking |
+| One responsibility per file                  | Mix API calls, state, and UI logic |
+| Run `npm run complete:check` before pushing  | Push without checking              |
 
 ---
 
-*This file is versioned alongside the source code. Keep it up-to-date as conventions evolve.*
+_This file is versioned alongside the source code. Keep it up-to-date as conventions evolve._
