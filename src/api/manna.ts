@@ -348,7 +348,8 @@ export async function uploadReadPdf(parameters: { file: File }): Promise<IReadPd
 async function* parseSseStream<T extends { type: string; data: unknown }>(
     response: Response
 ): AsyncGenerator<T> {
-    const reader = response.body!.getReader();
+    if (!response.body) throw new ApiError('Response body is missing', 500);
+    const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
 

@@ -121,6 +121,8 @@ export const useSwarmStore = defineStore('swarm', () => {
                         subtaskCount: event.data.subtaskCount,
                         totalDurationMs: event.data.totalDurationMs,
                         timestamp: new Date().toISOString(),
+                        // Streaming mode does not deliver full subtask payloads;
+                        // subtaskResults is empty and decomposition.reasoning is unavailable.
                         response: {
                             result: event.data.result,
                             subtaskResults: [],

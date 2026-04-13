@@ -283,7 +283,7 @@ function eventColor(type: SwarmStreamEvent['type']): string {
 function eventSummary(event: SwarmStreamEvent): string {
     switch (event.type) {
         case 'decomposed':
-            return `Decomposed into ${String(event.data.subtaskCount)} subtasks`;
+            return `Decomposed into ${event.data.subtaskCount} subtasks`;
         case 'subtask_start':
             return `Subtask ${event.data.subtaskId} started (${event.data.profile})`;
         case 'subtask_done':
@@ -291,7 +291,7 @@ function eventSummary(event: SwarmStreamEvent): string {
         case 'subtask_error':
             return `Subtask ${event.data.subtaskId} failed: ${event.data.error}`;
         case 'step':
-            return `Step ${String(event.data.step)}: ${event.data.action}`;
+            return `Step ${event.data.step}: ${event.data.action}`;
         case 'tool':
             return event.data.error
                 ? `Tool ${event.data.tool} error: ${event.data.error}`
@@ -308,7 +308,7 @@ function eventSummary(event: SwarmStreamEvent): string {
 }
 
 function formatDuration(ms: number): string {
-    if (ms < 1000) return `${String(ms)}ms`;
+    if (ms < 1000) return `${ms}ms`;
     return `${(ms / 1000).toFixed(1)}s`;
 }
 
