@@ -20,14 +20,14 @@ It has no authentication — it's a personal tool on a local network.
 
 The API has **six endpoint groups** (12 live endpoints + 2 pending):
 
-| Group | Endpoints | Nature | Status |
-|---|---|---|---|
-| **Agent** | `POST /run` | Multi-step agentic loop with tools, memory, routing | ✅ Live |
-| **IDE** | `POST /autocomplete`, `POST /lint-conventions`, `POST /page-review` | Single LLM call, no agent loop | ✅ Live |
-| **Upload** | `POST /upload/image-classify`, `POST /upload/speech-to-text`, `POST /upload/read-pdf` | Multipart file upload → tool execution | ✅ Live (new) |
-| **Sketch** | `POST /ink`, `POST /ink-and-color` | Multipart image upload → vision model | ⏳ PR #19 pending |
-| **OpenAI Compat** | `GET /v1/models`, `POST /v1/chat/completions` | Adapter layer (temporary, for Open WebUI) | ✅ Live (temporary) |
-| **System** | `GET /health` | Liveness check | ✅ Live |
+| Group             | Endpoints                                                                             | Nature                                              | Status              |
+| ----------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------- | ------------------- |
+| **Agent**         | `POST /run`                                                                           | Multi-step agentic loop with tools, memory, routing | ✅ Live             |
+| **IDE**           | `POST /autocomplete`, `POST /lint-conventions`, `POST /page-review`                   | Single LLM call, no agent loop                      | ✅ Live             |
+| **Upload**        | `POST /upload/image-classify`, `POST /upload/speech-to-text`, `POST /upload/read-pdf` | Multipart file upload → tool execution              | ✅ Live (new)       |
+| **Sketch**        | `POST /ink`, `POST /ink-and-color`                                                    | Multipart image upload → vision model               | ⏳ PR #19 pending   |
+| **OpenAI Compat** | `GET /v1/models`, `POST /v1/chat/completions`                                         | Adapter layer (temporary, for Open WebUI)           | ✅ Live (temporary) |
+| **System**        | `GET /health`                                                                         | Liveness check                                      | ✅ Live             |
 
 The frontend should provide a UI for ALL of these. The `openapi.yaml` file
 contains the complete schema for every request/response.
@@ -36,15 +36,15 @@ contains the complete schema for every request/response.
 
 ## 2. Tech Stack Requirements
 
-| Layer | Choice | Notes |
-|---|---|---|
-| Framework | **Vue 3** (Composition API, `<script setup>`) | No Options API |
-| State | **Pinia** | One store per domain (agent, ide, upload, sketch, system) |
-| Router | **Vue Router 4** | Hash mode is fine for local use |
-| HTTP | **Axios** or **ofetch** | Wrap in a composable; base URL from env |
-| Styling | Your choice (Tailwind, UnoCSS, or whatever is in the boilerplate) | Responsive, dark mode preferred |
-| TypeScript | **Strict mode** | Generate types from the OpenAPI spec schemas |
-| SSE | Native `EventSource` or `fetch` + `ReadableStream` | For streaming chat completions |
+| Layer      | Choice                                                            | Notes                                                     |
+| ---------- | ----------------------------------------------------------------- | --------------------------------------------------------- |
+| Framework  | **Vue 3** (Composition API, `<script setup>`)                     | No Options API                                            |
+| State      | **Pinia**                                                         | One store per domain (agent, ide, upload, sketch, system) |
+| Router     | **Vue Router 4**                                                  | Hash mode is fine for local use                           |
+| HTTP       | **Axios** or **ofetch**                                           | Wrap in a composable; base URL from env                   |
+| Styling    | Your choice (Tailwind, UnoCSS, or whatever is in the boilerplate) | Responsive, dark mode preferred                           |
+| TypeScript | **Strict mode**                                                   | Generate types from the OpenAPI spec schemas              |
+| SSE        | Native `EventSource` or `fetch` + `ReadableStream`                | For streaming chat completions                            |
 
 ---
 
@@ -52,7 +52,7 @@ contains the complete schema for every request/response.
 
 ```typescript
 // src/config.ts
-export const MANNA_BASE_URL = import.meta.env.VITE_MANNA_URL ?? "http://localhost:3001";
+export const MANNA_BASE_URL = import.meta.env.VITE_MANNA_URL ?? 'http://localhost:3001';
 ```
 
 The user sets `VITE_MANNA_URL` in their `.env` if Manna is on a different host/port.
@@ -68,27 +68,27 @@ Create `src/api/manna.ts` — a thin typed client wrapping every endpoint.
 ```typescript
 // POST /run
 async function runTask(params: {
-  task: string;
-  allowWrite?: boolean;
-  profile?: "fast" | "reasoning" | "code" | "default";
-}): Promise<{ result: string }>
+    task: string;
+    allowWrite?: boolean;
+    profile?: 'fast' | 'reasoning' | 'code' | 'default';
+}): Promise<{ result: string }>;
 
 // POST /v1/chat/completions (streaming)
 function streamChat(params: {
-  model: string;           // manna | manna-fast | manna-reasoning | manna-code
-  messages: Array<{ role: "system" | "user" | "assistant"; content: string }>;
-  allowWrite?: boolean;
-}): AsyncIterable<string>  // yields content deltas
+    model: string; // manna | manna-fast | manna-reasoning | manna-code
+    messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>;
+    allowWrite?: boolean;
+}): AsyncIterable<string>; // yields content deltas
 
 // POST /v1/chat/completions (non-streaming)
 async function chatCompletion(params: {
-  model: string;
-  messages: Array<{ role: "system" | "user" | "assistant"; content: string }>;
-  allowWrite?: boolean;
-}): Promise<OpenAiChatCompletionResponse>
+    model: string;
+    messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>;
+    allowWrite?: boolean;
+}): Promise<OpenAiChatCompletionResponse>;
 
 // GET /v1/models
-async function listModels(): Promise<OpenAiModelListResponse>
+async function listModels(): Promise<OpenAiModelListResponse>;
 ```
 
 ### 4.2 IDE
@@ -96,29 +96,29 @@ async function listModels(): Promise<OpenAiModelListResponse>
 ```typescript
 // POST /autocomplete
 async function autocomplete(params: {
-  prefix: string;
-  suffix?: string;
-  language?: string;
-}): Promise<AutocompleteResponse>
+    prefix: string;
+    suffix?: string;
+    language?: string;
+}): Promise<AutocompleteResponse>;
 
 // POST /lint-conventions
 async function lintConventions(params: {
-  content: string;
-  language?: string;
-  filePath?: string;
-  includeLlm?: boolean;
-  model?: string;
-  maxFindings?: number;
-}): Promise<LintConventionsResponse>
+    content: string;
+    language?: string;
+    filePath?: string;
+    includeLlm?: boolean;
+    model?: string;
+    maxFindings?: number;
+}): Promise<LintConventionsResponse>;
 
 // POST /page-review
 async function pageReview(params: {
-  content: string;
-  language?: string;
-  filePath?: string;
-  projectContext?: string;
-  model?: string;
-}): Promise<PageReviewResponse>
+    content: string;
+    language?: string;
+    filePath?: string;
+    projectContext?: string;
+    model?: string;
+}): Promise<PageReviewResponse>;
 ```
 
 ### 4.3 Upload (NEW in v1.1)
@@ -126,47 +126,42 @@ async function pageReview(params: {
 ```typescript
 // POST /upload/image-classify (multipart)
 async function uploadImageClassify(params: {
-  file: File;
-  prompt?: string;
-  model?: string;
-}): Promise<ImageClassifyResponse>
+    file: File;
+    prompt?: string;
+    model?: string;
+}): Promise<ImageClassifyResponse>;
 
 // POST /upload/speech-to-text (multipart)
 async function uploadSpeechToText(params: {
-  file: File;
-  model?: string;
-  language?: string;
-  prompt?: string;
-}): Promise<SpeechToTextResponse>
+    file: File;
+    model?: string;
+    language?: string;
+    prompt?: string;
+}): Promise<SpeechToTextResponse>;
 
 // POST /upload/read-pdf (multipart)
-async function uploadReadPdf(params: {
-  file: File;
-}): Promise<ReadPdfResponse>
+async function uploadReadPdf(params: { file: File }): Promise<ReadPdfResponse>;
 ```
 
 ### 4.4 Sketch
 
 ```typescript
 // POST /ink (multipart)
-async function inkSketch(params: {
-  image: File;
-  model?: string;
-}): Promise<InkResponse>
+async function inkSketch(params: { image: File; model?: string }): Promise<InkResponse>;
 
 // POST /ink-and-color (multipart)
 async function inkAndColor(params: {
-  image: File;
-  model?: string;
-  sketchState?: "sketch" | "inked";
-}): Promise<InkAndColorResponse>
+    image: File;
+    model?: string;
+    sketchState?: 'sketch' | 'inked';
+}): Promise<InkAndColorResponse>;
 ```
 
 ### 4.5 System
 
 ```typescript
 // GET /health
-async function healthCheck(): Promise<HealthResponse>
+async function healthCheck(): Promise<HealthResponse>;
 ```
 
 ---
@@ -194,20 +189,21 @@ async function healthCheck(): Promise<HealthResponse>
 ```
 
 The sidebar should:
+
 - Show a health indicator (poll `GET /health` every 30s)
 - Show loaded model count from `GET /v1/models`
 
 ### 5.2 Routes
 
-| Route | View | Primary Endpoint(s) |
-|---|---|---|
-| `/` | **Dashboard** | `GET /health`, `GET /v1/models` |
-| `/chat` | **Chat** | `POST /v1/chat/completions` (streaming) |
-| `/agent` | **Agent Task** | `POST /run` |
-| `/code` | **Code Tools** | `/autocomplete`, `/lint-conventions`, `/page-review` |
-| `/upload` | **Upload & Analyze** | `/upload/image-classify`, `/upload/speech-to-text`, `/upload/read-pdf` |
-| `/sketch` | **Sketch Studio** | `/ink`, `/ink-and-color` |
-| `/settings` | **Settings** | Config (base URL, defaults) |
+| Route       | View                 | Primary Endpoint(s)                                                    |
+| ----------- | -------------------- | ---------------------------------------------------------------------- |
+| `/`         | **Dashboard**        | `GET /health`, `GET /v1/models`                                        |
+| `/chat`     | **Chat**             | `POST /v1/chat/completions` (streaming)                                |
+| `/agent`    | **Agent Task**       | `POST /run`                                                            |
+| `/code`     | **Code Tools**       | `/autocomplete`, `/lint-conventions`, `/page-review`                   |
+| `/upload`   | **Upload & Analyze** | `/upload/image-classify`, `/upload/speech-to-text`, `/upload/read-pdf` |
+| `/sketch`   | **Sketch Studio**    | `/ink`, `/ink-and-color`                                               |
+| `/settings` | **Settings**         | Config (base URL, defaults)                                            |
 
 ---
 
@@ -218,6 +214,7 @@ The sidebar should:
 **Purpose**: At-a-glance system status.
 
 Components:
+
 - **Health card** — green/red badge, last check timestamp, poll interval
 - **Models card** — list all models from `GET /v1/models` with their IDs
 - **Quick actions** — shortcut buttons to Chat, Agent, Code Tools, Upload, Sketch
@@ -228,6 +225,7 @@ Components:
 the OpenAI-compat endpoint. This is the **primary interaction surface**.
 
 Features:
+
 - **Message list** — scrollable, auto-scroll to bottom on new message
 - **User input** — textarea with Shift+Enter for newline, Enter to send
 - **Model selector** — dropdown populated from `GET /v1/models` (manna, manna-agent, manna-fast, manna-reasoning, manna-code)
@@ -238,35 +236,36 @@ Features:
 - **Loading state** — show a spinner/typing indicator while the agent is working
 
 **SSE streaming implementation**:
+
 ```typescript
 const response = await fetch(`${MANNA_BASE_URL}/v1/chat/completions`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ model, messages, stream: true, allowWrite }),
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model, messages, stream: true, allowWrite })
 });
 
 const reader = response.body!.getReader();
 const decoder = new TextDecoder();
-let buffer = "";
+let buffer = '';
 
 while (true) {
-  const { done, value } = await reader.read();
-  if (done) break;
-  buffer += decoder.decode(value, { stream: true });
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
 
-  const lines = buffer.split("\n");
-  buffer = lines.pop() ?? "";
+    const lines = buffer.split('\n');
+    buffer = lines.pop() ?? '';
 
-  for (const line of lines) {
-    if (!line.startsWith("data: ")) continue;
-    const data = line.slice(6).trim();
-    if (data === "[DONE]") return;
-    const chunk = JSON.parse(data);
-    const delta = chunk.choices?.[0]?.delta?.content;
-    if (delta) {
-      // Append delta to the current assistant message in the store
+    for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') return;
+        const chunk = JSON.parse(data);
+        const delta = chunk.choices?.[0]?.delta?.content;
+        if (delta) {
+            // Append delta to the current assistant message in the store
+        }
     }
-  }
 }
 ```
 
@@ -276,6 +275,7 @@ while (true) {
 Simpler than Chat — single task in, single result out.
 
 Features:
+
 - **Task input** — large textarea
 - **Profile selector** — dropdown: "Auto (router decides)", Fast, Reasoning, Code, Default
 - **Write mode toggle** — checkbox for `allowWrite`
@@ -291,12 +291,14 @@ Features:
 **Three tabs**:
 
 #### Tab: Autocomplete
+
 - **Code editor** (use Monaco Editor or CodeMirror) — split into prefix/suffix zones with a cursor line
 - **Language selector** — dropdown (typescript, javascript, python, go, rust, etc.)
 - **Trigger button** — calls `POST /autocomplete`
 - **Result** — shows the completion inline or in a separate panel
 
 #### Tab: Lint & Conventions
+
 - **Code editor** — paste or type code
 - **Language selector** + **File path input** (optional)
 - **"Include LLM" toggle** (default true)
@@ -306,6 +308,7 @@ Features:
 - **Summary bar** — errors (red), warnings (yellow), infos (blue) counts
 
 #### Tab: Page Review
+
 - **Code editor** — full file content
 - **Language selector** + **File path input** + **Project context textarea**
 - **Submit** → calls `POST /page-review`
@@ -320,6 +323,7 @@ inline base64 data.
 **Three tabs**:
 
 #### Tab: Image Classify
+
 - **Drop zone / file picker** — accepts any image format (max 50 MB)
 - **Image preview** — show the uploaded image as a thumbnail
 - **Prompt input** (optional) — custom prompt for the vision model
@@ -328,6 +332,7 @@ inline base64 data.
 - **Result** — display the `response` field as formatted text + the `model` used
 
 #### Tab: Speech to Text
+
 - **Drop zone / file picker** — accepts audio files (WAV, MP3, etc.; max 50 MB)
 - **Audio preview** — HTML5 `<audio>` player for the uploaded file
 - **Language hint** (optional) — dropdown or text input (ISO 639-1 codes: en, it, es, etc.)
@@ -337,34 +342,36 @@ inline base64 data.
 - **Result** — display the `text` field with a copy button
 
 #### Tab: Read PDF
+
 - **Drop zone / file picker** — accepts PDF files (max 50 MB)
 - **PDF info** — show filename + file size
 - **Submit** → calls `POST /upload/read-pdf` (multipart FormData: `file`)
 - **Result** — display `pageCount` badge + `text` content in a scrollable, copyable panel
 
 **Multipart upload helper** (shared across all three tabs):
+
 ```typescript
 async function uploadFile(
-  endpoint: string,
-  file: File,
-  extraFields?: Record<string, string>
+    endpoint: string,
+    file: File,
+    extraFields?: Record<string, string>
 ): Promise<unknown> {
-  const form = new FormData();
-  form.append("file", file);
-  if (extraFields) {
-    for (const [key, value] of Object.entries(extraFields)) {
-      if (value) form.append(key, value);
+    const form = new FormData();
+    form.append('file', file);
+    if (extraFields) {
+        for (const [key, value] of Object.entries(extraFields)) {
+            if (value) form.append(key, value);
+        }
     }
-  }
-  const res = await fetch(`${MANNA_BASE_URL}${endpoint}`, {
-    method: "POST",
-    body: form,
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error ?? res.statusText);
-  }
-  return res.json();
+    const res = await fetch(`${MANNA_BASE_URL}${endpoint}`, {
+        method: 'POST',
+        body: form
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(err.error ?? res.statusText);
+    }
+    return res.json();
 }
 ```
 
@@ -378,6 +385,7 @@ endpoints return 404.
 **Two modes** (toggle or tabs):
 
 #### Mode: Ink Only
+
 - **Drop zone / file picker** — accepts PNG, JPG, WEBP, GIF (max 10 MB)
 - **Image preview** — show the uploaded sketch
 - **Model override** (optional text input)
@@ -385,6 +393,7 @@ endpoints return 404.
 - **Result** — display the `inkingDescription` as formatted text
 
 #### Mode: Ink & Color
+
 - **Drop zone / file picker** — same as above
 - **Image preview**
 - **Sketch state override** — radio buttons: "Auto-detect", "It's a sketch", "It's already inked"
@@ -404,76 +413,82 @@ endpoints return 404.
 ## 7. Pinia Stores
 
 ### `useSystemStore`
+
 ```typescript
 interface SystemState {
-  health: { status: string; timestamp: string } | null;
-  healthLoading: boolean;
-  models: OpenAiModelObject[];
-  modelsLoading: boolean;
-  baseUrl: string;  // from localStorage or env
+    health: { status: string; timestamp: string } | null;
+    healthLoading: boolean;
+    models: OpenAiModelObject[];
+    modelsLoading: boolean;
+    baseUrl: string; // from localStorage or env
 }
 // Actions: fetchHealth(), fetchModels()
 ```
 
 ### `useChatStore`
+
 ```typescript
 interface ChatState {
-  conversations: Array<{
-    id: string;
-    title: string;
-    messages: OpenAiChatMessage[];
-    model: string;
-    createdAt: string;
-  }>;
-  activeConversationId: string | null;
-  streaming: boolean;
+    conversations: Array<{
+        id: string;
+        title: string;
+        messages: OpenAiChatMessage[];
+        model: string;
+        createdAt: string;
+    }>;
+    activeConversationId: string | null;
+    streaming: boolean;
 }
 // Actions: sendMessage(), newConversation(), deleteConversation()
 ```
 
 ### `useAgentStore`
+
 ```typescript
 interface AgentState {
-  taskHistory: Array<{
-    id: string;
-    task: string;
-    result: string;
-    profile: string | null;
-    allowWrite: boolean;
-    timestamp: string;
-  }>;
-  loading: boolean;
+    taskHistory: Array<{
+        id: string;
+        task: string;
+        result: string;
+        profile: string | null;
+        allowWrite: boolean;
+        timestamp: string;
+    }>;
+    loading: boolean;
 }
 // Actions: runTask()
 ```
 
 ### `useIdeStore`
+
 ```typescript
 interface IdeState {
-  autocompleteResult: AutocompleteResponse | null;
-  lintResult: LintConventionsResponse | null;
-  reviewResult: PageReviewResponse | null;
-  loading: Record<"autocomplete" | "lint" | "review", boolean>;
+    autocompleteResult: AutocompleteResponse | null;
+    lintResult: LintConventionsResponse | null;
+    reviewResult: PageReviewResponse | null;
+    loading: Record<'autocomplete' | 'lint' | 'review', boolean>;
 }
 ```
 
 ### `useUploadStore` (NEW in v1.1)
+
 ```typescript
 interface UploadState {
-  imageClassifyResult: ImageClassifyResponse | null;
-  speechToTextResult: SpeechToTextResponse | null;
-  readPdfResult: ReadPdfResponse | null;
-  loading: Record<"imageClassify" | "speechToText" | "readPdf", boolean>;
+    imageClassifyResult: ImageClassifyResponse | null;
+    speechToTextResult: SpeechToTextResponse | null;
+    readPdfResult: ReadPdfResponse | null;
+    loading: Record<'imageClassify' | 'speechToText' | 'readPdf', boolean>;
 }
 // Actions: classifyImage(), transcribeAudio(), readPdf()
 ```
 
 ### `useSketchStore`
+
 ```typescript
 interface SketchState {
-  inkResult: InkResponse | null;
-  inkAndColorResult: InkAndColorResponse | null;
-  loading: Record<"ink" | "inkAndColor", boolean>;
+    inkResult: InkResponse | null;
+    inkAndColorResult: InkAndColorResponse | null;
+    loading: Record<'ink' | 'inkAndColor', boolean>;
 }
 ```
 
@@ -495,6 +510,7 @@ Every API call in `src/api/manna.ts` must use these types for params and return 
 ## 9. Error Handling
 
 All API calls should:
+
 1. Catch network errors → show a toast/notification: "Cannot reach Manna at {baseUrl}"
 2. Handle 400s → show validation errors from the response body
 3. Handle 429s → show "Rate limited. Retry in {retryAfterSeconds}s" and disable the submit button for that duration
@@ -590,78 +606,80 @@ src/
 ## 12. Key Implementation Details
 
 ### SSE Streaming (composable)
+
 ```typescript
 // src/composables/useStreaming.ts
 export function useStreaming() {
-  const isStreaming = ref(false);
+    const isStreaming = ref(false);
 
-  async function* streamChatCompletion(
-    baseUrl: string,
-    body: OpenAiChatCompletionRequest
-  ): AsyncGenerator<string> {
-    isStreaming.value = true;
-    try {
-      const res = await fetch(`${baseUrl}/v1/chat/completions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...body, stream: true }),
-      });
+    async function* streamChatCompletion(
+        baseUrl: string,
+        body: OpenAiChatCompletionRequest
+    ): AsyncGenerator<string> {
+        isStreaming.value = true;
+        try {
+            const res = await fetch(`${baseUrl}/v1/chat/completions`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...body, stream: true })
+            });
 
-      const reader = res.body!.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
+            const reader = res.body!.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          const payload = line.slice(6).trim();
-          if (payload === "[DONE]") return;
-          const chunk = JSON.parse(payload);
-          const content = chunk.choices?.[0]?.delta?.content;
-          if (content) yield content;
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() ?? '';
+                for (const line of lines) {
+                    if (!line.startsWith('data: ')) continue;
+                    const payload = line.slice(6).trim();
+                    if (payload === '[DONE]') return;
+                    const chunk = JSON.parse(payload);
+                    const content = chunk.choices?.[0]?.delta?.content;
+                    if (content) yield content;
+                }
+            }
+        } finally {
+            isStreaming.value = false;
         }
-      }
-    } finally {
-      isStreaming.value = false;
     }
-  }
 
-  return { isStreaming, streamChatCompletion };
+    return { isStreaming, streamChatCompletion };
 }
 ```
 
 ### Multipart Upload (shared composable — NEW in v1.1)
+
 ```typescript
 // src/composables/useUpload.ts
-import { MANNA_BASE_URL } from "../config";
+import { MANNA_BASE_URL } from '../config';
 
 export async function uploadFile<T>(
-  endpoint: string,
-  file: File,
-  fieldName: string = "file",
-  extraFields?: Record<string, string>,
+    endpoint: string,
+    file: File,
+    fieldName: string = 'file',
+    extraFields?: Record<string, string>
 ): Promise<T> {
-  const form = new FormData();
-  form.append(fieldName, file);
-  if (extraFields) {
-    for (const [key, value] of Object.entries(extraFields)) {
-      if (value !== undefined && value !== "") form.append(key, value);
+    const form = new FormData();
+    form.append(fieldName, file);
+    if (extraFields) {
+        for (const [key, value] of Object.entries(extraFields)) {
+            if (value !== undefined && value !== '') form.append(key, value);
+        }
     }
-  }
-  const res = await fetch(`${MANNA_BASE_URL}${endpoint}`, {
-    method: "POST",
-    body: form,
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error ?? `HTTP ${res.status}`);
-  }
-  return res.json() as Promise<T>;
+    const res = await fetch(`${MANNA_BASE_URL}${endpoint}`, {
+        method: 'POST',
+        body: form
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(err.error ?? `HTTP ${res.status}`);
+    }
+    return res.json() as Promise<T>;
 }
 
 // Usage examples:
@@ -673,17 +691,18 @@ export async function uploadFile<T>(
 ```
 
 ### Health Polling (composable)
+
 ```typescript
 // src/composables/useHealthPoll.ts
 export function useHealthPoll(intervalMs = 30_000) {
-  const systemStore = useSystemStore();
-  let timer: ReturnType<typeof setInterval>;
+    const systemStore = useSystemStore();
+    let timer: ReturnType<typeof setInterval>;
 
-  onMounted(() => {
-    systemStore.fetchHealth();
-    timer = setInterval(() => systemStore.fetchHealth(), intervalMs);
-  });
-  onUnmounted(() => clearInterval(timer));
+    onMounted(() => {
+        systemStore.fetchHealth();
+        timer = setInterval(() => systemStore.fetchHealth(), intervalMs);
+    });
+    onUnmounted(() => clearInterval(timer));
 }
 ```
 
@@ -728,12 +747,12 @@ Before considering the frontend complete, verify:
 
 ## 15. Changelog from v1.0
 
-| What changed | Details |
-|---|---|
-| **Upload endpoints (NEW)** | 3 new endpoints: `/upload/image-classify`, `/upload/speech-to-text`, `/upload/read-pdf`. New view at `/upload`, new Pinia store `useUploadStore`, new components in `components/upload/`. |
-| **OpenAI compat → merged** | Was marked "pending PR #28", now live on main. No schema changes. |
-| **generate_diagram tool** | Now in the agent's read-only tool set. No new endpoint (used via `/run`), but the agent can generate Mermaid diagrams. |
-| **Dual-input tools** | `image_classify`, `speech_to_text`, `read_pdf` tools now accept `data` (base64) OR `path` (disk). The upload endpoints use the `data` path. |
-| **OpenAI chat message content** | Now supports multipart content arrays (`text` + `image_url` parts), not just plain strings. Schema updated. |
-| **Shared FileDropZone component** | Added to component tree — reused by Upload and Sketch views. |
-| **Sketch endpoints** | Still pending merge (PR #19). Build the UI, handle 404 gracefully. |
+| What changed                      | Details                                                                                                                                                                                   |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Upload endpoints (NEW)**        | 3 new endpoints: `/upload/image-classify`, `/upload/speech-to-text`, `/upload/read-pdf`. New view at `/upload`, new Pinia store `useUploadStore`, new components in `components/upload/`. |
+| **OpenAI compat → merged**        | Was marked "pending PR #28", now live on main. No schema changes.                                                                                                                         |
+| **generate_diagram tool**         | Now in the agent's read-only tool set. No new endpoint (used via `/run`), but the agent can generate Mermaid diagrams.                                                                    |
+| **Dual-input tools**              | `image_classify`, `speech_to_text`, `read_pdf` tools now accept `data` (base64) OR `path` (disk). The upload endpoints use the `data` path.                                               |
+| **OpenAI chat message content**   | Now supports multipart content arrays (`text` + `image_url` parts), not just plain strings. Schema updated.                                                                               |
+| **Shared FileDropZone component** | Added to component tree — reused by Upload and Sketch views.                                                                                                                              |
+| **Sketch endpoints**              | Still pending merge (PR #19). Build the UI, handle 404 gracefully.                                                                                                                        |

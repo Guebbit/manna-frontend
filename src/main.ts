@@ -1,20 +1,40 @@
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
-import { i18n } from '@/utils/i18n.ts';
+
+// Vuetify
+import 'vuetify/styles';
+import '@mdi/font/css/materialdesignicons.css';
+import { createVuetify } from 'vuetify';
+import * as components from 'vuetify/components';
+import * as directives from 'vuetify/directives';
 
 import App from './App.vue';
 import router from './router';
-import { initializeApiMocking } from '@/mocks/apiMock.ts';
 
-/**
- * Global CSS
- */
-import '@/assets/styles/theme.scss';
-import '@/assets/styles/main.scss';
+const vuetify = createVuetify({
+    components,
+    directives,
+    theme: {
+        defaultTheme: 'dark',
+        themes: {
+            dark: {
+                dark: true,
+                colors: {
+                    primary: '#7C4DFF',
+                    secondary: '#448AFF',
+                    // eslint-disable-next-line @typescript-eslint/naming-convention
+                    'surface-variant': '#2A2A2A'
+                }
+            },
+            light: {
+                dark: false,
+                colors: {
+                    primary: '#7C4DFF',
+                    secondary: '#448AFF'
+                }
+            }
+        }
+    }
+});
 
-/**
- * Vue3 App
- */
-
-initializeApiMocking();
-createApp(App).use(createPinia()).use(router).use(i18n).mount('#app');
+createApp(App).use(createPinia()).use(router).use(vuetify).mount('#app');

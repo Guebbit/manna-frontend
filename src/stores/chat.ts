@@ -1,0 +1,109 @@
+import { defineStore } from 'pinia';
+import { ref, computed } from 'vue';
+import { v4 as uuidv4 } from 'uuid';
+import type { IOpenAiChatMessage } from '@/api/types';
+import { streamChat } from '@/api/manna';
+import { useNotificationStore } from './notification';
+import { ApiError } from '@/api/manna';
+
+export interface IConversation {
+    id: string;
+    title: string;
+    messages: IOpenAiChatMessage[];
+    model: string;
+    createdAt: string;
+}
+
+export const useChatStore = defineStore('chat', () => {
+    const conversations = ref<IConversation[]>([]);
+    const activeConversationId = ref<string | undefined>(undefined);
+    const streaming = ref(false);
+
+    const activeConversation = computed(() =>
+        conversations.value.find((c) => c.id === activeConversationId.value)
+    );
+
+    function newConversation(model = 'manna'): string {
+        const id = uuidv4();
+        conversations.value.unshift({
+            id,
+            title: 'New conversation',
+            messages: [],
+            model,
+            createdAt: new Date().toISOString()
+        });
+        activeConversationId.value = id;
+        return id;
+    }
+
+    function deleteConversation(id: string): void {
+        const index = conversations.value.findIndex((c) => c.id === id);
+        if (index === -1) return;
+        conversations.value.splice(index, 1);
+        if (activeConversationId.value === id) {
+            activeConversationId.value = conversations.value[0]?.id;
+        }
+    }
+
+    async function sendMessage(content: string, allowWrite = false): Promise<void> {
+        const notificationStore = useNotificationStore();
+        let conversationReference = activeConversation.value;
+
+        if (!conversationReference) {
+            const id = newConversation();
+            conversationReference = conversations.value.find((c) => c.id === id);
+        }
+        if (!conversationReference) return;
+
+        // Set title from first message
+        if (conversationReference.messages.length === 0) {
+            conversationReference.title =
+                content.length > 60 ? content.slice(0, 60) + '…' : content;
+        }
+
+        conversationReference.messages.push({ role: 'user', content });
+
+        // Add empty assistant message for streaming
+        const assistantIndex = conversationReference.messages.length;
+        conversationReference.messages.push({ role: 'assistant', content: '' });
+
+        streaming.value = true;
+        try {
+            const generator = streamChat({
+                model: conversationReference.model,
+                messages: conversationReference.messages.slice(0, -1),
+                allowWrite
+            });
+
+            for await (const chunk of generator) {
+                const message = conversationReference.messages[assistantIndex];
+                if (message && typeof message.content === 'string') {
+                    message.content += chunk;
+                }
+            }
+        } catch (error: unknown) {
+            conversationReference.messages.splice(assistantIndex, 1);
+            if (error instanceof ApiError && error.retryAfterSeconds) {
+                notificationStore.error(
+                    `Rate limited. Retry in ${String(error.retryAfterSeconds)}s`
+                );
+            } else {
+                notificationStore.error(
+                    error instanceof Error ? error.message : 'Failed to send message'
+                );
+            }
+        } finally {
+            streaming.value = false;
+        }
+    }
+
+    return {
+        conversations,
+        activeConversationId,
+        streaming,
+        activeConversation,
+        newConversation,
+        deleteConversation,
+        sendMessage
+    };
+});
