@@ -19,3 +19,9 @@ export function getMannaBaseUrl(): string {
 export function setMannaBaseUrl(url: string): void {
     localStorage.setItem('manna-base-url', url);
 }
+
+/**
+ * The Manna backend version this frontend is synced against.
+ * Update this constant whenever the frontend is updated to match a new backend version.
+ */
+export const MANNA_BACKEND_VERSION = '0.15.0-alpha';

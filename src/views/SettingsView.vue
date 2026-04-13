@@ -74,6 +74,9 @@
                         </p>
                         <v-divider class="my-3" />
                         <p class="text-caption">API: {{ apiUrl }}</p>
+                        <p class="text-caption mt-1">
+                            Backend version: <strong>{{ MANNA_BACKEND_VERSION }}</strong>
+                        </p>
                     </v-card-text>
                 </v-card>
             </v-col>
@@ -83,7 +86,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { getMannaBaseUrl, setMannaBaseUrl } from '@/config';
+import { getMannaBaseUrl, setMannaBaseUrl, MANNA_BACKEND_VERSION } from '@/config';
 import { healthCheck } from '@/api/manna';
 
 const apiUrl = ref(getMannaBaseUrl());

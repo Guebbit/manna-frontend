@@ -42,6 +42,7 @@
                         <v-chip class="ml-2" size="small" color="primary">
                             {{ systemStore.models.length }}
                         </v-chip>
+                        <v-chip v-if="systemStore.modes.length" class="ml-1" size="small" color="secondary">{{ systemStore.modes.length }} mode{{ systemStore.modes.length === 1 ? '' : 's' }}</v-chip>
                     </v-card-title>
                     <v-card-text>
                         <v-chip
@@ -104,6 +105,8 @@ const quickActions = [
     { label: 'Chat', icon: 'mdi-chat', to: '/chat' },
     { label: 'Agent', icon: 'mdi-robot', to: '/agent' },
     { label: 'Code', icon: 'mdi-code-braces', to: '/code' },
-    { label: 'Upload', icon: 'mdi-upload', to: '/upload' }
+    { label: 'Upload', icon: 'mdi-upload', to: '/upload' },
+    { label: 'Swarm', icon: 'mdi-sitemap', to: '/swarm' },
+    { label: 'System Info', icon: 'mdi-information-outline', to: '/system' }
 ];
 </script>

@@ -71,7 +71,8 @@ const navItems = [
     { title: 'Code Tools', icon: 'mdi-code-braces', to: '/code' },
     { title: 'Upload & Analyze', icon: 'mdi-upload', to: '/upload' },
     { title: 'Graph Builder', icon: 'mdi-graph', to: '/graph' },
-
+    { title: 'Swarm', icon: 'mdi-sitemap', to: '/swarm' },
+    { title: 'System Info', icon: 'mdi-information-outline', to: '/system' },
     { title: 'Settings', icon: 'mdi-cog', to: '/settings' }
 ];
 </script>

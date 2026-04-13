@@ -40,6 +40,16 @@ const router = createRouter({
                     component: () => import('@/views/GraphBuilderView.vue')
                 },
                 {
+                    path: 'swarm',
+                    name: 'swarm',
+                    component: () => import('@/views/SwarmView.vue')
+                },
+                {
+                    path: 'system',
+                    name: 'system-info',
+                    component: () => import('@/views/SystemInfoView.vue')
+                },
+                {
                     path: 'settings',
                     name: 'settings',
                     component: () => import('@/views/SettingsView.vue')

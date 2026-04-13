@@ -2,60 +2,70 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
 import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
-import type { ModelProfile, AgentStreamEvent } from '@/api/types';
-import { runTask, runTaskStream, ApiError } from '@/api/manna';
+import type { ModelProfile, ISwarmResponse, SwarmStreamEvent } from '@/api/types';
+import { runSwarm, runSwarmStream, ApiError } from '@/api/manna';
 import { useNotificationsStore, TOAST_TYPE } from './notification';
 
-/** A historical record of a submitted agent task and its outcome. */
-export interface ITaskHistoryEntry {
+/** A historical record of a submitted swarm task and its outcome. */
+export interface ISwarmHistoryEntry {
     id: string;
     task: string;
     result: string;
     profile: ModelProfile | undefined;
     allowWrite: boolean;
+    maxSubtasks: number | undefined;
+    subtaskCount: number;
+    totalDurationMs: number;
     timestamp: string;
+    response: ISwarmResponse;
 }
 
 /**
- * Pinia store managing autonomous agent task submissions and history.
+ * Pinia store managing multi-agent swarm task submissions and history.
  */
-export const useAgentStore = defineStore('agent', () => {
+export const useSwarmStore = defineStore('swarm', () => {
     const { getLoading, setLoading } = useCoreStore();
     const { loading, fetchAny } = useStructureRestApi({
         getLoading,
         setLoading
     });
 
-    const taskHistory = ref<ITaskHistoryEntry[]>([]);
+    const swarmHistory = ref<ISwarmHistoryEntry[]>([]);
     const streaming = ref(false);
-    const streamEvents = ref<AgentStreamEvent[]>([]);
+    const streamEvents = ref<SwarmStreamEvent[]>([]);
 
     /**
-     * Submits an agent task to the backend and records the result in history.
+     * Submits a swarm task and waits for the full JSON result.
      *
-     * @param task       - The natural-language task description.
-     * @param profile    - Optional model profile for inference routing.
-     * @param allowWrite - Whether the agent may modify files (default `false`).
+     * @param task        - The complex task to decompose and solve.
+     * @param profile     - Optional model profile for inference routing.
+     * @param allowWrite  - Whether agents may modify files (default `false`).
+     * @param maxSubtasks - Optional maximum number of subtasks to create.
      * @returns The created history entry, or `undefined` on failure.
      */
-    const submitTask = (
+    const submitSwarm = (
         task: string,
         profile?: ModelProfile,
-        allowWrite = false
-    ): Promise<ITaskHistoryEntry | undefined> => {
+        allowWrite = false,
+        maxSubtasks?: number
+    ): Promise<ISwarmHistoryEntry | undefined> => {
         const notificationStore = useNotificationsStore();
         return fetchAny(
             () =>
-                runTask({ task, profile, allowWrite }).then((response) => {
-                    const entry: ITaskHistoryEntry = {
+                runSwarm({ task, profile, allowWrite, maxSubtasks }).then((response) => {
+                    const entry: ISwarmHistoryEntry = {
                         id: uuidv4(),
                         task,
                         result: response.result,
                         profile,
                         allowWrite,
-                        timestamp: new Date().toISOString()
+                        maxSubtasks,
+                        subtaskCount: response.subtaskResults.length,
+                        totalDurationMs: response.totalDurationMs,
+                        timestamp: new Date().toISOString(),
+                        response
                     };
-                    taskHistory.value.unshift(entry);
+                    swarmHistory.value.unshift(entry);
                     return entry;
                 })
         ).catch((error: unknown) => {
@@ -67,7 +77,7 @@ export const useAgentStore = defineStore('agent', () => {
                 );
             } else {
                 notificationStore.addMessage(
-                    error instanceof Error ? error.message : 'Agent task failed',
+                    error instanceof Error ? error.message : 'Swarm task failed',
                     TOAST_TYPE.DANGER,
                     8000
                 );
@@ -78,37 +88,47 @@ export const useAgentStore = defineStore('agent', () => {
     };
 
     /**
-     * Submits an agent task via SSE streaming, populates `streamEvents` reactively,
-     * and records the final result in history when the `done` event arrives.
+     * Submits a swarm task via SSE streaming, populates `streamEvents` reactively.
      *
-     * @param task       - The natural-language task description.
-     * @param profile    - Optional model profile for inference routing.
-     * @param allowWrite - Whether the agent may modify files (default `false`).
+     * @param task        - The complex task to decompose and solve.
+     * @param profile     - Optional model profile for inference routing.
+     * @param allowWrite  - Whether agents may modify files (default `false`).
+     * @param maxSubtasks - Optional maximum number of subtasks to create.
      * @returns The created history entry on success, or `undefined` on failure.
      */
-    const submitTaskStream = async (
+    const submitSwarmStream = async (
         task: string,
         profile?: ModelProfile,
-        allowWrite = false
-    ): Promise<ITaskHistoryEntry | undefined> => {
+        allowWrite = false,
+        maxSubtasks?: number
+    ): Promise<ISwarmHistoryEntry | undefined> => {
         const notificationStore = useNotificationsStore();
         streaming.value = true;
         streamEvents.value = [];
 
         try {
-            for await (const event of runTaskStream({ task, profile, allowWrite })) {
+            for await (const event of runSwarmStream({ task, profile, allowWrite, maxSubtasks })) {
                 streamEvents.value.push(event);
 
                 if (event.type === 'done') {
-                    const entry: ITaskHistoryEntry = {
+                    const entry: ISwarmHistoryEntry = {
                         id: uuidv4(),
                         task,
                         result: event.data.result,
                         profile,
                         allowWrite,
-                        timestamp: new Date().toISOString()
+                        maxSubtasks,
+                        subtaskCount: event.data.subtaskCount,
+                        totalDurationMs: event.data.totalDurationMs,
+                        timestamp: new Date().toISOString(),
+                        response: {
+                            result: event.data.result,
+                            subtaskResults: [],
+                            decomposition: { reasoning: '', subtaskCount: event.data.subtaskCount },
+                            totalDurationMs: event.data.totalDurationMs
+                        }
                     };
-                    taskHistory.value.unshift(entry);
+                    swarmHistory.value.unshift(entry);
                     return entry;
                 }
 
@@ -126,7 +146,7 @@ export const useAgentStore = defineStore('agent', () => {
                 );
             } else {
                 notificationStore.addMessage(
-                    error instanceof Error ? error.message : 'Agent stream failed',
+                    error instanceof Error ? error.message : 'Swarm stream failed',
                     TOAST_TYPE.DANGER,
                     8000
                 );
@@ -140,11 +160,11 @@ export const useAgentStore = defineStore('agent', () => {
     };
 
     return {
-        taskHistory,
+        swarmHistory,
         loading,
         streaming,
         streamEvents,
-        submitTask,
-        submitTaskStream
+        submitSwarm,
+        submitSwarmStream
     };
 });
