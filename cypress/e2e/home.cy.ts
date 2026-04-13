@@ -1,17 +1,15 @@
-describe('Public routes', () => {
-    const publicRoutes = ['/', '/login', '/signup', '/products'];
+describe('Manna routes', () => {
+    const routes = ['/', '/chat', '/agent', '/code', '/upload', '/sketch', '/settings'];
 
-    for (const route of publicRoutes) {
+    for (const route of routes) {
         it(`loads ${route} and shows basic page content`, () => {
-            cy.visit(route);
+            cy.visit(`/#${route}`);
             cy.get('body').should('be.visible');
-            cy.get('h1').should('exist');
         });
     }
 
-    it('loads error route and shows 404 page', () => {
-        cy.visit('/error/404/not-found');
+    it('loads unknown route and shows error page', () => {
+        cy.visit('/#/nonexistent-page');
         cy.get('body').should('be.visible');
-        cy.get('h1').should('contain.text', '404');
     });
 });

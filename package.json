@@ -30,16 +30,18 @@
         "publish:public": "npm run complete && npm publish --access public"
     },
     "dependencies": {
-        "@guebbit/css-toolkit": "^1.4.1",
-        "@guebbit/js-toolkit": "^1.0.8",
-        "@guebbit/vue-toolkit": "^1.0.3",
+        "@mdi/font": "^7.4.47",
         "@openapitools/openapi-generator-cli": "^2.30.2",
         "axios": "^1.13.6",
         "axios-mock-adapter": "^2.1.0",
+        "highlight.js": "^11.11.1",
+        "marked": "^15.0.7",
+        "marked-highlight": "^2.2.1",
         "pinia": "^3.0.4",
+        "uuid": "^11.1.0",
         "vue": "^3.5.29",
-        "vue-i18n": "^11.3.0",
         "vue-router": "^5.0.3",
+        "vuetify": "^3.8.5",
         "zod": "^4.3.6"
     },
     "devDependencies": {
@@ -51,6 +53,7 @@
         "@tsconfig/node22": "^22.0.5",
         "@types/jsdom": "^28.0.0",
         "@types/node": "^25.3.5",
+        "@types/uuid": "^10.0.0",
         "@vitejs/plugin-vue": "^6.0.4",
         "@vitest/eslint-plugin": "^1.6.9",
         "@vue/eslint-config-prettier": "^10.2.0",
@@ -75,6 +78,7 @@
         "typescript-eslint": "^8.56.1",
         "vite": "^7.3.1",
         "vite-plugin-vue-devtools": "^8.0.7",
+        "vite-plugin-vuetify": "^2.1.1",
         "vitepress": "^1.6.4",
         "vitest": "^4.0.18",
         "vue-eslint-parser": "^10.4.0",
