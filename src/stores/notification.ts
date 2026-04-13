@@ -8,6 +8,7 @@ import { useNotificationsStore as _useNotificationsStore } from '@guebbit/vue-to
 export enum EToastType {
     PRIMARY = 'primary',
     SECONDARY = 'secondary',
+    /** Maps to the string `'error'` to match the Vuetify colour name and the `IToastType.DANGER` value. */
     DANGER = 'error',
     WARNING = 'warning',
     SUCCESS = 'success',

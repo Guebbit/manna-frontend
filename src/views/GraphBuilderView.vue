@@ -115,8 +115,14 @@ const fileInputReference = ref<HTMLInputElement>();
 const allowWrite = ref(false);
 const showResults = ref(false);
 
+/** Vertical space (px) occupied by the app-bar, toolbar, page heading, and padding. */
+const CHROME_HEIGHT_PX = 280;
+
+/** Minimum canvas height in pixels. */
+const MIN_CANVAS_HEIGHT_PX = 400;
+
 /** Canvas height — leaves room for the toolbar and results. */
-const canvasHeight = computed(() => Math.max(400, window.innerHeight - 280));
+const canvasHeight = computed(() => Math.max(MIN_CANVAS_HEIGHT_PX, window.innerHeight - CHROME_HEIGHT_PX));
 
 /** Serialises the current graph and shows a success notification. */
 function onSave(): void {

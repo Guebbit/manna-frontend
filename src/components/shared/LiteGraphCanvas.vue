@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, shallowRef, onMounted, onUnmounted } from 'vue';
 import { LGraph, LGraphCanvas } from 'litegraph.js';
 import 'litegraph.js/css/litegraph.css';
 import { setupLiteGraph } from '@/litegraph/setup';
@@ -31,8 +31,11 @@ const canvasStyle = computed(() => ({
     display: 'block',
 }));
 
-let graph: LGraph | undefined;
-let graphCanvas: LGraphCanvas | undefined;
+/** Live LiteGraph instance — held in a shallow ref to preserve reactivity. */
+const graph = shallowRef<LGraph>();
+
+/** Live LiteGraph canvas controller. */
+const graphCanvas = shallowRef<LGraphCanvas>();
 
 onMounted(() => {
     setupLiteGraph();
@@ -43,15 +46,15 @@ onMounted(() => {
         return;
     }
 
-    graph = new LGraph();
-    graphCanvas = new LGraphCanvas(element, graph);
-    graph.start();
+    graph.value = new LGraph();
+    graphCanvas.value = new LGraphCanvas(element, graph.value);
+    graph.value.start();
 });
 
 onUnmounted(() => {
-    graph?.stop();
-    graph = undefined;
-    graphCanvas = undefined;
+    graph.value?.stop();
+    graph.value = undefined;
+    graphCanvas.value = undefined;
 });
 
 defineExpose({ graph, graphCanvas });
