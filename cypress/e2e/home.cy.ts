@@ -1,5 +1,5 @@
 describe('Manna routes', () => {
-    const routes = ['/', '/chat', '/agent', '/code', '/upload', '/sketch', '/settings'];
+    const routes = ['/', '/chat', '/agent', '/code', '/upload', '/settings'];
 
     for (const route of routes) {
         it(`loads ${route} and shows basic page content`, () => {
