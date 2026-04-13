@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
 import type { IOpenAiChatMessage } from '@/api/types';
 import { streamChat } from '@/api/manna';
-export { useNotificationsStore } from '@guebbit/vue-toolkit';
+import { useNotificationsStore } from '@guebbit/vue-toolkit';
 import { ApiError } from '@/api/manna';
 
 
