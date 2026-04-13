@@ -1,1869 +1,1092 @@
-openapi: 3.0.3
+openapi: "3.1.0"
 info:
-    title: Ecommerce Demo API
-    version: '2.0.0'
-    description: |
-        Stable, codegen-oriented OpenAPI contract.
-        Designed for multi-project, multi-language use (client/server stubs, DTOs, SDKs).
-    contact:
-        name: API Team
+  title: Manna — Personal AI Agent Platform API
+  description: |
+    Local-first agentic loop wrapping Ollama-hosted LLMs.
+    Exposes a generic agent endpoint (`/run`), IDE-specific direct endpoints,
+    file upload endpoints (image/audio/PDF), sketch-processing endpoints,
+    and an OpenAI-compatible adapter layer for Open WebUI integration.
+
+    **Base URL**: `http://localhost:3001`
+  version: "1.1.0"
+  contact:
+    name: Guebbit
+    url: https://github.com/Guebbit/AI-coding-assistant
 
 servers:
-    - url: http://localhost:3000
-      description: Local
-    - url: https://api.example.com
-      description: Production
+  - url: http://localhost:3001
+    description: Local development server (default)
 
 tags:
-    - name: Auth
-    - name: Account
-    - name: Users
-    - name: Products
-    - name: Cart
-    - name: Orders
-
-# If set, by default all operation requires an authentication
-# security:
-#    - bearerAuth: []
-
-components:
-    # This is a common security scheme that can be used by any operation
-    securitySchemes:
-        bearerAuth:
-            type: http
-            scheme: bearer
-            bearerFormat: JWT
-
-    parameters:
-        # Common parameters
-        PageParam:
-            name: page
-            in: query
-            required: false
-            schema:
-                $ref: '#/components/schemas/Page'
-            description: 1-based page index
-        PageSizeParam:
-            name: pageSize
-            in: query
-            required: false
-            schema:
-                $ref: '#/components/schemas/PageSize'
-        TextParam:
-            name: text
-            in: query
-            required: false
-            schema:
-                $ref: '#/components/schemas/Text'
-
-        # Query ID parameters (just for filtering)
-        IdParam:
-            name: id
-            in: query
-            required: false
-            schema:
-                $ref: '#/components/schemas/Id'
-        UserIdParam:
-            name: userId
-            in: query
-            required: false
-            schema:
-                $ref: '#/components/schemas/Id'
-        ProductIdParam:
-            name: productId
-            in: query
-            required: false
-            schema:
-                $ref: '#/components/schemas/Id'
-        # OrderIdParam:
-        #     name: orderId
-        #     in: query
-        #     required: false
-        #     schema:
-        #         $ref: '#/components/schemas/Id'
-
-        # Path ID parameters (for resource lookup)
-        IdPathParam:
-            name: id
-            in: path
-            required: true
-            schema:
-                $ref: '#/components/schemas/Id'
-            description: Resource identifier
-
-        ProductIdPathParam:
-            name: productId
-            in: path
-            required: true
-            schema:
-                $ref: '#/components/schemas/Id'
-            description: Product identifier
-
-        TokenPathParam:
-            name: token
-            in: path
-            required: true
-            schema:
-                type: string
-            description: Refresh token
-
-    responses:
-        Success:
-            description: Success
-            content:
-                application/json:
-                    schema:
-                        $ref: '#/components/schemas/MessageResponse'
-        Unauthorized:
-            description: Unauthorized
-            content:
-                application/json:
-                    schema:
-                        $ref: '#/components/schemas/ErrorResponse'
-        Forbidden:
-            description: Forbidden
-            content:
-                application/json:
-                    schema:
-                        $ref: '#/components/schemas/ErrorResponse'
-        NotFound:
-            description: Resource not found
-            content:
-                application/json:
-                    schema:
-                        $ref: '#/components/schemas/ErrorResponse'
-        ValidationError:
-            description: Validation failed
-            content:
-                application/json:
-                    schema:
-                        $ref: '#/components/schemas/ValidationErrorResponse'
-        InternalError:
-            description: Internal server error
-            content:
-                application/json:
-                    schema:
-                        $ref: '#/components/schemas/ErrorResponse'
-
-    schemas:
-        # ---------- Commons ----------
-        Page:
-            type: integer
-            minimum: 1
-            default: 1
-            description: 1-based page index
-        PageSize:
-            type: integer
-            default: 10
-            minimum: 1
-            maximum: 100
-            description: Optional override; server may clamp to a max
-        Id:
-            type: string
-            description: Resource identifier
-        Text:
-            type: string
-            minLength: 1
-            description: Free-text search string
-        Email:
-            type: string
-            format: email
-        Password:
-            type: string
-            minLength: 8
-
-        # ---------- Meta / envelope ----------
-        PaginationMeta:
-            type: object
-            required: [page, pageSize, totalItems, totalPages]
-            properties:
-                page:
-                    $ref: '#/components/schemas/Page'
-                pageSize:
-                    $ref: '#/components/schemas/PageSize'
-                totalItems:
-                    type: integer
-                    minimum: 0
-                totalPages:
-                    type: integer
-                    minimum: 0
-
-        # ---------- System Messages ----------
-
-        MessageResponse:
-            type: object
-            required: [success, message]
-            properties:
-                success:
-                    type: boolean
-                    enum: [true]
-                message:
-                    type: string
-
-        ErrorResponse:
-            type: object
-            required: [success, error]
-            properties:
-                success:
-                    type: boolean
-                    enum: [false]
-                error:
-                    $ref: '#/components/schemas/ErrorDetail'
-                traceId:
-                    type: string
-                    description: Correlation ID for support/debugging
-
-        ErrorDetail:
-            type: object
-            required: [code]
-            properties:
-                code:
-                    type: string
-                    # Example just for documentation purposes. Actual values are defined in the backend.
-                    example: AUTH_INVALID_TOKEN
-                message:
-                    type: string
-                details:
-                    type: object
-                    additionalProperties: true
-
-        ValidationErrorResponse:
-            allOf:
-                - $ref: '#/components/schemas/ErrorResponse'
-                - type: object
-                  required: [success, errors]
-                  properties:
-                      success:
-                          type: boolean
-                          enum: [false]
-                      errors:
-                          type: array
-                          items:
-                              type: object
-                              required: [field, message]
-                              properties:
-                                  field:
-                                      type: string
-                                  message:
-                                      type: string
-                                  code:
-                                      type: string
-
-        # ---------- Domain ----------
-        AuthTokens:
-            type: object
-            required: [token]
-            properties:
-                token:
-                    type: string
-                    description: Access JWT
-                refreshToken:
-                    type: string
-                    description: Refresh token if returned by backend
-                expiresIn:
-                    type: integer
-                    description: Access token expiry in seconds
-
-        RefreshTokenResponse:
-            type: object
-            required: [token]
-            properties:
-                token:
-                    type: string
-                    description: New access JWT
-                refreshToken:
-                    type: string
-                    description: New refresh token if returned by backend
-                expiresIn:
-                    type: integer
-                    description: New access token expiry in seconds
-
-        User:
-            type: object
-            required: [id, email, username]
-            properties:
-                id:
-                    $ref: '#/components/schemas/Id'
-                email:
-                    $ref: '#/components/schemas/Email'
-                username:
-                    type: string
-                admin:
-                    type: boolean
-                active:
-                    type: boolean
-                imageUrl:
-                    type: string
-                    format: uri
-                createdAt:
-                    type: string
-                    format: date-time
-                updatedAt:
-                    type: string
-                    format: date-time
-
-        Product:
-            type: object
-            required: [id, title, price]
-            properties:
-                id:
-                    $ref: '#/components/schemas/Id'
-                title:
-                    type: string
-                price:
-                    type: number
-                    format: double
-                    minimum: 0
-                description:
-                    type: string
-                active:
-                    type: boolean
-                imageUrl:
-                    type: string
-                    format: uri
-                createdAt:
-                    type: string
-                    format: date-time
-                updatedAt:
-                    type: string
-                    format: date-time
-                deletedAt:
-                    type: string
-                    format: date-time
-
-        CartItem:
-            type: object
-            required: [productId, quantity]
-            properties:
-                productId:
-                    $ref: '#/components/schemas/Id'
-                quantity:
-                    type: integer
-                    minimum: 1
-
-        Order:
-            type: object
-            required: [id, userId, email, items, total, status]
-            properties:
-                id:
-                    $ref: '#/components/schemas/Id'
-                userId:
-                    $ref: '#/components/schemas/Id'
-                email:
-                    $ref: '#/components/schemas/Email'
-                items:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/CartItem'
-                total:
-                    type: number
-                    format: double
-                    minimum: 0
-                notes:
-                    type: string
-                    description: Optional order notes
-                status:
-                    type: string
-                    enum: [pending, paid, processing, shipped, delivered, cancelled]
-                createdAt:
-                    type: string
-                    format: date-time
-                updatedAt:
-                    type: string
-                    format: date-time
-
-        # ---------- Request DTOs — Auth ----------
-        LoginRequest:
-            type: object
-            additionalProperties: false
-            required: [email, password]
-            properties:
-                email:
-                    $ref: '#/components/schemas/Email'
-                password:
-                    $ref: '#/components/schemas/Password'
-
-        SignupRequest:
-            type: object
-            additionalProperties: false
-            required: [email, username, password, passwordConfirm]
-            properties:
-                email:
-                    $ref: '#/components/schemas/Email'
-                username:
-                    type: string
-                    minLength: 3
-                password:
-                    $ref: '#/components/schemas/Password'
-                passwordConfirm:
-                    $ref: '#/components/schemas/Password'
-                imageUrl:
-                    type: string
-                    format: uri
-
-        SignupRequestMultipart:
-            type: object
-            additionalProperties: false
-            required: [email, username, password, passwordConfirm]
-            properties:
-                email:
-                    $ref: '#/components/schemas/Email'
-                username:
-                    type: string
-                    minLength: 3
-                password:
-                    $ref: '#/components/schemas/Password'
-                passwordConfirm:
-                    $ref: '#/components/schemas/Password'
-                imageUpload:
-                    type: string
-                    format: binary
-                    description: Optional user profile image
-
-        PasswordResetRequest:
-            type: object
-            additionalProperties: false
-            required: [email]
-            properties:
-                email:
-                    $ref: '#/components/schemas/Email'
-
-        PasswordResetConfirmRequest:
-            type: object
-            additionalProperties: false
-            required: [token, password, passwordConfirm]
-            properties:
-                token:
-                    type: string
-                    description: One-time password reset token (NOT a JWT).
-                password:
-                    $ref: '#/components/schemas/Password'
-                passwordConfirm:
-                    $ref: '#/components/schemas/Password'
-
-        # ---------- Request DTOs — Users ----------
-        SearchUsersRequest:
-            type: object
-            additionalProperties: false
-            properties:
-                page:
-                    $ref: '#/components/schemas/Page'
-                pageSize:
-                    $ref: '#/components/schemas/PageSize'
-                text:
-                    $ref: '#/components/schemas/Text'
-                id:
-                    $ref: '#/components/schemas/Id'
-                email:
-                    $ref: '#/components/schemas/Email'
-                username:
-                    type: string
-                active:
-                    type: boolean
-
-        CreateUserRequest:
-            type: object
-            additionalProperties: false
-            required: [email, username, password]
-            properties:
-                email:
-                    $ref: '#/components/schemas/Email'
-                username:
-                    type: string
-                password:
-                    $ref: '#/components/schemas/Password'
-                admin:
-                    type: boolean
-                active:
-                    type: boolean
-                imageUrl:
-                    type: string
-                    format: uri
-
-        CreateUserRequestMultipart:
-            type: object
-            additionalProperties: false
-            required: [email, username, password]
-            properties:
-                email:
-                    $ref: '#/components/schemas/Email'
-                username:
-                    type: string
-                password:
-                    $ref: '#/components/schemas/Password'
-                admin:
-                    type: boolean
-                active:
-                    type: boolean
-                imageUpload:
-                    type: string
-                    format: binary
-                    description: Optional user profile image
-
-        UpdateUserRequest:
-            type: object
-            additionalProperties: false
-            required: [id]
-            properties:
-                id:
-                    $ref: '#/components/schemas/Id'
-                email:
-                    $ref: '#/components/schemas/Email'
-                username:
-                    type: string
-                password:
-                    $ref: '#/components/schemas/Password'
-                imageUrl:
-                    type: string
-                    format: uri
-
-        UpdateUserRequestMultipart:
-            type: object
-            additionalProperties: false
-            required: [id]
-            properties:
-                id:
-                    $ref: '#/components/schemas/Id'
-                email:
-                    $ref: '#/components/schemas/Email'
-                username:
-                    type: string
-                password:
-                    $ref: '#/components/schemas/Password'
-                imageUpload:
-                    type: string
-                    format: binary
-                    description: Optional user profile image
-
-        UpdateUserByIdRequest:
-            type: object
-            additionalProperties: false
-            properties:
-                email:
-                    $ref: '#/components/schemas/Email'
-                password:
-                    $ref: '#/components/schemas/Password'
-                username:
-                    type: string
-                imageUrl:
-                    type: string
-                    format: uri
-
-        UpdateUserByIdRequestMultipart:
-            type: object
-            additionalProperties: false
-            properties:
-                email:
-                    $ref: '#/components/schemas/Email'
-                password:
-                    $ref: '#/components/schemas/Password'
-                username:
-                    type: string
-                imageUpload:
-                    type: string
-                    format: binary
-                    description: Optional user profile image
-
-        DeleteUserRequest:
-            type: object
-            additionalProperties: false
-            required: [id]
-            properties:
-                id:
-                    $ref: '#/components/schemas/Id'
-                hardDelete:
-                    type: boolean
-                    default: false
-
-        # ---------- Request DTOs — Products ----------
-        SearchProductsRequest:
-            type: object
-            additionalProperties: false
-            properties:
-                page:
-                    $ref: '#/components/schemas/Page'
-                pageSize:
-                    $ref: '#/components/schemas/PageSize'
-                text:
-                    $ref: '#/components/schemas/Text'
-                id:
-                    $ref: '#/components/schemas/Id'
-                minPrice:
-                    type: number
-                    format: double
-                    minimum: 0
-                maxPrice:
-                    type: number
-                    format: double
-                    minimum: 0
-
-        CreateProductRequest:
-            type: object
-            additionalProperties: false
-            required: [title, price]
-            properties:
-                title:
-                    type: string
-                price:
-                    type: number
-                    format: double
-                    minimum: 0
-                description:
-                    type: string
-                active:
-                    type: boolean
-                imageUrl:
-                    type: string
-                    format: uri
-
-        CreateProductRequestMultipart:
-            type: object
-            additionalProperties: false
-            required: [title, price]
-            properties:
-                title:
-                    type: string
-                price:
-                    type: number
-                    format: double
-                    minimum: 0
-                description:
-                    type: string
-                active:
-                    type: boolean
-                imageUpload:
-                    type: string
-                    format: binary
-                    description: Optional product image
-
-        UpdateProductRequest:
-            type: object
-            additionalProperties: false
-            required: [id, title, price]
-            properties:
-                id:
-                    $ref: '#/components/schemas/Id'
-                title:
-                    type: string
-                description:
-                    type: string
-                price:
-                    type: number
-                    format: double
-                    minimum: 0
-                active:
-                    type: boolean
-                imageUrl:
-                    type: string
-                    format: uri
-
-        UpdateProductRequestMultipart:
-            type: object
-            additionalProperties: false
-            required: [id, title, price]
-            properties:
-                id:
-                    $ref: '#/components/schemas/Id'
-                title:
-                    type: string
-                description:
-                    type: string
-                price:
-                    type: number
-                    format: double
-                    minimum: 0
-                active:
-                    type: boolean
-                imageUpload:
-                    type: string
-                    format: binary
-                    description: Optional product image
-
-        # To be used in GET /products:
-        UpdateProductRequestBody:
-            type: object
-            additionalProperties: false
-            required: [id, title, price]
-            properties:
-                id:
-                    $ref: '#/components/schemas/Id'
-                title:
-                    type: string
-                description:
-                    type: string
-                price:
-                    type: string
-                imageUrl:
-                    type: string
-                    format: uri
-                active:
-                    type: string
-
-        UpdateProductByIdRequest:
-            type: object
-            additionalProperties: false
-            required: [title, price]
-            properties:
-                title:
-                    type: string
-                description:
-                    type: string
-                price:
-                    type: number
-                    format: double
-                    minimum: 0
-                active:
-                    type: boolean
-                imageUrl:
-                    type: string
-                    format: uri
-
-        UpdateProductByIdRequestMultipart:
-            type: object
-            additionalProperties: false
-            required: [title, price]
-            properties:
-                title:
-                    type: string
-                description:
-                    type: string
-                price:
-                    type: number
-                    format: double
-                    minimum: 0
-                active:
-                    type: boolean
-                imageUpload:
-                    type: string
-                    format: binary
-                    description: Optional product image
-
-        DeleteProductRequest:
-            type: object
-            additionalProperties: false
-            required: [id]
-            properties:
-                id:
-                    $ref: '#/components/schemas/Id'
-                hardDelete:
-                    type: boolean
-                    default: false
-
-        # ---------- Request DTOs — Cart ----------
-        UpsertCartItemRequest:
-            type: object
-            additionalProperties: false
-            required: [productId, quantity]
-            properties:
-                productId:
-                    $ref: '#/components/schemas/Id'
-                quantity:
-                    type: integer
-                    minimum: 1
-
-        UpdateCartItemByIdRequest:
-            type: object
-            additionalProperties: false
-            required: [quantity]
-            properties:
-                productId:
-                    $ref: '#/components/schemas/Id'
-                quantity:
-                    type: integer
-                    minimum: 1
-
-        RemoveCartItemRequest:
-            type: object
-            additionalProperties: false
-            properties:
-                productId:
-                    $ref: '#/components/schemas/Id'
-
-        CheckoutRequest:
-            type: object
-            additionalProperties: false
-            properties:
-                email:
-                    $ref: '#/components/schemas/Email'
-                notes:
-                    type: string
-                    description: Optional order notes
-
-        # ---------- Request DTOs — Orders ----------
-        SearchOrdersRequest:
-            type: object
-            additionalProperties: false
-            properties:
-                page:
-                    $ref: '#/components/schemas/Page'
-                pageSize:
-                    $ref: '#/components/schemas/PageSize'
-                id:
-                    $ref: '#/components/schemas/Id'
-                userId:
-                    $ref: '#/components/schemas/Id'
-                productId:
-                    $ref: '#/components/schemas/Id'
-                email:
-                    $ref: '#/components/schemas/Email'
-
-        CreateOrderRequest:
-            type: object
-            additionalProperties: false
-            required: [userId, email, items]
-            properties:
-                userId:
-                    $ref: '#/components/schemas/Id'
-                email:
-                    $ref: '#/components/schemas/Email'
-                items:
-                    type: array
-                    minItems: 1
-                    items:
-                        $ref: '#/components/schemas/CartItem'
-            description: Create a new order.
-
-        UpdateOrderRequest:
-            type: object
-            additionalProperties: false
-            required: [id]
-            properties:
-                id:
-                    $ref: '#/components/schemas/Id'
-                status:
-                    type: string
-                    enum: [pending, paid, processing, shipped, delivered, cancelled]
-                    description: Updated order status
-                userId:
-                    $ref: '#/components/schemas/Id'
-                email:
-                    $ref: '#/components/schemas/Email'
-                items:
-                    type: array
-                    minItems: 1
-                    items:
-                        $ref: '#/components/schemas/CartItem'
-
-        UpdateOrderByIdRequest:
-            type: object
-            additionalProperties: false
-            properties:
-                status:
-                    type: string
-                    enum: [pending, paid, processing, shipped, delivered, cancelled]
-                    description: Updated order status
-                userId:
-                    $ref: '#/components/schemas/Id'
-                email:
-                    $ref: '#/components/schemas/Email'
-                items:
-                    type: array
-                    minItems: 1
-                    items:
-                        $ref: '#/components/schemas/CartItem'
-
-        DeleteOrderRequest:
-            type: object
-            additionalProperties: false
-            required: [id]
-            properties:
-                id:
-                    $ref: '#/components/schemas/Id'
-
-        # --------------- RESPONSES ---------------
-        # ---------- Response DTOs — envelope items ----------
-        UsersResponse:
-            type: object
-            required: [items, meta]
-            properties:
-                items:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/User'
-                meta:
-                    $ref: '#/components/schemas/PaginationMeta'
-
-        ProductsResponse:
-            type: object
-            required: [items, meta]
-            properties:
-                items:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Product'
-                meta:
-                    $ref: '#/components/schemas/PaginationMeta'
-
-        OrdersResponse:
-            type: object
-            required: [items, meta]
-            properties:
-                items:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Order'
-                meta:
-                    $ref: '#/components/schemas/PaginationMeta'
-
-        # ---------- Response DTOs — Cart ----------
-        CartSummaryResponse:
-            type: object
-            required: [itemsCount, totalQuantity, total]
-            properties:
-                itemsCount:
-                    type: integer
-                    minimum: 0
-                    description: Number of distinct cart lines/items
-                totalQuantity:
-                    type: integer
-                    minimum: 0
-                    description: Sum of quantities across all items
-                total:
-                    type: number
-                    format: double
-                    minimum: 0
-                    description: Sum of item prices * quantity (before tax/shipping/discounts)
-                currency:
-                    type: string
-                    description: ISO-4217 currency code (e.g. USD)
-
-        CartResponse:
-            type: object
-            required: [items, summary]
-            properties:
-                items:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/CartItem'
-                summary:
-                    $ref: '#/components/schemas/CartSummaryResponse'
-
-        CheckoutResponse:
-            type: object
-            required: [order]
-            properties:
-                order:
-                    $ref: '#/components/schemas/Order'
-                message:
-                    type: string
+  - name: Agent
+    description: Core agentic loop — multi-step reasoning with tools
+  - name: IDE
+    description: Direct single-LLM-call endpoints for IDE integration
+  - name: Upload
+    description: Multipart file upload endpoints — process images, audio, PDFs directly
+  - name: Sketch
+    description: Sketch processing endpoints (inking, colorization) — PR #19 pending merge
+  - name: OpenAI Compat
+    description: "OpenAI-compatible adapter for Open WebUI (⚠ temporary — will be removed when custom frontend ships)"
+  - name: System
+    description: Health and operational endpoints
 
 paths:
-    # --------- Authentication and profile ---------
-    /account:
-        get:
-            tags: [Account]
-            summary: Current user info
-            description: Returns the full profile of the currently authenticated user
-            operationId: getAccount
-            security:
-                - bearerAuth: []
-            responses:
-                '200':
-                    description: Current user info
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/User'
-                '401': { $ref: '#/components/responses/Unauthorized' }
+  # ─────────────────────────────────────────────────────────────────────
+  # SYSTEM
+  # ─────────────────────────────────────────────────────────────────────
+  /health:
+    get:
+      operationId: healthCheck
+      summary: Liveness check
+      description: Returns 200 OK with a timestamp. No LLM call. Safe to poll.
+      tags: [System]
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
 
-    /account/login:
-        post:
-            tags: [Auth]
-            summary: Login
-            description: Authenticates a user with email and password credentials. On success, returns a JWT access token that must be passed as a Bearer token on subsequent authenticated requests.
-            operationId: login
-            security: []
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/LoginRequest'
-            responses:
-                '200':
-                    description: Auth tokens
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/AuthTokens'
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '422': { $ref: '#/components/responses/ValidationError' }
-                '500': { $ref: '#/components/responses/InternalError' }
+  # ─────────────────────────────────────────────────────────────────────
+  # AGENT
+  # ─────────────────────────────────────────────────────────────────────
+  /run:
+    post:
+      operationId: runAgentTask
+      summary: Submit a task to the agentic loop
+      description: |
+        Triggers the full agent reasoning loop:
+        1. Query memory for relevant past entries
+        2. Build prompt (task + context + memory + tool descriptions)
+        3. Route to model profile (fast / reasoning / code / default)
+        4. LLM returns structured JSON: `{ thought, action, input }`
+        5. If `action !== "none"`, execute tool, append result, repeat
+        6. Stop when `action === "none"` or MAX_STEPS reached (default 5)
 
-    /account/signup:
-        post:
-            tags: [Auth]
-            summary: Signup
-            description: Registers a new user account with optional image upload. Returns the newly created user profile on success.
-            operationId: signup
-            security: []
-            requestBody:
-                required: true
-                content:
-                    multipart/form-data:
-                        schema:
-                            $ref: '#/components/schemas/SignupRequestMultipart'
-            responses:
-                '201':
-                    description: Created
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/User'
-                '422': { $ref: '#/components/responses/ValidationError' }
-                '500': { $ref: '#/components/responses/InternalError' }
+        Available tools in the loop: read_file, shell, mysql_query, browser_fetch,
+        image_classify, semantic_search, speech_to_text, read_pdf,
+        code_autocomplete, generate_diagram.
+        Write-gated tools (require allowWrite): write_file, scaffold_project.
+      tags: [Agent]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RunRequest"
+      responses:
+        "200":
+          description: Agent completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunResponse"
+        "400":
+          description: Invalid request (missing task, invalid profile)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Unhandled error inside the agent loop
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
-    /account/reset:
-        post:
-            tags: [Auth]
-            operationId: requestPasswordReset
-            description: Initiates the password-reset flow by sending a one-time reset token to the provided email address. The token should then be submitted to `/account/reset-confirm`.
-            security: []
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/PasswordResetRequest'
-            responses:
-                '200': { $ref: '#/components/responses/Success' }
-                '422': { $ref: '#/components/responses/ValidationError' }
-                '500': { $ref: '#/components/responses/InternalError' }
+  # ─────────────────────────────────��───────────────────────────────────
+  # IDE ENDPOINTS
+  # ─────────────────────────────────────────────────────────────────────
+  /autocomplete:
+    post:
+      operationId: autocomplete
+      summary: IDE cursor-time code completion
+      description: |
+        Single LLM call via TOOL_IDE_MODEL. Results cached in-memory (LRU)
+        for 30s. Rate limit: 120 req/min per IP. Timeout: 2500ms.
+      tags: [IDE]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AutocompleteRequest"
+      responses:
+        "200":
+          description: Completion generated (or served from cache)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AutocompleteResponse"
+        "400":
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RateLimitResponse"
+        "500":
+          description: LLM call failed or timed out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
-    /account/reset-confirm:
-        post:
-            tags: [Auth]
-            operationId: confirmPasswordReset
-            description: Completes the password-reset flow. Validates the one-time reset token issued by `/account/reset` and, if valid, updates the user's password to the supplied value.
-            security: []
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/PasswordResetConfirmRequest'
-            responses:
-                '200': { $ref: '#/components/responses/Success' }
-                '422': { $ref: '#/components/responses/ValidationError' }
-                '500': { $ref: '#/components/responses/InternalError' }
+  /lint-conventions:
+    post:
+      operationId: lintConventions
+      summary: Two-pass code quality analysis
+      description: |
+        Pass 1 (deterministic): TypeScript compiler diagnostics + convention rules.
+        Pass 2 (optional LLM): AI enrichment via AGENT_MODEL_CODE.
+        Rate limit: 30 req/min. Timeout: 10000ms.
+      tags: [IDE]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LintConventionsRequest"
+      responses:
+        "200":
+          description: Analysis complete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LintConventionsResponse"
+        "400":
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RateLimitResponse"
+        "500":
+          description: LLM call failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
-    /account/refresh:
-        get:
-            tags: [Auth]
-            summary: Refresh access token
-            description: Creates a new short-lived access token using a refresh token. The refresh token can be provided as a query parameter, path parameter, or retrieved from the `jwt` cookie.
-            operationId: refreshToken
-            security: []
-            responses:
-                '200':
-                    description: New access token
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/RefreshTokenResponse'
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '500': { $ref: '#/components/responses/InternalError' }
+  /page-review:
+    post:
+      operationId: pageReview
+      summary: Whole-file engineering review
+      description: |
+        Single LLM call returning categorized suggestions (correctness,
+        maintainability, standards, enhancements). Rate limit: 20 req/min.
+        Timeout: 20000ms.
+      tags: [IDE]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PageReviewRequest"
+      responses:
+        "200":
+          description: Review complete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageReviewResponse"
+        "400":
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RateLimitResponse"
+        "500":
+          description: LLM call failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
-    /account/refresh/{token}:
-        get:
-            tags: [Auth]
-            summary: Refresh access token with token in path
-            description: Creates a new short-lived access token using a refresh token provided in the URL path.
-            operationId: refreshTokenWithPath
-            security: []
-            parameters:
-                - $ref: '#/components/parameters/TokenPathParam'
-            responses:
-                '200':
-                    description: New access token
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/RefreshTokenResponse'
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '500': { $ref: '#/components/responses/InternalError' }
+  # ─────────────────────────────────────────────────────────────────────
+  # UPLOAD ENDPOINTS (merged via PR #29)
+  # ─────────────────────────────────────────────────────────────────────
+  /upload/image-classify:
+    post:
+      operationId: uploadImageClassify
+      summary: Classify/describe an uploaded image
+      description: |
+        Accepts a multipart image upload and sends it to a vision model
+        (TOOL_VISION_MODEL, default llava-llama3) for classification/description.
+        Internally calls the same image_classify tool with inline base64 data.
+        Max file size: 50 MB.
+      tags: [Upload]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/UploadImageClassifyRequest"
+      responses:
+        "200":
+          description: Image classified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageClassifyResponse"
+        "400":
+          description: No file uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Vision model call failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
-    /account/logout-all:
-        post:
-            tags: [Auth]
-            summary: Logout from all devices
-            description: Logs out the authenticated user from ALL devices by removing all refresh tokens from the database and clearing authentication cookies.
-            operationId: logoutAll
-            security:
-                - bearerAuth: []
-            responses:
-                '200': { $ref: '#/components/responses/Success' }
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '500': { $ref: '#/components/responses/InternalError' }
+  /upload/speech-to-text:
+    post:
+      operationId: uploadSpeechToText
+      summary: Transcribe an uploaded audio file
+      description: |
+        Accepts a multipart audio upload and sends it to an STT model
+        (TOOL_STT_MODEL, default whisper) via Ollama's OpenAI-compatible
+        /v1/audio/transcriptions endpoint.
+        Max file size: 50 MB.
+      tags: [Upload]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/UploadSpeechToTextRequest"
+      responses:
+        "200":
+          description: Audio transcribed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpeechToTextResponse"
+        "400":
+          description: No file uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: STT model call failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
-    /account/tokens/expired:
-        delete:
-            tags: [Auth]
-            summary: Remove expired tokens
-            description: Removes all expired tokens (refresh, password-reset, etc.) from every user record in the database. Restricted to administrators.
-            operationId: deleteExpiredTokens
-            security:
-                - bearerAuth: []
-            responses:
-                '200': { $ref: '#/components/responses/Success' }
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '403': { $ref: '#/components/responses/Forbidden' }
-                '500': { $ref: '#/components/responses/InternalError' }
+  /upload/read-pdf:
+    post:
+      operationId: uploadReadPdf
+      summary: Extract text from an uploaded PDF
+      description: |
+        Accepts a multipart PDF upload and extracts text via pdf-parse.
+        No LLM call. Max file size: 50 MB.
+      tags: [Upload]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/UploadReadPdfRequest"
+      responses:
+        "200":
+          description: PDF text extracted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadPdfResponse"
+        "400":
+          description: No file uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: PDF parsing failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
-    # --------- Users ---------
-    /users:
-        get:
-            tags: [Users]
-            summary: List users (paginated)
-            description: Returns a paginated list of user accounts.
-            operationId: listUsers
-            security:
-                - bearerAuth: []
-            parameters:
-                - $ref: '#/components/parameters/PageParam'
-                - $ref: '#/components/parameters/PageSizeParam'
-                - $ref: '#/components/parameters/TextParam'
-                - $ref: '#/components/parameters/IdParam'
-                - name: email
-                  in: query
-                  schema:
-                      $ref: '#/components/schemas/Email'
-                - name: username
-                  in: query
-                  schema:
-                      type: string
-                - name: active
-                  in: query
-                  schema:
-                      type: boolean
-            responses:
-                '200':
-                    description: Users list page
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/UsersResponse'
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '403': { $ref: '#/components/responses/Forbidden' }
-                '500': { $ref: '#/components/responses/InternalError' }
-        post:
-            tags: [Users]
-            summary: Create user
-            description: Creates a new user account with the supplied email, username, and password. Optional image can be uploaded.
-            operationId: createUser
-            security:
-                - bearerAuth: []
-            requestBody:
-                required: true
-                content:
-                    multipart/form-data:
-                        schema:
-                            $ref: '#/components/schemas/CreateUserRequestMultipart'
-            responses:
-                '201':
-                    description: Created user
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/User'
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '403': { $ref: '#/components/responses/Forbidden' }
-                '422': { $ref: '#/components/responses/ValidationError' }
-                '500': { $ref: '#/components/responses/InternalError' }
-        put:
-            tags: [Users]
-            summary: Edit user
-            description: Updates an existing user's email or password. Optional image can be uploaded.
-            operationId: updateUser
-            security:
-                - bearerAuth: []
-            requestBody:
-                required: true
-                content:
-                    multipart/form-data:
-                        schema:
-                            $ref: '#/components/schemas/UpdateUserRequestMultipart'
-            responses:
-                '200':
-                    description: Updated user
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/User'
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '403': { $ref: '#/components/responses/Forbidden' }
-                '422': { $ref: '#/components/responses/ValidationError' }
-                '500': { $ref: '#/components/responses/InternalError' }
-        delete:
-            tags: [Users]
-            summary: Delete user
-            description: Deletes the user identified by the `id` field in the request body. Set `hardDelete` to `true` to permanently remove the record.
-            operationId: deleteUser
-            security:
-                - bearerAuth: []
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/DeleteUserRequest'
-            responses:
-                '200': { $ref: '#/components/responses/Success' }
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '403': { $ref: '#/components/responses/Forbidden' }
-                '404': { $ref: '#/components/responses/NotFound' }
-                '500': { $ref: '#/components/responses/InternalError' }
+  # ─────────────────────────────────────────────────────────────────────
+  # SKETCH ENDPOINTS (from PR #19 — pending merge)
+  # ─────────────────────────────────────────────────────────────────────
+  /ink:
+    post:
+      operationId: inkSketch
+      summary: Describe inking for a sketch image
+      description: |
+        Accepts a sketch image upload and returns a detailed inking description
+        (line weights, contours, hatching style). Uses TOOL_VISION_MODEL.
+        Timeout: 60000ms. Max file size: 10 MB.
+        **Status: PR #19 pending merge.**
+      tags: [Sketch]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/InkRequest"
+      responses:
+        "200":
+          description: Inking description generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InkResponse"
+        "400":
+          description: No image uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Vision model call failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
-    /users/{id}:
-        # Same as GET /users?id={id}
-        get:
-            tags: [Users]
-            summary: User details
-            description: Returns the full profile of the user identified by `{id}`. Functionally equivalent to `GET /users?id={id}`.
-            operationId: getUserById
-            security:
-                - bearerAuth: []
-            parameters:
-                - $ref: '#/components/parameters/IdPathParam'
-            responses:
-                '200':
-                    description: User
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/User'
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '403': { $ref: '#/components/responses/Forbidden' }
-                '404': { $ref: '#/components/responses/NotFound' }
-                '500': { $ref: '#/components/responses/InternalError' }
-        put:
-            tags: [Users]
-            summary: Edit user
-            description: Updates the email or password of the user identified by `{id}` in the path. Optional image can be uploaded.
-            operationId: updateUserById
-            security:
-                - bearerAuth: []
-            parameters:
-                - $ref: '#/components/parameters/IdPathParam'
-            requestBody:
-                required: true
-                content:
-                    multipart/form-data:
-                        schema:
-                            $ref: '#/components/schemas/UpdateUserByIdRequestMultipart'
-            responses:
-                '200':
-                    description: Updated user
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/User'
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '403': { $ref: '#/components/responses/Forbidden' }
-                '422': { $ref: '#/components/responses/ValidationError' }
-                '404': { $ref: '#/components/responses/NotFound' }
-                '500': { $ref: '#/components/responses/InternalError' }
-        # Same as DELETE /users
-        delete:
-            tags: [Users]
-            summary: Delete user
-            description: Deletes the user identified by `{id}` in the path. Pass the `hardDelete` query parameter as `true` to permanently remove the record. Functionally equivalent to `DELETE /users`.
-            operationId: deleteUserById
-            security:
-                - bearerAuth: []
-            parameters:
-                - $ref: '#/components/parameters/IdPathParam'
-                - name: hardDelete
-                  in: query
-                  schema:
-                      type: boolean
-            responses:
-                '200': { $ref: '#/components/responses/Success' }
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '403': { $ref: '#/components/responses/Forbidden' }
-                '404': { $ref: '#/components/responses/NotFound' }
-                '500': { $ref: '#/components/responses/InternalError' }
+  /ink-and-color:
+    post:
+      operationId: inkAndColorSketch
+      summary: Auto-classify then ink and/or colorize a sketch
+      description: |
+        Classifies image as sketch/inked/unknown, then returns inking +
+        colorization guidance for sketches, or colorization-only for inked
+        drawings. Pass `sketchState` to skip classification.
+        Timeout: 60000ms. Max file size: 10 MB.
+        **Status: PR #19 pending merge.**
+      tags: [Sketch]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/InkAndColorRequest"
+      responses:
+        "200":
+          description: Colorization description generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InkAndColorResponse"
+        "400":
+          description: No image uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Vision model call failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
-    # Same as GET /users, but with JSON body, more suitable for DTOs and multi-language codegen
-    /users/search:
-        post:
-            tags: [Users]
-            summary: Search users (DTO-friendly)
-            description: Searches and filters users via a JSON request body. Functionally equivalent to `GET /users` with query parameters
-            operationId: searchUsers
-            security:
-                - bearerAuth: []
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/SearchUsersRequest'
-            responses:
-                '200':
-                    description: Users search results
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/UsersResponse'
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '403': { $ref: '#/components/responses/Forbidden' }
-                '422': { $ref: '#/components/responses/ValidationError' }
-                '500': { $ref: '#/components/responses/InternalError' }
+  # ─────────────────────────────────────────────────────────────────────
+  # OPENAI COMPAT (merged via PR #28)
+  # ─────────────────────────────────────────────────────────────────────
+  /v1/models:
+    get:
+      operationId: listOpenAiModels
+      summary: List available Manna models (OpenAI format)
+      description: |
+        Returns Manna profiles as OpenAI-style model objects. Used by
+        Open WebUI to populate the model picker.
+        Rate limit: 120 req/min per IP.
+        ⚠ TEMPORARY — will be removed when the custom frontend ships.
+      tags: [OpenAI Compat]
+      responses:
+        "200":
+          description: Model list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenAiModelListResponse"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RateLimitResponse"
 
-    # ----- Products -----
+  /v1/chat/completions:
+    post:
+      operationId: openAiChatCompletion
+      summary: OpenAI-compatible chat completion via Manna agent
+      description: |
+        Translates OpenAI ChatCompletion format → agent.run() → ChatCompletion
+        response. Supports streaming (buffered SSE).
 
-    /products:
-        get:
-            tags: [Products]
-            summary: List products (paginated)
-            description: Returns a paginated list of products.
-            operationId: listProducts
-            parameters:
-                - $ref: '#/components/parameters/ProductIdParam'
-                - $ref: '#/components/parameters/PageParam'
-                - $ref: '#/components/parameters/PageSizeParam'
-                - $ref: '#/components/parameters/TextParam'
-                - name: minPrice
-                  in: query
-                  required: false
-                  schema:
-                      type: number
-                      format: double
-                      minimum: 0
-                - name: maxPrice
-                  in: query
-                  required: false
-                  schema:
-                      type: number
-                      format: double
-                      minimum: 0
-            responses:
-                '200':
-                    description: Products page
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ProductsResponse'
-                '500': { $ref: '#/components/responses/InternalError' }
-        post:
-            tags: [Products]
-            summary: Create product
-            description: Creates a new product with optional image upload
-            operationId: createProduct
-            security:
-                - bearerAuth: []
-            requestBody:
-                required: true
-                content:
-                    multipart/form-data:
-                        schema:
-                            $ref: '#/components/schemas/CreateProductRequestMultipart'
-            responses:
-                '201':
-                    description: Created product
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Product'
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '403': { $ref: '#/components/responses/Forbidden' }
-                '422': { $ref: '#/components/responses/ValidationError' }
-                '500': { $ref: '#/components/responses/InternalError' }
-        put:
-            tags: [Products]
-            summary: Edit product
-            description: Updates an existing product with optional image upload
-            operationId: updateProduct
-            security:
-                - bearerAuth: []
-            requestBody:
-                required: true
-                content:
-                    multipart/form-data:
-                        schema:
-                            $ref: '#/components/schemas/UpdateProductRequestMultipart'
-            responses:
-                '200':
-                    description: Updated product
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Product'
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '403': { $ref: '#/components/responses/Forbidden' }
-                '404': { $ref: '#/components/responses/NotFound' }
-                '422': { $ref: '#/components/responses/ValidationError' }
-                '500': { $ref: '#/components/responses/InternalError' }
-        delete:
-            tags: [Products]
-            summary: Delete product
-            description: Deletes the product identified by the `id` field in the request body. Set `hardDelete` to `true` to permanently remove the record
-            operationId: deleteProduct
-            security:
-                - bearerAuth: []
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/DeleteProductRequest'
-            responses:
-                '200': { $ref: '#/components/responses/Success' }
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '403': { $ref: '#/components/responses/Forbidden' }
-                '404': { $ref: '#/components/responses/NotFound' }
-                '422': { $ref: '#/components/responses/ValidationError' }
-                '500': { $ref: '#/components/responses/InternalError' }
+        Model mapping:
+        - `manna` / `manna-agent` → auto (router decides)
+        - `manna-fast` → fast profile
+        - `manna-reasoning` → reasoning profile
+        - `manna-code` → code profile
 
-    /products/{id}:
-        # Same as /products/id={id}
-        get:
-            tags: [Products]
-            summary: Product details
-            description: Returns the full details of the product identified by `{id}`. Functionally equivalent to `GET /products?id={id}`.
-            operationId: getProductById
-            parameters:
-                - $ref: '#/components/parameters/IdPathParam'
-            responses:
-                '200':
-                    description: Product
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Product'
-                '404': { $ref: '#/components/responses/NotFound' }
-                '500': { $ref: '#/components/responses/InternalError' }
-        # Same as PUT /products
-        put:
-            tags: [Products]
-            summary: Edit product
-            description: Updates the product identified by `{id}` in the path with optional image upload. Functionally equivalent to `PUT /products` with the id in the body.
-            operationId: updateProductById
-            security:
-                - bearerAuth: []
-            parameters:
-                - $ref: '#/components/parameters/IdPathParam'
-            requestBody:
-                required: true
-                content:
-                    multipart/form-data:
-                        schema:
-                            $ref: '#/components/schemas/UpdateProductByIdRequestMultipart'
-            responses:
-                '200':
-                    description: Updated product
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Product'
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '422': { $ref: '#/components/responses/ValidationError' }
-                '404': { $ref: '#/components/responses/NotFound' }
-                '500': { $ref: '#/components/responses/InternalError' }
-        # Same as DELETE /products
-        delete:
-            tags: [Products]
-            summary: Delete product
-            description: Deletes the product identified by `{id}` in the path. Pass the `hardDelete` query parameter as `true` to permanently remove the record. Functionally equivalent to `DELETE /products`.
-            operationId: deleteProductById
-            security:
-                - bearerAuth: []
-            parameters:
-                - $ref: '#/components/parameters/IdPathParam'
-                - name: hardDelete
-                  in: query
-                  schema:
-                      type: boolean
-            responses:
-                '200': { $ref: '#/components/responses/Success' }
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '404': { $ref: '#/components/responses/NotFound' }
-                '500': { $ref: '#/components/responses/InternalError' }
+        Write mode: prefix message with `[WRITE]` or set `allowWrite: true`.
+        Rate limit: 60 req/min (configurable via OPENAI_COMPAT_RATE_LIMIT).
+        ⚠ TEMPORARY — will be removed when the custom frontend ships.
+      tags: [OpenAI Compat]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OpenAiChatCompletionRequest"
+      responses:
+        "200":
+          description: Chat completion (non-streaming)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenAiChatCompletionResponse"
+            text/event-stream:
+              schema:
+                type: string
+                description: SSE stream of ChatCompletionChunk objects, ending with `data: [DONE]`
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RateLimitResponse"
+        "500":
+          description: Agent loop failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
-    # Same as GET /products, but with JSON body, more suitable for DTOs and multi-language codegen
-    /products/search:
-        post:
-            tags: [Products]
-            summary: Search products (DTO-friendly)
-            description: Searches and filters products via a JSON request body. Functionally equivalent to `GET /products` with query parameters.
-            operationId: searchProducts
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/SearchProductsRequest'
-            responses:
-                '200':
-                    description: Products search results
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ProductsResponse'
-                '422': { $ref: '#/components/responses/ValidationError' }
-                '500': { $ref: '#/components/responses/InternalError' }
+# ═══════════════════════════════════════════════════════════════════════
+# SCHEMAS
+# ═══════════════════════════════════════════════════════════════════════
+components:
+  schemas:
+    # ── Shared ──────────────────────────────────────────────────────────
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+        requestId:
+          type: string
+          format: uuid
 
-    /cart:
-        get:
-            tags: [Cart]
-            summary: Get cart
-            description: Returns all items currently in the authenticated user's cart along with a computed summary
-            operationId: getCart
-            security:
-                - bearerAuth: []
-            responses:
-                '200':
-                    description: Cart items
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/CartResponse'
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '500': { $ref: '#/components/responses/InternalError' }
-        post:
-            tags: [Cart]
-            summary: Add/Edit cart item
-            description: Adds or edit a product to the authenticated user's cart. Returns the updated cart.
-            operationId: upsertCartItem
-            security:
-                - bearerAuth: []
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/UpsertCartItemRequest'
-            responses:
-                '200':
-                    description: Add/Edit to cart
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/CartResponse'
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '422': { $ref: '#/components/responses/ValidationError' }
-                '500': { $ref: '#/components/responses/InternalError' }
-        delete:
-            tags: [Cart]
-            summary: Empty cart or, if productId is set, remove target cart item
-            description: Clear cart or, ir productId is set, removes a specific product from the authenticated user's cart. Returns the updated cart (can be empty)
-            operationId: clearCart
-            security:
-                - bearerAuth: []
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/RemoveCartItemRequest'
-            responses:
-                '200':
-                    description: Cart cleared
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/CartResponse'
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '500': { $ref: '#/components/responses/InternalError' }
+    ValidationErrorResponse:
+      type: object
+      required: [error, details]
+      properties:
+        error:
+          type: string
+        details:
+          type: object
+          description: Zod flattened error object
 
-    /cart/{productId}:
-        # Same as POST /cart?productId={productId}
-        put:
-            tags: [Cart]
-            summary: Set cart item quantity
-            description: Sets the quantity of the cart line for the product identified by `{productId}` in the path. Functionally equivalent to `POST /cart`. Returns the updated cart.
-            operationId: updateCartItemById
-            security:
-                - bearerAuth: []
-            parameters:
-                - $ref: '#/components/parameters/ProductIdPathParam'
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/UpdateCartItemByIdRequest'
-            responses:
-                '200':
-                    description: Updated cart
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/CartResponse'
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '404': { $ref: '#/components/responses/NotFound' }
-                '422': { $ref: '#/components/responses/ValidationError' }
-                '500': { $ref: '#/components/responses/InternalError' }
-        delete:
-            tags: [Cart]
-            summary: Remove item from cart
-            description: Removes the cart line for the product identified by `{productId}` in the path from the authenticated user's cart. Returns the updated cart.
-            operationId: removeCartItem
-            security:
-                - bearerAuth: []
-            parameters:
-                - $ref: '#/components/parameters/ProductIdPathParam'
-            responses:
-                '200':
-                    description: Updated cart
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/CartResponse'
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '404': { $ref: '#/components/responses/NotFound' }
-                '500': { $ref: '#/components/responses/InternalError' }
+    RateLimitResponse:
+      type: object
+      required: [error, retryAfterSeconds]
+      properties:
+        error:
+          type: string
+          example: Rate limit exceeded
+        retryAfterSeconds:
+          type: integer
+          minimum: 1
 
-    /cart/summary:
-        get:
-            tags: [Cart]
-            summary: Get cart summary
-            description: Returns a lightweight summary of the authenticated user's cart.
-            operationId: getCartSummary
-            security:
-                - bearerAuth: []
-            responses:
-                '200':
-                    description: Cart summary
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/CartSummaryResponse'
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '500': { $ref: '#/components/responses/InternalError' }
+    ModelProfile:
+      type: string
+      enum: [fast, reasoning, code, default]
+      description: Forces a specific Ollama model profile, bypassing automatic routing
 
-    /cart/checkout:
-        post:
-            tags: [Orders]
-            summary: Checkout (place order from cart)
-            description: Converts the authenticated user's current cart into a new order. The cart is cleared upon success. An optional email address and order notes can be supplied in the request body. Returns the created order.
-            operationId: checkout
-            security:
-                - bearerAuth: []
-            requestBody:
-                required: false
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/CheckoutRequest'
-            responses:
-                '201':
-                    description: Order created
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/CheckoutResponse'
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '422': { $ref: '#/components/responses/ValidationError' }
-                '500': { $ref: '#/components/responses/InternalError' }
+    # ── System ──────────────────────────────────────────────────────────
+    HealthResponse:
+      type: object
+      required: [status, timestamp]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        timestamp:
+          type: string
+          format: date-time
 
-    /orders:
-        get:
-            tags: [Orders]
-            summary: List orders (paginated)
-            description: Returns a paginated list of orders.
-            operationId: listOrders
-            security:
-                - bearerAuth: []
-            parameters:
-                - $ref: '#/components/parameters/IdParam'
-                - $ref: '#/components/parameters/PageParam'
-                - $ref: '#/components/parameters/PageSizeParam'
-                - $ref: '#/components/parameters/UserIdParam'
-                - $ref: '#/components/parameters/ProductIdParam'
-                - name: email
-                  in: query
-                  schema:
-                      $ref: '#/components/schemas/Email'
-            responses:
-                '200':
-                    description: Orders page
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/OrdersResponse'
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '500': { $ref: '#/components/responses/InternalError' }
-        post:
-            tags: [Orders]
-            summary: Create order
-            description: Creates a new order directly from the supplied payload.
-            operationId: createOrder
-            security:
-                - bearerAuth: []
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/CreateOrderRequest'
-            responses:
-                '201':
-                    description: Created order
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Order'
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '403': { $ref: '#/components/responses/Forbidden' }
-                '404': { $ref: '#/components/responses/NotFound' }
-                '422': { $ref: '#/components/responses/ValidationError' }
-                '500': { $ref: '#/components/responses/InternalError' }
-        put:
-            tags: [Orders]
-            summary: Update order
-            description: Updates an existing order identified by id in the request body.
-            operationId: updateOrder
-            security:
-                - bearerAuth: []
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/UpdateOrderRequest'
-            responses:
-                '200':
-                    description: Updated order
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Order'
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '403': { $ref: '#/components/responses/Forbidden' }
-                '404': { $ref: '#/components/responses/NotFound' }
-                '422': { $ref: '#/components/responses/ValidationError' }
-                '500': { $ref: '#/components/responses/InternalError' }
-        delete:
-            tags: [Orders]
-            summary: Delete order
-            description: Permanently removes the order identified by id.
-            operationId: deleteOrder
-            security:
-                - bearerAuth: []
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/DeleteOrderRequest'
-            responses:
-                '200': { $ref: '#/components/responses/Success' }
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '403': { $ref: '#/components/responses/Forbidden' }
-                '404': { $ref: '#/components/responses/NotFound' }
-                '500': { $ref: '#/components/responses/InternalError' }
+    # ── Agent /run ──────────────────────────────────────────────────────
+    RunRequest:
+      type: object
+      required: [task]
+      properties:
+        task:
+          type: string
+          minLength: 1
+          description: Natural-language description of what the agent should do
+        allowWrite:
+          type: boolean
+          default: false
+          description: When true, enables write_file and scaffold_project tools
+        profile:
+          $ref: "#/components/schemas/ModelProfile"
 
-    # Same as GET /orders, but with JSON body, more suitable for DTOs and multi-language codegen
-    /orders/search:
-        post:
-            tags: [Orders]
-            summary: Search orders (DTO-friendly)
-            description: Searches and filters orders via a JSON request body. Functionally equivalent to `GET /orders`.
-            operationId: searchOrders
-            security:
-                - bearerAuth: []
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/SearchOrdersRequest'
-            responses:
-                '200':
-                    description: Orders search results
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/OrdersResponse'
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '403': { $ref: '#/components/responses/Forbidden' }
-                '422': { $ref: '#/components/responses/ValidationError' }
-                '500': { $ref: '#/components/responses/InternalError' }
+    RunResponse:
+      type: object
+      required: [result]
+      properties:
+        result:
+          type: string
+          description: The agent's final answer
 
-    /orders/{id}:
-        # Same as GET /orders?id={id}
-        get:
-            tags: [Orders]
-            summary: Order details
-            description: Returns the full details of the order identified by `{id}`. Functionally equivalent to `GET /orders?id={id}`.
-            operationId: getOrderById
-            security:
-                - bearerAuth: []
-            parameters:
-                - $ref: '#/components/parameters/IdPathParam'
-            responses:
-                '200':
-                    description: Order
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Order'
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '403': { $ref: '#/components/responses/Forbidden' }
-                '404': { $ref: '#/components/responses/NotFound' }
-                '500': { $ref: '#/components/responses/InternalError' }
-        put:
-            tags: [Orders]
-            summary: Edit order
-            description: Updates the order identified by `{id}` in the path.
-            operationId: updateOrderById
-            security:
-                - bearerAuth: []
-            parameters:
-                - $ref: '#/components/parameters/IdPathParam'
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/UpdateOrderByIdRequest'
-            responses:
-                '200':
-                    description: Updated order
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Order'
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '403': { $ref: '#/components/responses/Forbidden' }
-                '404': { $ref: '#/components/responses/NotFound' }
-                '422': { $ref: '#/components/responses/ValidationError' }
-                '500': { $ref: '#/components/responses/InternalError' }
-        delete:
-            tags: [Orders]
-            summary: Delete order
-            description: Permanently removes the order identified by `id`.
-            operationId: deleteOrderById
-            security:
-                - bearerAuth: []
-            parameters:
-                - $ref: '#/components/parameters/IdPathParam'
-            responses:
-                '200': { $ref: '#/components/responses/Success' }
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '403': { $ref: '#/components/responses/Forbidden' }
-                '404': { $ref: '#/components/responses/NotFound' }
-                '500': { $ref: '#/components/responses/InternalError' }
+    # ── IDE /autocomplete ───────────────────────────────────────────────
+    AutocompleteRequest:
+      type: object
+      required: [prefix]
+      properties:
+        prefix:
+          type: string
+          minLength: 1
+          description: Code appearing before the cursor
+        suffix:
+          type: string
+          description: Code appearing after the cursor (fill-in-the-middle)
+        language:
+          type: string
+          description: Language hint (e.g. "typescript", "python")
+          default: plaintext
 
-    /orders/{id}/invoice:
-        get:
-            tags: [Orders]
-            summary: Download order invoice (PDF)
-            description: Generates and returns the invoice for the order identified by `{id}` as a binary PDF file. The client should save or stream the response with an appropriate `Content-Disposition` header.
-            operationId: getOrderInvoice
-            security:
-                - bearerAuth: []
-            parameters:
-                - $ref: '#/components/parameters/IdPathParam'
-            responses:
-                '200':
-                    description: Invoice PDF
-                    content:
-                        application/pdf:
-                            schema:
-                                type: string
-                                format: binary
-                '401': { $ref: '#/components/responses/Unauthorized' }
-                '404': { $ref: '#/components/responses/NotFound' }
-                '500': { $ref: '#/components/responses/InternalError' }
+    AutocompleteResponse:
+      type: object
+      required: [completion, model, language, cached, latencyMs, createdAtIso]
+      properties:
+        completion:
+          type: string
+        model:
+          type: string
+        language:
+          type: string
+        cached:
+          type: boolean
+        latencyMs:
+          type: integer
+        createdAtIso:
+          type: string
+          format: date-time
+
+    # ── IDE /lint-conventions ───────────────────────────────────────────
+    LintConventionsRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          minLength: 1
+          description: Source code to analyze
+        language:
+          type: string
+          description: Language hint. Falls back to filePath extension.
+        filePath:
+          type: string
+          description: Virtual file path for extension inference and TS context
+        includeLlm:
+          type: boolean
+          default: true
+          description: Whether to run the LLM enrichment pass
+        model:
+          type: string
+          description: Override the LLM model (defaults to AGENT_MODEL_CODE)
+        maxFindings:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 80
+          description: Maximum total findings to return
+
+    Finding:
+      type: object
+      required: [source, severity, category, message]
+      properties:
+        source:
+          type: string
+          enum: [typescript, convention, llm]
+        severity:
+          type: string
+          enum: [error, warning, info]
+        category:
+          type: string
+        message:
+          type: string
+        line:
+          type: integer
+          minimum: 1
+        column:
+          type: integer
+          minimum: 1
+        rule:
+          type: string
+
+    LintConventionsSummary:
+      type: object
+      required: [total, errors, warnings, infos, deterministicCount, llmCount]
+      properties:
+        total:
+          type: integer
+        errors:
+          type: integer
+        warnings:
+          type: integer
+        infos:
+          type: integer
+        deterministicCount:
+          type: integer
+        llmCount:
+          type: integer
+
+    LintConventionsResponse:
+      type: object
+      required: [requestId, language, filePath, summary, findings, llmModelUsed, latencyMs]
+      properties:
+        requestId:
+          type: string
+          format: uuid
+        language:
+          type: string
+        filePath:
+          type: string
+        summary:
+          $ref: "#/components/schemas/LintConventionsSummary"
+        findings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Finding"
+        llmModelUsed:
+          type: string
+          nullable: true
+        latencyMs:
+          type: integer
+
+    # ── IDE /page-review ────────────────────────────────────────────────
+    PageReviewRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          minLength: 1
+          description: Full source code of the file to review
+        language:
+          type: string
+          description: Language hint
+        filePath:
+          type: string
+          description: Virtual file path
+        projectContext:
+          type: string
+          description: Free-text description of the project
+        model:
+          type: string
+          description: Override the LLM model (defaults to AGENT_MODEL_CODE)
+
+    CategorizedSuggestion:
+      type: object
+      required: [title, detail, priority]
+      properties:
+        title:
+          type: string
+        detail:
+          type: string
+        priority:
+          type: string
+          enum: [high, medium, low]
+
+    PageReviewCategories:
+      type: object
+      required: [correctness, maintainability, standards, enhancements]
+      properties:
+        correctness:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategorizedSuggestion"
+          maxItems: 12
+        maintainability:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategorizedSuggestion"
+          maxItems: 12
+        standards:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategorizedSuggestion"
+          maxItems: 12
+        enhancements:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategorizedSuggestion"
+          maxItems: 12
+
+    PageReviewResponse:
+      type: object
+      required: [requestId, model, language, filePath, categories, latencyMs]
+      properties:
+        requestId:
+          type: string
+          format: uuid
+        model:
+          type: string
+        language:
+          type: string
+        filePath:
+          type: string
+        categories:
+          $ref: "#/components/schemas/PageReviewCategories"
+        latencyMs:
+          type: integer
+
+    # ── Upload /upload/image-classify ───────────────────────────────────
+    UploadImageClassifyRequest:
+      type: object
+      required: [file]
+      properties:
+        file:
+          type: string
+          format: binary
+          description: Image file (any format Ollama vision model supports; max 50 MB)
+        prompt:
+          type: string
+          description: Custom vision prompt (defaults to "Describe this image and identify what it most likely contains.")
+        model:
+          type: string
+          description: Override the vision model (defaults to TOOL_VISION_MODEL / llava-llama3)
+
+    ImageClassifyResponse:
+      type: object
+      required: [model, response]
+      properties:
+        model:
+          type: string
+        path:
+          type: string
+          description: Only present when the tool was called with a disk path
+        response:
+          type: string
+          description: The model's textual description/classification
+
+    # ── Upload /upload/speech-to-text ───────────────────────────────────
+    UploadSpeechToTextRequest:
+      type: object
+      required: [file]
+      properties:
+        file:
+          type: string
+          format: binary
+          description: Audio file (WAV, MP3, etc.; max 50 MB)
+        model:
+          type: string
+          description: Override the STT model (defaults to TOOL_STT_MODEL / whisper)
+        language:
+          type: string
+          description: ISO 639-1 language hint (e.g. "en", "it")
+        prompt:
+          type: string
+          description: Context/prompt to guide transcription
+
+    SpeechToTextResponse:
+      type: object
+      required: [model, text]
+      properties:
+        model:
+          type: string
+        path:
+          type: string
+          description: Only present when the tool was called with a disk path
+        text:
+          type: string
+          description: Transcribed text content
+
+    # ── Upload /upload/read-pdf ─────────────────────────────────────────
+    UploadReadPdfRequest:
+      type: object
+      required: [file]
+      properties:
+        file:
+          type: string
+          format: binary
+          description: PDF file (max 50 MB)
+
+    ReadPdfResponse:
+      type: object
+      required: [pageCount, text]
+      properties:
+        path:
+          type: string
+          description: Only present when the tool was called with a disk path
+        pageCount:
+          type: integer
+          description: Number of pages in the PDF
+        text:
+          type: string
+          description: Extracted text content
+
+    # ── Sketch /ink ─────────────────────────────────────────────────────
+    InkRequest:
+      type: object
+      required: [image]
+      properties:
+        image:
+          type: string
+          format: binary
+          description: Sketch image file (PNG, JPG, WEBP, GIF; max 10 MB)
+        model:
+          type: string
+          description: Override the vision model (defaults to TOOL_VISION_MODEL)
+
+    InkResponse:
+      type: object
+      required: [requestId, model, originalName, inkingDescription, latencyMs]
+      properties:
+        requestId:
+          type: string
+          format: uuid
+        model:
+          type: string
+        originalName:
+          type: string
+        inkingDescription:
+          type: string
+        latencyMs:
+          type: integer
+
+    # ── Sketch /ink-and-color ───────────────────────────────────────────
+    SketchState:
+      type: string
+      enum: [sketch, inked, unknown]
+
+    InkAndColorRequest:
+      type: object
+      required: [image]
+      properties:
+        image:
+          type: string
+          format: binary
+          description: Image file (PNG, JPG, WEBP, GIF; max 10 MB)
+        model:
+          type: string
+          description: Override the vision model
+        sketchState:
+          $ref: "#/components/schemas/SketchState"
+
+    InkAndColorResponse:
+      type: object
+      required: [requestId, model, originalName, detectedState, colorizationDescription, latencyMs]
+      properties:
+        requestId:
+          type: string
+          format: uuid
+        model:
+          type: string
+        originalName:
+          type: string
+        detectedState:
+          $ref: "#/components/schemas/SketchState"
+        colorizationDescription:
+          type: string
+        latencyMs:
+          type: integer
+
+    # ── OpenAI Compat /v1/models ────────────────────────────────────────
+    OpenAiModelObject:
+      type: object
+      required: [id, object, created, owned_by]
+      properties:
+        id:
+          type: string
+          description: "Model identifier: manna, manna-agent, manna-fast, manna-reasoning, manna-code"
+        object:
+          type: string
+          enum: [model]
+        created:
+          type: integer
+          description: Unix timestamp
+        owned_by:
+          type: string
+          enum: [manna]
+
+    OpenAiModelListResponse:
+      type: object
+      required: [object, data]
+      properties:
+        object:
+          type: string
+          enum: [list]
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/OpenAiModelObject"
+
+    # ── OpenAI Compat /v1/chat/completions ──────────────────────────────
+    OpenAiChatMessageContent:
+      oneOf:
+        - type: string
+        - type: array
+          items:
+            oneOf:
+              - type: object
+                required: [type, text]
+                properties:
+                  type:
+                    type: string
+                    enum: [text]
+                  text:
+                    type: string
+              - type: object
+                required: [type, image_url]
+                properties:
+                  type:
+                    type: string
+                    enum: [image_url]
+                  image_url:
+                    type: object
+                    required: [url]
+                    properties:
+                      url:
+                        type: string
+
+    OpenAiChatMessage:
+      type: object
+      required: [role, content]
+      properties:
+        role:
+          type: string
+          enum: [system, user, assistant, tool]
+        content:
+          $ref: "#/components/schemas/OpenAiChatMessageContent"
+
+    OpenAiChatCompletionRequest:
+      type: object
+      required: [model, messages]
+      properties:
+        model:
+          type: string
+          description: |
+            Manna model ID: manna, manna-agent, manna-fast, manna-reasoning, manna-code.
+            Any other string falls back to auto-routing.
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/OpenAiChatMessage"
+          minItems: 1
+        stream:
+          type: boolean
+          default: false
+          description: When true, returns SSE stream of ChatCompletionChunk objects
+        temperature:
+          type: number
+          description: Accepted but ignored (Manna uses profile-based temperature)
+        max_tokens:
+          type: integer
+          description: Accepted but ignored
+        top_p:
+          type: number
+          description: Accepted but ignored
+        frequency_penalty:
+          type: number
+          description: Accepted but ignored
+        presence_penalty:
+          type: number
+          description: Accepted but ignored
+        stop:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+          description: Accepted but ignored
+        n:
+          type: integer
+          description: Accepted but ignored
+        allowWrite:
+          type: boolean
+          default: false
+          description: "Extension: enable write tools. Also triggered by [WRITE] prefix in message."
+
+    OpenAiChatCompletionChoice:
+      type: object
+      required: [index, message, finish_reason]
+      properties:
+        index:
+          type: integer
+        message:
+          type: object
+          required: [role, content]
+          properties:
+            role:
+              type: string
+              enum: [assistant]
+            content:
+              type: string
+        finish_reason:
+          type: string
+          enum: [stop, length]
+
+    OpenAiUsage:
+      type: object
+      required: [prompt_tokens, completion_tokens, total_tokens]
+      properties:
+        prompt_tokens:
+          type: integer
+          description: Always 0 (Manna does not track tokens)
+        completion_tokens:
+          type: integer
+          description: Always 0
+        total_tokens:
+          type: integer
+          description: Always 0
+
+    OpenAiChatCompletionResponse:
+      type: object
+      required: [id, object, created, model, choices, usage]
+      properties:
+        id:
+          type: string
+          description: "Format: chatcmpl-<uuid>"
+        object:
+          type: string
+          enum: [chat.completion]
+        created:
+          type: integer
+          description: Unix timestamp
+        model:
+          type: string
+        choices:
+          type: array
+          items:
+            $ref: "#/components/schemas/OpenAiChatCompletionChoice"
+        usage:
+          $ref: "#/components/schemas/OpenAiUsage"
