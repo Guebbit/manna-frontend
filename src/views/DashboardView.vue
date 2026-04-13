@@ -42,7 +42,15 @@
                         <v-chip class="ml-2" size="small" color="primary">
                             {{ systemStore.models.length }}
                         </v-chip>
-                        <v-chip v-if="systemStore.modes.length > 0" class="ml-1" size="small" color="secondary">{{ systemStore.modes.length }} mode{{ systemStore.modes.length === 1 ? '' : 's' }}</v-chip>
+                        <v-chip
+                            v-if="systemStore.modes.length > 0"
+                            class="ml-1"
+                            size="small"
+                            color="secondary"
+                        >
+                            {{ systemStore.modes.length }}
+                            {{ systemStore.modes.length === 1 ? 'mode' : 'modes' }}
+                        </v-chip>
                     </v-card-title>
                     <v-card-text>
                         <v-chip

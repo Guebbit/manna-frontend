@@ -90,6 +90,10 @@ export const useSwarmStore = defineStore('swarm', () => {
     /**
      * Submits a swarm task via SSE streaming, populates `streamEvents` reactively.
      *
+     * Note: in streaming mode the history entry's `subtaskResults` array will be empty
+     * because individual subtask answers are not included in the SSE `done` event.
+     * Use `submitSwarm()` instead when you need full per-subtask details.
+     *
      * @param task        - The complex task to decompose and solve.
      * @param profile     - Optional model profile for inference routing.
      * @param allowWrite  - Whether agents may modify files (default `false`).
