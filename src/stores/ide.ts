@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
-import { reactive, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
+import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
 import type {
     IAutocompleteResponse,
     ILintConventionsResponse,
@@ -13,14 +14,21 @@ import { useNotificationsStore, TOAST_TYPE } from './notification';
  * (autocomplete, lint, and page review).
  */
 export const useIdeStore = defineStore('ide', () => {
+    const { getLoading, setLoading } = useCoreStore();
+    const { fetchAny } = useStructureRestApi({
+        getLoading,
+        setLoading,
+        loadingKey: 'ide'
+    });
+
     const autocompleteResult = ref<IAutocompleteResponse | undefined>(undefined);
     const lintResult = ref<ILintConventionsResponse | undefined>(undefined);
     const reviewResult = ref<IPageReviewResponse | undefined>(undefined);
 
     const loading = reactive({
-        autocomplete: false,
-        lint: false,
-        review: false
+        autocomplete: computed(() => getLoading('ide-autocomplete')),
+        lint: computed(() => getLoading('ide-lint')),
+        review: computed(() => getLoading('ide-review'))
     });
 
     /**
@@ -30,77 +38,89 @@ export const useIdeStore = defineStore('ide', () => {
      * @param suffix   - Optional code text after the cursor.
      * @param language - Optional language identifier for context.
      */
-    async function submitAutocomplete(
+    const submitAutocomplete = (
         prefix: string,
         suffix?: string,
         language?: string
-    ): Promise<void> {
+    ) => {
         const notificationStore = useNotificationsStore();
-        loading.autocomplete = true;
-        try {
-            autocompleteResult.value = await autocomplete({ prefix, suffix, language });
-        } catch (error: unknown) {
+        return fetchAny(
+            () =>
+                autocomplete({ prefix, suffix, language }).then((data) => {
+                    autocompleteResult.value = data;
+                }),
+            {
+                lastUpdateKey: 'autocomplete',
+                loadingKey: '-autocomplete'
+            }
+        ).catch((error: unknown) => {
             if (error instanceof ApiError) {
                 notificationStore.addMessage(error.message, TOAST_TYPE.DANGER, 8000);
             }
             autocompleteResult.value = undefined;
-        } finally {
-            loading.autocomplete = false;
-        }
-    }
+        });
+    };
 
     /**
      * Submits source code for convention-aware linting analysis.
      *
      * @param parameters - The lint request options (content, language, model, etc.).
      */
-    async function submitLint(parameters: {
+    const submitLint = (parameters: {
         content: string;
         language?: string;
         filePath?: string;
         includeLlm?: boolean;
         model?: string;
         maxFindings?: number;
-    }): Promise<void> {
+    }) => {
         const notificationStore = useNotificationsStore();
-        loading.lint = true;
-        try {
-            lintResult.value = await lintConventions(parameters);
-        } catch (error: unknown) {
+        return fetchAny(
+            () =>
+                lintConventions(parameters).then((data) => {
+                    lintResult.value = data;
+                }),
+            {
+                lastUpdateKey: 'lint',
+                loadingKey: '-lint'
+            }
+        ).catch((error: unknown) => {
             if (error instanceof ApiError) {
                 notificationStore.addMessage(error.message, TOAST_TYPE.DANGER, 8000);
             }
             lintResult.value = undefined;
-        } finally {
-            loading.lint = false;
-        }
-    }
+        });
+    };
 
     /**
      * Submits source code for an AI-powered page-level review.
      *
      * @param parameters - The review request options (content, language, model, etc.).
      */
-    async function submitReview(parameters: {
+    const submitReview = (parameters: {
         content: string;
         language?: string;
         filePath?: string;
         projectContext?: string;
         model?: string;
-    }): Promise<void> {
+    }) => {
         const notificationStore = useNotificationsStore();
-        loading.review = true;
-        try {
-            reviewResult.value = await pageReview(parameters);
-        } catch (error: unknown) {
+        return fetchAny(
+            () =>
+                pageReview(parameters).then((data) => {
+                    reviewResult.value = data;
+                }),
+            {
+                lastUpdateKey: 'review',
+                loadingKey: '-review'
+            }
+        ).catch((error: unknown) => {
             if (error instanceof ApiError) {
                 notificationStore.addMessage(error.message, TOAST_TYPE.DANGER, 8000);
             }
             reviewResult.value = undefined;
-        } finally {
-            loading.review = false;
-        }
-    }
+        });
+    };
 
     return {
         autocompleteResult,

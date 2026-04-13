@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
+import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
 import type { IOpenAiChatMessage } from '@/api/types';
 import { streamChat } from '@/api/manna';
 import { useNotificationsStore, TOAST_TYPE } from './notification';
@@ -19,6 +20,12 @@ export interface IConversation {
  * Pinia store managing chat conversations and streaming message delivery.
  */
 export const useChatStore = defineStore('chat', () => {
+    const { getLoading, setLoading } = useCoreStore();
+    const { loading, fetchAny } = useStructureRestApi({
+        getLoading,
+        setLoading
+    });
+
     const conversations = ref<IConversation[]>([]);
     const activeConversationId = ref<string | undefined>(undefined);
     const streaming = ref(false);
@@ -68,7 +75,7 @@ export const useChatStore = defineStore('chat', () => {
      * @param allowWrite - When `true`, grants the backend write-access to the filesystem.
      * @returns Resolves when the full assistant reply has been received.
      */
-    async function sendMessage(content: string, allowWrite = false): Promise<void> {
+    const sendMessage = (content: string, allowWrite = false) => {
         const notificationStore = useNotificationsStore();
         let conversationReference = activeConversation.value;
 
@@ -76,7 +83,7 @@ export const useChatStore = defineStore('chat', () => {
             const id = newConversation();
             conversationReference = conversations.value.find((c) => c.id === id);
         }
-        if (!conversationReference) return;
+        if (!conversationReference) return Promise.resolve();
 
         // Set title from first message
         if (conversationReference.messages.length === 0) {
@@ -90,22 +97,33 @@ export const useChatStore = defineStore('chat', () => {
         const assistantIndex = conversationReference.messages.length;
         conversationReference.messages.push({ role: 'assistant', content: '' });
 
-        streaming.value = true;
-        try {
-            const generator = streamChat({
-                model: conversationReference.model,
-                messages: conversationReference.messages.slice(0, -1),
-                allowWrite
-            });
+        // Capture reference for use inside async callback
+        const conversation = conversationReference;
 
-            for await (const chunk of generator) {
-                const message = conversationReference.messages[assistantIndex];
-                if (message && typeof message.content === 'string') {
-                    message.content += chunk;
+        return fetchAny(
+            async () => {
+                streaming.value = true;
+                try {
+                    const generator = streamChat({
+                        model: conversation.model,
+                        messages: conversation.messages.slice(0, -1),
+                        allowWrite
+                    });
+
+                    for await (const chunk of generator) {
+                        const message = conversation.messages[assistantIndex];
+                        if (message && typeof message.content === 'string') {
+                            message.content += chunk;
+                        }
+                    }
+                } catch (error: unknown) {
+                    conversation.messages.splice(assistantIndex, 1);
+                    throw error;
+                } finally {
+                    streaming.value = false;
                 }
             }
-        } catch (error: unknown) {
-            conversationReference.messages.splice(assistantIndex, 1);
+        ).catch((error: unknown) => {
             if (error instanceof ApiError && error.retryAfterSeconds) {
                 notificationStore.addMessage(
                     `Rate limited. Retry in ${String(error.retryAfterSeconds)}s`,
@@ -119,15 +137,14 @@ export const useChatStore = defineStore('chat', () => {
                     8000
                 );
             }
-        } finally {
-            streaming.value = false;
-        }
-    }
+        });
+    };
 
     return {
         conversations,
         activeConversationId,
         streaming,
+        loading,
         activeConversation,
         newConversation,
         deleteConversation,
