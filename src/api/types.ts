@@ -407,3 +407,99 @@ export interface IHelpResponse {
     endpointCount: number;
     endpoints: IHelpEndpoint[];
 }
+
+/* ─── Workflow ───────────────────────────────────────────────── */
+
+/** Context carry mode for workflow steps. */
+export type WorkflowCarryMode = 'none' | 'summary' | 'full';
+
+/** Request body for the /workflow endpoint. */
+export interface IWorkflowRequest {
+    steps: string[];
+    allowWrite?: boolean;
+    profile?: ModelProfile;
+    carry?: WorkflowCarryMode;
+    maxStepsPerStep?: number;
+}
+
+/** A single step result from a workflow execution. */
+export interface IWorkflowStepResult {
+    index: number;
+    task: string;
+    result: string;
+    success: boolean;
+    durationMs: number;
+    error?: string;
+}
+
+/** Response body from the /workflow endpoint. */
+export interface IWorkflowResponse {
+    steps: IWorkflowStepResult[];
+    allSucceeded: boolean;
+    totalDurationMs: number;
+}
+
+/* ─── Workflow /workflow/stream SSE events ────────────────────── */
+
+/** SSE event: workflow started */
+export interface IWorkflowStartEvent {
+    stepCount: number;
+}
+
+/** SSE event: workflow step started */
+export interface IWorkflowStepStartEvent {
+    index: number;
+    task: string;
+}
+
+/** SSE event: inner agent iteration within a workflow step */
+export interface IWorkflowStepEvent {
+    workflowIndex: number;
+    step: number;
+    action: string;
+    thought: string;
+}
+
+/** SSE event: tool execution within a workflow step */
+export interface IWorkflowToolEvent {
+    workflowIndex: number;
+    tool: string;
+    result?: string;
+    error?: string;
+}
+
+/** SSE event: model routing within a workflow step */
+export interface IWorkflowRouteEvent {
+    workflowIndex: number;
+    profile: string;
+    model: string;
+    reason: string;
+}
+
+/** SSE event: workflow step completed */
+export interface IWorkflowStepDoneEvent {
+    index: number;
+    task: string;
+    result: string;
+    success: boolean;
+    durationMs: number;
+    error?: string;
+}
+
+/** SSE event: workflow completed */
+export interface IWorkflowDoneEvent {
+    steps: IWorkflowStepResult[];
+    allSucceeded: boolean;
+    totalDurationMs: number;
+}
+
+/** Discriminated union of all SSE events from /workflow/stream */
+export type WorkflowStreamEvent =
+    | { type: 'workflow_start'; data: IWorkflowStartEvent }
+    | { type: 'step_start'; data: IWorkflowStepStartEvent }
+    | { type: 'step'; data: IWorkflowStepEvent }
+    | { type: 'tool'; data: IWorkflowToolEvent }
+    | { type: 'route'; data: IWorkflowRouteEvent }
+    | { type: 'step_done'; data: IWorkflowStepDoneEvent }
+    | { type: 'done'; data: IWorkflowDoneEvent }
+    | { type: 'error'; data: IAgentErrorEvent };
