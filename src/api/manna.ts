@@ -33,7 +33,10 @@ import type {
     SwarmStreamEvent,
     IInfoModesResponse,
     IInfoModelsResponse,
-    IHelpResponse
+    IHelpResponse,
+    IWorkflowRequest,
+    IWorkflowResponse,
+    WorkflowStreamEvent
 } from './types';
 
 /* ─── Error class ────────────────────────────────────────────── */
@@ -508,4 +511,51 @@ export async function fetchInfoModels(): Promise<IInfoModelsResponse> {
 export async function fetchHelp(): Promise<IHelpResponse> {
     const response = await fetch(`${baseUrl()}/help`);
     return handleResponse<IHelpResponse>(response);
+}
+
+/* ─── Workflow ─────────────────────────────────────────────────── */
+
+/**
+ * Submits a sequential workflow and waits for the complete JSON result.
+ *
+ * @param parameters - The ordered step list, carry mode, profile, and write-access flag.
+ * @returns The workflow result including per-step breakdown and timing.
+ */
+export async function runWorkflow(parameters: IWorkflowRequest): Promise<IWorkflowResponse> {
+    const response = await fetch(`${baseUrl()}/workflow`, {
+        method: 'POST',
+        headers: JSON_HEADERS,
+        body: JSON.stringify(parameters)
+    });
+    return handleResponse<IWorkflowResponse>(response);
+}
+
+/**
+ * Submits a sequential workflow and streams lifecycle events via SSE.
+ *
+ * @param parameters - The ordered step list, carry mode, profile, and write-access flag.
+ * @yields Typed `WorkflowStreamEvent` objects.
+ * @throws {ApiError} When the initial HTTP response is not OK.
+ */
+export async function* runWorkflowStream(
+    parameters: IWorkflowRequest
+): AsyncGenerator<WorkflowStreamEvent> {
+    const response = await fetch(`${baseUrl()}/workflow/stream`, {
+        method: 'POST',
+        headers: JSON_HEADERS,
+        body: JSON.stringify(parameters)
+    });
+
+    if (!response.ok) {
+        let errorMessage = response.statusText;
+        try {
+            const body = await response.json();
+            errorMessage = body.error ?? errorMessage;
+        } catch {
+            /* ignore */
+        }
+        throw new ApiError(errorMessage, response.status);
+    }
+
+    yield* parseSseStream<WorkflowStreamEvent>(response);
 }

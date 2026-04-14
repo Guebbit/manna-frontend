@@ -131,6 +131,7 @@ const quickActions = [
     { label: 'Code', icon: 'mdi-code-braces', to: '/code', description: 'Fast IDE tools: code completion, lint analysis, and AI-powered page review.' },
     { label: 'Upload', icon: 'mdi-upload', to: '/upload', description: 'Classify images, transcribe audio, or extract text from PDFs using specialised AI models.' },
     { label: 'Swarm', icon: 'mdi-sitemap', to: '/swarm', description: 'Break a complex task into subtasks, run them across multiple agents in parallel, and synthesise the results.' },
+    { label: 'Workflow', icon: 'mdi-list-status', to: '/workflow' },
     { label: 'System Info', icon: 'mdi-information-outline', to: '/system', description: 'View routing profiles, loaded Ollama models, and the complete API reference.' }
 ];
 </script>
