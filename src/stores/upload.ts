@@ -1,9 +1,17 @@
+/**
+ * @module stores/upload
+ *
+ * Pinia store for file-upload analysis operations.
+ *
+ * Each upload type targets a different backend tool:
+ * - **Image classify** (`/upload/image-classify`) — Sends the image to a multimodal
+ *   vision model (e.g. LLaVA) which describes or classifies the visual content.
+ * - **Speech to text** (`/upload/speech-to-text`) — Transcribes audio using the
+ *   Whisper model.  A language hint and context prompt improve accuracy.
+ * - **Read PDF** (`/upload/read-pdf`) — Extracts raw text from the PDF using
+ *   `pdf-parse` (no AI involved — fast and deterministic).
+ */
 import { defineStore } from 'pinia';
-import { computed, reactive, ref } from 'vue';
-import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
-import type { IImageClassifyResponse, ISpeechToTextResponse, IReadPdfResponse } from '@/api/types';
-import { uploadImageClassify, uploadSpeechToText, uploadReadPdf, ApiError } from '@/api/manna';
-import { useNotificationsStore, TOAST_TYPE } from './notification';
 
 /**
  * Pinia store managing file upload operations

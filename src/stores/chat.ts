@@ -1,11 +1,18 @@
+/**
+ * @module stores/chat
+ *
+ * Pinia store for OpenAI-compatible chat conversations.
+ *
+ * The chat system mirrors the OpenAI `/v1/chat/completions` interface.  Model
+ * selection determines the routing path on the backend:
+ * - `'manna'` (and `'manna-*'` variants) — routed through the full agentic loop,
+ *   giving the model access to all 18 registered tools (file ops, web search, etc.).
+ * - Any other identifier (e.g. `'llama3.1:8b'`) — direct Ollama inference with no
+ *   tool access, for lower latency plain-chat use cases.
+ *
+ * Messages are streamed via SSE so the UI updates token-by-token.
+ */
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
-import { v4 as uuidv4 } from 'uuid';
-import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
-import type { IOpenAiChatMessage } from '@/api/types';
-import { streamChat } from '@/api/manna';
-import { useNotificationsStore } from '@guebbit/vue-toolkit';
-import { ApiError } from '@/api/manna';
 
 
 /** A single chat conversation with its messages and metadata. */
@@ -94,7 +101,8 @@ export const useChatStore = defineStore('chat', () => {
 
         conversationReference.messages.push({ role: 'user', content });
 
-        // Add empty assistant message for streaming
+        // Add an empty assistant placeholder before streaming so the UI renders
+        // the typing cursor immediately without waiting for the first token
         const assistantIndex = conversationReference.messages.length;
         conversationReference.messages.push({ role: 'assistant', content: '' });
 

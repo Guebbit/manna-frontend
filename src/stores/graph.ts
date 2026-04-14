@@ -1,8 +1,18 @@
+/**
+ * @module stores/graph
+ *
+ * Pinia store for the visual LiteGraph pipeline builder.
+ *
+ * The store serialises the live `LGraph` instance to a JSON snapshot using
+ * LiteGraph's own `graph.serialize()` method and sends the JSON to the Manna
+ * `/run` endpoint as a task description.
+ *
+ * Currently the graph JSON is embedded in a natural-language prompt so the
+ * agent can interpret and execute the pipeline.  When the backend adds a
+ * dedicated `POST /run/graph` endpoint this store should be updated to target
+ * that route instead for more structured execution.
+ */
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
-import type { LGraph, serializedLGraph } from 'litegraph.js';
-import { runTask } from '@/api/manna';
-import { useNotificationsStore, TOAST_TYPE } from './notification';
 
 /** Serialised LiteGraph graph payload. */
 export type IGraphData = serializedLGraph;

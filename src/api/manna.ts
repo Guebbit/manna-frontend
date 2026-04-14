@@ -1,3 +1,15 @@
+/**
+ * @module manna
+ *
+ * HTTP client functions for every Manna backend endpoint.
+ *
+ * All functions use the native `fetch` API and return typed response objects.
+ * Failures are signalled by throwing an {@link ApiError} with the HTTP status code.
+ * Streaming endpoints are implemented as `AsyncGenerator` functions that yield
+ * typed event objects as they arrive over the wire.
+ *
+ * Import the base URL resolver from `@/config` — never hard-code backend URLs.
+ */
 import { getMannaBaseUrl } from '@/config';
 import type {
     IRunRequest,

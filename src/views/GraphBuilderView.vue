@@ -1,50 +1,86 @@
 <template>
     <div class="graph-builder">
-        <h1 class="text-h4 mb-4">Graph Builder</h1>
+        <h1 class="text-h4 mb-2">Graph Builder</h1>
+        <p class="text-body-2 text-grey mb-4">
+            Build visual pipelines with a node graph editor. Connect nodes to define multi-step
+            workflows, then execute them on the backend via the agent loop.
+        </p>
 
         <!-- Toolbar -->
         <v-toolbar flat density="compact" color="surface" class="mb-4 rounded" border>
-            <v-btn
-                variant="tonal"
-                prepend-icon="mdi-content-save"
-                class="mr-2"
-                @click="onSave"
-            >
-                Save
-            </v-btn>
-            <v-btn
-                variant="tonal"
-                prepend-icon="mdi-folder-open"
-                class="mr-2"
-                @click="onLoad"
-            >
-                Load
-            </v-btn>
-            <v-btn
-                variant="tonal"
-                prepend-icon="mdi-delete"
-                class="mr-2"
-                @click="onClear"
-            >
-                Clear
-            </v-btn>
+            <v-tooltip text="Download the current graph as a JSON file." location="top">
+                <template #activator="{ props: tooltipProps }">
+                    <v-btn
+                        v-bind="tooltipProps"
+                        variant="tonal"
+                        prepend-icon="mdi-content-save"
+                        class="mr-2"
+                        @click="onSave"
+                    >
+                        Save
+                    </v-btn>
+                </template>
+            </v-tooltip>
+            <v-tooltip text="Import a previously saved graph JSON file." location="top">
+                <template #activator="{ props: tooltipProps }">
+                    <v-btn
+                        v-bind="tooltipProps"
+                        variant="tonal"
+                        prepend-icon="mdi-folder-open"
+                        class="mr-2"
+                        @click="onLoad"
+                    >
+                        Load
+                    </v-btn>
+                </template>
+            </v-tooltip>
+            <v-tooltip text="Remove all nodes and connections from the canvas." location="top">
+                <template #activator="{ props: tooltipProps }">
+                    <v-btn
+                        v-bind="tooltipProps"
+                        variant="tonal"
+                        prepend-icon="mdi-delete"
+                        class="mr-2"
+                        @click="onClear"
+                    >
+                        Clear
+                    </v-btn>
+                </template>
+            </v-tooltip>
             <v-divider vertical class="mx-2" />
-            <v-switch
-                v-model="allowWrite"
-                label="Allow write"
-                color="warning"
-                density="compact"
-                hide-details
-                class="mr-4"
-            />
-            <v-btn
-                color="primary"
-                prepend-icon="mdi-play"
-                :loading="graphStore.isExecuting"
-                @click="onExecute"
+            <v-tooltip
+                text="⚠ When enabled, the agent executing this graph can create, modify, and delete files on the server's filesystem."
+                location="top"
+                max-width="320"
             >
-                Execute
-            </v-btn>
+                <template #activator="{ props: tooltipProps }">
+                    <v-switch
+                        v-bind="tooltipProps"
+                        v-model="allowWrite"
+                        label="Allow write"
+                        color="warning"
+                        density="compact"
+                        hide-details
+                        class="mr-4"
+                    />
+                </template>
+            </v-tooltip>
+            <v-tooltip
+                text="Serialises the graph and sends it to the agent for execution. Results appear in the panel below."
+                location="top"
+            >
+                <template #activator="{ props: tooltipProps }">
+                    <v-btn
+                        v-bind="tooltipProps"
+                        color="primary"
+                        prepend-icon="mdi-play"
+                        :loading="graphStore.isExecuting"
+                        @click="onExecute"
+                    >
+                        Execute
+                    </v-btn>
+                </template>
+            </v-tooltip>
             <v-spacer />
             <v-btn
                 variant="text"
@@ -83,7 +119,10 @@
                     >
                         {{ graphStore.executionResult }}
                     </div>
-                    <span v-else class="text-grey">No result yet. Execute the graph to see output here.</span>
+                    <span v-else class="text-grey">
+                        No result yet. Build a graph with nodes and edges, then click
+                        <strong>Execute</strong> to run the pipeline on the backend.
+                    </span>
                 </v-card-text>
             </v-card>
         </v-expand-transition>

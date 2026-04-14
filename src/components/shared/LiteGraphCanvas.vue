@@ -3,6 +3,20 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * LiteGraphCanvas — mounts and manages a LiteGraph visual pipeline editor.
+ *
+ * On mount, registers all Manna-specific custom nodes (text input, LLM generate,
+ * shell, read/write file, browser fetch, semantic search, text output) and
+ * initialises a `LGraph` + `LGraphCanvas` instance bound to the `<canvas>` element.
+ *
+ * The live `graph` and `graphCanvas` instances are exposed via `defineExpose` so
+ * that parent components (e.g. `GraphBuilderView`) can serialise, deserialise, and
+ * execute the graph without needing direct DOM access.
+ *
+ * @prop width  - Canvas width in pixels.  Defaults to `100%` of the parent element.
+ * @prop height - Canvas height in pixels.  Defaults to `600`.
+ */
 import { ref, computed, shallowRef, onMounted, onUnmounted } from 'vue';
 import { LGraph, LGraphCanvas } from 'litegraph.js';
 import 'litegraph.js/css/litegraph.css';

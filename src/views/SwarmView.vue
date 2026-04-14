@@ -1,6 +1,10 @@
 <template>
     <div>
-        <h1 class="text-h4 mb-6">Swarm Orchestration</h1>
+        <h1 class="text-h4 mb-2">Swarm Orchestration</h1>
+        <p class="text-body-2 text-grey mb-6">
+            Swarm decomposes a complex task into subtasks, runs them in parallel across multiple
+            agents, then synthesises a final answer. Best for multi-part research or analysis tasks.
+        </p>
 
         <v-row>
             <v-col cols="12" md="7">
@@ -14,6 +18,8 @@
                             variant="outlined"
                             rows="4"
                             auto-grow
+                            hint="Works best with complex, multi-part tasks: e.g. 'Research Vue 3, React, and Svelte — compare performance, DX, and ecosystem size'."
+                            persistent-hint
                         />
 
                         <v-row class="mt-2">
@@ -37,38 +43,65 @@
                                     max="20"
                                     placeholder="Auto"
                                     clearable
+                                    hint="Limits how many subtasks are created. Leave empty to let the system decide. Lower = faster but less thorough."
+                                    persistent-hint
                                 />
                             </v-col>
                             <v-col cols="12" sm="4" class="d-flex align-center">
-                                <v-switch
-                                    v-model="allowWrite"
-                                    label="Allow write"
-                                    color="warning"
-                                    density="compact"
-                                    hide-details
-                                />
+                                <v-tooltip
+                                    text="⚠ When enabled, all subtask agents can create, modify, and delete files on the server's filesystem. Leave off unless needed."
+                                    location="top"
+                                    max-width="320"
+                                >
+                                    <template #activator="{ props: tooltipProps }">
+                                        <v-switch
+                                            v-bind="tooltipProps"
+                                            v-model="allowWrite"
+                                            label="Allow write"
+                                            color="warning"
+                                            density="compact"
+                                            hide-details
+                                        />
+                                    </template>
+                                </v-tooltip>
                             </v-col>
                         </v-row>
                     </v-card-text>
                     <v-card-actions>
-                        <v-btn
-                            color="primary"
-                            :loading="swarmStore.loading && !swarmStore.streaming"
-                            :disabled="!taskInput.trim() || swarmStore.streaming"
-                            @click="submitJson"
+                        <v-tooltip
+                            text="Waits for all subtasks to complete, then returns the full result with per-subtask breakdowns."
+                            location="top"
                         >
-                            <v-icon start>mdi-sitemap</v-icon>
-                            Run Swarm
-                        </v-btn>
-                        <v-btn
-                            color="secondary"
-                            :loading="swarmStore.streaming"
-                            :disabled="!taskInput.trim() || (swarmStore.loading && !swarmStore.streaming)"
-                            @click="submitStream"
+                            <template #activator="{ props: tooltipProps }">
+                                <v-btn
+                                    v-bind="tooltipProps"
+                                    color="primary"
+                                    :loading="swarmStore.loading && !swarmStore.streaming"
+                                    :disabled="!taskInput.trim() || swarmStore.streaming"
+                                    @click="submitJson"
+                                >
+                                    <v-icon start>mdi-sitemap</v-icon>
+                                    Run Swarm
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
+                        <v-tooltip
+                            text="Shows live events as subtasks start, complete, and the final synthesis happens."
+                            location="top"
                         >
-                            <v-icon start>mdi-antenna</v-icon>
-                            Run Swarm (Stream)
-                        </v-btn>
+                            <template #activator="{ props: tooltipProps }">
+                                <v-btn
+                                    v-bind="tooltipProps"
+                                    color="secondary"
+                                    :loading="swarmStore.streaming"
+                                    :disabled="!taskInput.trim() || (swarmStore.loading && !swarmStore.streaming)"
+                                    @click="submitStream"
+                                >
+                                    <v-icon start>mdi-antenna</v-icon>
+                                    Run Swarm (Stream)
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
                     </v-card-actions>
                 </v-card>
 
@@ -127,6 +160,10 @@
                     class="mt-4"
                 >
                     <v-card-title>Subtask Breakdown</v-card-title>
+                    <v-card-subtitle>
+                        Each subtask ran independently with its own agent loop.
+                        Expand a row to see the individual answer.
+                    </v-card-subtitle>
                     <v-card-text>
                         <v-expansion-panels>
                             <v-expansion-panel
@@ -205,10 +242,13 @@ import CopyButton from '@/components/shared/CopyButton.vue';
 const swarmStore = useSwarmStore();
 
 const taskInput = ref('');
+// 'auto' maps to undefined in API calls — lets the model router choose per subtask
 const selectedProfile = ref<ModelProfile | 'auto'>('auto');
+// Default false: write access is dangerous — all subtask agents share this flag
 const allowWrite = ref(false);
 const maxSubtasks = ref<number | undefined>(undefined);
 const latestResult = ref<ISwarmHistoryEntry | undefined>(undefined);
+// Tracks whether a stream has completed so the event timeline stays visible afterwards
 const streamFinished = ref(false);
 
 const profileOptions = [
@@ -233,6 +273,7 @@ async function submitJson(): Promise<void> {
     if (!task) return;
 
     streamFinished.value = false;
+    // Map 'auto' sentinel to undefined so the model router picks per subtask
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
     const result = await swarmStore.submitSwarm(
         task,
@@ -251,6 +292,7 @@ async function submitStream(): Promise<void> {
     if (!task) return;
 
     streamFinished.value = false;
+    // Map 'auto' sentinel to undefined so the model router picks per subtask
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
     const result = await swarmStore.submitSwarmStream(
         task,
@@ -258,6 +300,7 @@ async function submitStream(): Promise<void> {
         allowWrite.value,
         maxSubtasks.value
     );
+    // Mark finished so the event timeline stays visible after streaming ends
     streamFinished.value = true;
     if (result) {
         latestResult.value = result;

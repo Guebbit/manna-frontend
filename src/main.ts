@@ -1,3 +1,12 @@
+/**
+ * @module main
+ *
+ * Application entry point.
+ *
+ * Wires together Vue 3, Pinia, Vue Router, and Vuetify, then mounts the root
+ * component onto `#app`.  The Vuetify theme defaults to dark mode with Manna's
+ * brand colours (deep-purple primary, blue secondary).
+ */
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 

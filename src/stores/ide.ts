@@ -1,13 +1,18 @@
+/**
+ * @module stores/ide
+ *
+ * Pinia store for the three direct IDE code-intelligence endpoints.
+ *
+ * Unlike the agent and swarm stores, these endpoints bypass the agentic loop
+ * entirely and call specialised backend routes directly:
+ * - `/autocomplete`     — Fill-in-the-middle code completion (code-specialised model).
+ * - `/lint-conventions` — Deterministic linting + optional LLM review pass.
+ * - `/page-review`      — Holistic AI-powered review of an entire source file.
+ *
+ * The direct-to-model approach gives lower latency at the cost of not having tool
+ * access.  These endpoints are optimised for interactive IDE-style use cases.
+ */
 import { defineStore } from 'pinia';
-import { computed, reactive, ref } from 'vue';
-import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
-import type {
-    IAutocompleteResponse,
-    ILintConventionsResponse,
-    IPageReviewResponse
-} from '@/api/types';
-import { autocomplete, lintConventions, pageReview, ApiError } from '@/api/manna';
-import { useNotificationsStore, TOAST_TYPE } from './notification';
 
 /**
  * Pinia store managing IDE code-intelligence operations

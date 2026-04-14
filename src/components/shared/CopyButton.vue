@@ -14,6 +14,15 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * CopyButton — an icon button that copies a text string to the clipboard.
+ *
+ * Shows a check-mark icon with a success colour for 2 seconds after a successful
+ * copy to give the user visual confirmation.  Silently ignores clipboard errors
+ * (e.g. non-secure context).
+ *
+ * @prop text - The string to write to the clipboard on click.
+ */
 import { ref } from 'vue';
 
 const props = defineProps<{

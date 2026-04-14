@@ -1,3 +1,13 @@
+/**
+ * @module stores/notification
+ *
+ * Re-exports the `useNotificationsStore` from `@guebbit/vue-toolkit` with a
+ * locally typed `addMessage` signature so that all call-sites can use the
+ * project-specific `EToastType` / `TOAST_TYPE` enum without type-cast noise.
+ *
+ * Import from this module (not from the toolkit directly) whenever you need
+ * to show a notification toast in a store or component.
+ */
 import { useNotificationsStore as _useNotificationsStore } from '@guebbit/vue-toolkit';
 
 /**

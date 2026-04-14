@@ -1,6 +1,10 @@
 <template>
     <div>
-        <h1 class="text-h4 mb-6">Code Tools</h1>
+        <h1 class="text-h4 mb-2">Code Tools</h1>
+        <p class="text-body-2 text-grey mb-6">
+            Direct IDE endpoints — fast, single-purpose code intelligence. These bypass the
+            agent loop for lower latency, calling specialised models directly.
+        </p>
 
         <v-tabs v-model="activeTab" color="primary">
             <v-tab value="autocomplete">Autocomplete</v-tab>
@@ -20,6 +24,8 @@
                             variant="outlined"
                             density="compact"
                             class="mb-3"
+                            hint="Helps the model produce syntax-correct completions for your language."
+                            persistent-hint
                         />
                         <v-textarea
                             v-model="autoPrefix"
@@ -27,6 +33,8 @@
                             variant="outlined"
                             rows="6"
                             class="code-textarea"
+                            hint="The code before your cursor position. The model continues writing from here."
+                            persistent-hint
                         />
                         <v-textarea
                             v-model="autoSuffix"
@@ -34,6 +42,8 @@
                             variant="outlined"
                             rows="3"
                             class="code-textarea"
+                            hint="The code after your cursor. Enables fill-in-the-middle (FIM) mode for better context-aware completions."
+                            persistent-hint
                         />
                     </v-card-text>
                     <v-card-actions>
@@ -54,9 +64,16 @@
                         Completion
                         <v-spacer />
                         <CopyButton :text="ideStore.autocompleteResult.completion" />
-                        <v-chip size="small" class="ml-2">
-                            {{ ideStore.autocompleteResult.latencyMs }}ms
-                        </v-chip>
+                        <v-tooltip
+                            text="Round-trip time including model inference. Powered by a fast code-specialised model."
+                            location="top"
+                        >
+                            <template #activator="{ props: tooltipProps }">
+                                <v-chip v-bind="tooltipProps" size="small" class="ml-2">
+                                    {{ ideStore.autocompleteResult.latencyMs }}ms
+                                </v-chip>
+                            </template>
+                        </v-tooltip>
                     </v-card-title>
                     <v-card-text>
                         <pre class="completion-result">{{
@@ -98,12 +115,21 @@
                         />
                         <v-row class="mt-1">
                             <v-col cols="auto">
-                                <v-switch
-                                    v-model="lintIncludeLlm"
-                                    label="Include LLM analysis"
-                                    density="compact"
-                                    hide-details
-                                />
+                                <v-tooltip
+                                    text="When off, only deterministic TypeScript/convention rules run (fastest). When on, an AI model also reviews the code for style, bugs, and best practices."
+                                    location="top"
+                                    max-width="320"
+                                >
+                                    <template #activator="{ props: tooltipProps }">
+                                        <v-switch
+                                            v-bind="tooltipProps"
+                                            v-model="lintIncludeLlm"
+                                            label="Include LLM analysis"
+                                            density="compact"
+                                            hide-details
+                                        />
+                                    </template>
+                                </v-tooltip>
                             </v-col>
                             <v-col cols="12" sm="4">
                                 <v-slider
@@ -113,6 +139,8 @@
                                     :max="200"
                                     :step="1"
                                     thumb-label
+                                    hint="Cap the number of reported issues. Useful for large files."
+                                    persistent-hint
                                 />
                             </v-col>
                         </v-row>
@@ -168,7 +196,16 @@
                                             {{ finding.severity }}
                                         </v-chip>
                                     </td>
-                                    <td>{{ finding.source }}</td>
+                                    <td>
+                                        <v-tooltip
+                                            :text="sourceTooltip(finding.source)"
+                                            location="top"
+                                        >
+                                            <template #activator="{ props: tooltipProps }">
+                                                <span v-bind="tooltipProps">{{ finding.source }}</span>
+                                            </template>
+                                        </v-tooltip>
+                                    </td>
                                     <td>{{ finding.message }}</td>
                                     <td>{{ finding.line ?? '–' }}</td>
                                     <td class="text-caption">{{ finding.rule ?? '–' }}</td>
@@ -222,6 +259,8 @@
                             label="Project context (optional)"
                             variant="outlined"
                             rows="2"
+                            hint="Describe your project briefly (e.g. 'Vue 3 SPA with Pinia stores') so the reviewer gives more relevant, targeted suggestions."
+                            persistent-hint
                         />
                     </v-card-text>
                     <v-card-actions>
@@ -258,12 +297,20 @@
                                     <v-card-title class="text-subtitle-2 d-flex align-center">
                                         {{ suggestion.title }}
                                         <v-spacer />
-                                        <v-chip
-                                            size="x-small"
-                                            :color="priorityColor(suggestion.priority)"
+                                        <v-tooltip
+                                            :text="priorityTooltip(suggestion.priority)"
+                                            location="top"
                                         >
-                                            {{ suggestion.priority }}
-                                        </v-chip>
+                                            <template #activator="{ props: tooltipProps }">
+                                                <v-chip
+                                                    v-bind="tooltipProps"
+                                                    size="x-small"
+                                                    :color="priorityColor(suggestion.priority)"
+                                                >
+                                                    {{ suggestion.priority }}
+                                                </v-chip>
+                                            </template>
+                                        </v-tooltip>
                                     </v-card-title>
                                     <v-card-text class="text-body-2">
                                         {{ suggestion.detail }}
@@ -364,6 +411,24 @@ function severityColor(severity: string): string {
 function priorityColor(priority: string): string {
     const map: Record<string, string> = { high: 'error', medium: 'warning', low: 'success' };
     return map[priority] ?? 'grey';
+}
+
+function sourceTooltip(source: string): string {
+    const map: Record<string, string> = {
+        typescript: 'Compiler diagnostic (type error, syntax error)',
+        convention: 'Rule-based convention check (naming, formatting, imports)',
+        llm: 'AI-powered suggestion — goes beyond what static analysis can detect'
+    };
+    return map[source] ?? source;
+}
+
+function priorityTooltip(priority: string): string {
+    const map: Record<string, string> = {
+        high: 'Should fix before merging — correctness or security concern',
+        medium: 'Recommended improvement — improves quality or maintainability',
+        low: 'Nice-to-have polish — minor style or enhancement suggestion'
+    };
+    return map[priority] ?? priority;
 }
 
 const reviewCategories = computed(() => {

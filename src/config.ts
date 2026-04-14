@@ -1,4 +1,18 @@
 /**
+ * @module config
+ *
+ * Runtime configuration helpers for the Manna frontend.
+ *
+ * The backend URL is resolved in priority order:
+ * 1. `localStorage` key `'manna-base-url'` — set by the Settings view.
+ * 2. `VITE_MANNA_URL` environment variable — set at build time.
+ * 3. Hardcoded fallback `http://localhost:3001`.
+ *
+ * Settings are persisted in `localStorage` so they survive page reloads.
+ * No other state is persisted here — all runtime state lives in Pinia stores.
+ */
+
+/**
  * Retrieves the Manna backend base URL from localStorage, environment, or fallback default.
  *
  * @returns The configured backend URL string.

@@ -17,6 +17,19 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * FileDropZone — a drag-and-drop + click-to-browse file picker.
+ *
+ * Emits a single `file` event with the selected `File` object.  Supports both
+ * drag-and-drop and the native file picker (click to open).  The `accept` prop
+ * is forwarded directly to the hidden `<input type="file">`.
+ *
+ * @prop accept - MIME type or extension filter for the file picker (e.g. `'image/*'`).
+ * @prop label  - Primary label text shown in the drop zone.
+ * @prop hint   - Secondary hint text shown below the label.
+ *
+ * @emits file - Emitted with the chosen `File` when the user selects or drops a file.
+ */
 import { ref } from 'vue';
 
 defineProps<{

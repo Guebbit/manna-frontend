@@ -1,6 +1,10 @@
 <template>
     <div>
-        <h1 class="text-h4 mb-6">Upload &amp; Analyze</h1>
+        <h1 class="text-h4 mb-2">Upload &amp; Analyze</h1>
+        <p class="text-body-2 text-grey mb-6">
+            Upload files for AI-powered analysis: classify images with a vision model,
+            transcribe audio with Whisper, or extract text from PDFs (fast and deterministic).
+        </p>
 
         <v-tabs v-model="activeTab" color="primary">
             <v-tab value="image">Image Classify</v-tab>
@@ -36,12 +40,16 @@
                             variant="outlined"
                             density="compact"
                             class="mt-3"
+                            hint="Override the default prompt. E.g. 'Describe all text visible in this image' or 'Is this a cat or a dog?'."
+                            persistent-hint
                         />
                         <v-text-field
                             v-model="imageModel"
                             label="Model override (optional)"
                             variant="outlined"
                             density="compact"
+                            hint="Leave empty to use the default vision model. Specify an Ollama multimodal model name to override (e.g. llava:13b)."
+                            persistent-hint
                         />
                     </v-card-text>
                     <v-card-actions>
@@ -95,6 +103,8 @@
                                     label="Language hint (e.g. en, it)"
                                     variant="outlined"
                                     density="compact"
+                                    hint="ISO 639-1 code (e.g. 'en', 'it', 'de'). Helps Whisper produce more accurate transcriptions."
+                                    persistent-hint
                                 />
                             </v-col>
                             <v-col cols="12" sm="4">
@@ -111,6 +121,8 @@
                                     label="Context prompt"
                                     variant="outlined"
                                     density="compact"
+                                    hint="Provide domain-specific vocabulary or context to improve accuracy (e.g. technical terms, proper nouns)."
+                                    persistent-hint
                                 />
                             </v-col>
                         </v-row>
@@ -147,7 +159,7 @@
                         <FileDropZone
                             accept="application/pdf"
                             label="Drop a PDF file here or click to browse"
-                            hint="PDF files — max 50 MB"
+                            hint="PDF files — max 50 MB. Text is extracted without AI — fast and deterministic."
                             @file="onPdfFile"
                         />
                         <div v-if="pdfFile" class="mt-3">

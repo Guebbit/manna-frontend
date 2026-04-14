@@ -3,6 +3,15 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * MarkdownRenderer — renders a Markdown string as safe HTML with syntax highlighting.
+ *
+ * Uses `marked` for Markdown-to-HTML conversion and `highlight.js` for code-block
+ * syntax highlighting (GitHub Dark theme).  The rendered HTML is injected via
+ * `v-html`; never pass untrusted user-controlled Markdown without sanitising first.
+ *
+ * @prop content - The Markdown string to render.  An empty string renders nothing.
+ */
 import { computed } from 'vue';
 import { Marked } from 'marked';
 import { markedHighlight } from 'marked-highlight';
