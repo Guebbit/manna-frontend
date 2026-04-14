@@ -13,6 +13,16 @@
  *   router selects the best profile per agent step; users can also force a profile manually.
  */
 import { defineStore } from 'pinia';
+import { computed, ref } from 'vue';
+import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
+import type {
+    IHealthResponse,
+    IOpenAiModelObject,
+    IInfoMode,
+    IInfoModel,
+    IHelpResponse
+} from '@/api/types';
+import { healthCheck, listModels, fetchInfoModes, fetchInfoModels, fetchHelp } from '@/api/manna';
 
 /**
  * Pinia store managing backend health status, available model list,

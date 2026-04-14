@@ -13,6 +13,15 @@
  * access.  These endpoints are optimised for interactive IDE-style use cases.
  */
 import { defineStore } from 'pinia';
+import { computed, reactive, ref } from 'vue';
+import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
+import type {
+    IAutocompleteResponse,
+    ILintConventionsResponse,
+    IPageReviewResponse
+} from '@/api/types';
+import { autocomplete, lintConventions, pageReview, ApiError } from '@/api/manna';
+import { useNotificationsStore, TOAST_TYPE } from './notification';
 
 /**
  * Pinia store managing IDE code-intelligence operations
@@ -43,11 +52,7 @@ export const useIdeStore = defineStore('ide', () => {
      * @param suffix   - Optional code text after the cursor.
      * @param language - Optional language identifier for context.
      */
-    const submitAutocomplete = (
-        prefix: string,
-        suffix?: string,
-        language?: string
-    ) => {
+    const submitAutocomplete = (prefix: string, suffix?: string, language?: string) => {
         const notificationStore = useNotificationsStore();
         return fetchAny(
             () =>

@@ -16,6 +16,12 @@
  *   will be empty.  Use `submitSwarm()` when you need the per-subtask details.
  */
 import { defineStore } from 'pinia';
+import { ref } from 'vue';
+import { v4 as uuidv4 } from 'uuid';
+import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
+import type { ModelProfile, ISwarmResponse, SwarmStreamEvent } from '@/api/types';
+import { runSwarm, runSwarmStream, ApiError } from '@/api/manna';
+import { useNotificationsStore, TOAST_TYPE } from './notification';
 
 /** A historical record of a submitted swarm task and its outcome. */
 export interface ISwarmHistoryEntry {
@@ -61,24 +67,23 @@ export const useSwarmStore = defineStore('swarm', () => {
         maxSubtasks?: number
     ): Promise<ISwarmHistoryEntry | undefined> => {
         const notificationStore = useNotificationsStore();
-        return fetchAny(
-            () =>
-                runSwarm({ task, profile, allowWrite, maxSubtasks }).then((response) => {
-                    const entry: ISwarmHistoryEntry = {
-                        id: uuidv4(),
-                        task,
-                        result: response.result,
-                        profile,
-                        allowWrite,
-                        maxSubtasks,
-                        subtaskCount: response.subtaskResults.length,
-                        totalDurationMs: response.totalDurationMs,
-                        timestamp: new Date().toISOString(),
-                        response
-                    };
-                    swarmHistory.value.unshift(entry);
-                    return entry;
-                })
+        return fetchAny(() =>
+            runSwarm({ task, profile, allowWrite, maxSubtasks }).then((response) => {
+                const entry: ISwarmHistoryEntry = {
+                    id: uuidv4(),
+                    task,
+                    result: response.result,
+                    profile,
+                    allowWrite,
+                    maxSubtasks,
+                    subtaskCount: response.subtaskResults.length,
+                    totalDurationMs: response.totalDurationMs,
+                    timestamp: new Date().toISOString(),
+                    response
+                };
+                swarmHistory.value.unshift(entry);
+                return entry;
+            })
         ).catch((error: unknown) => {
             if (error instanceof ApiError && error.retryAfterSeconds) {
                 notificationStore.addMessage(
