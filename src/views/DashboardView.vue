@@ -4,12 +4,10 @@
 
         <!-- Welcome banner — gives first-time users a quick overview of what Manna offers -->
         <v-alert type="info" variant="tonal" class="mb-6" closable>
-            <strong>Welcome to Manna</strong> — a local-first AI agent platform.
-            Use the sidebar to access different tools:
-            <strong>Chat</strong> for conversations,
-            <strong>Agent</strong> for autonomous task execution,
-            <strong>Swarm</strong> for multi-agent complex tasks,
-            <strong>Code Tools</strong> for IDE features, and
+            <strong>Welcome to Manna</strong> — a local-first AI agent platform. Use the sidebar to
+            access different tools: <strong>Chat</strong> for conversations,
+            <strong>Agent</strong> for autonomous task execution, <strong>Swarm</strong> for
+            multi-agent complex tasks, <strong>Code Tools</strong> for IDE features, and
             <strong>Upload</strong> for file analysis.
         </v-alert>
 
@@ -97,11 +95,7 @@
                         Quick Actions
                     </v-card-title>
                     <v-card-text>
-                        <div
-                            v-for="action in quickActions"
-                            :key="action.to"
-                            class="mb-3"
-                        >
+                        <div v-for="action in quickActions" :key="action.to" class="mb-3">
                             <v-btn
                                 :to="action.to"
                                 :prepend-icon="action.icon"
@@ -126,12 +120,52 @@ import HealthBadge from '@/components/shared/HealthBadge.vue';
 const systemStore = useSystemStore();
 
 const quickActions = [
-    { label: 'Chat', icon: 'mdi-chat', to: '/chat', description: 'OpenAI-compatible chat. Use the \'manna\' model for tool-enabled agentic conversations.' },
-    { label: 'Agent', icon: 'mdi-robot', to: '/agent', description: 'Autonomous task execution. The agent reasons step-by-step and calls tools to complete your request.' },
-    { label: 'Code', icon: 'mdi-code-braces', to: '/code', description: 'Fast IDE tools: code completion, lint analysis, and AI-powered page review.' },
-    { label: 'Upload', icon: 'mdi-upload', to: '/upload', description: 'Classify images, transcribe audio, or extract text from PDFs using specialised AI models.' },
-    { label: 'Swarm', icon: 'mdi-sitemap', to: '/swarm', description: 'Break a complex task into subtasks, run them across multiple agents in parallel, and synthesise the results.' },
-    { label: 'Workflow', icon: 'mdi-list-status', to: '/workflow' },
-    { label: 'System Info', icon: 'mdi-information-outline', to: '/system', description: 'View routing profiles, loaded Ollama models, and the complete API reference.' }
+    {
+        label: 'Chat',
+        icon: 'mdi-chat',
+        to: '/chat',
+        description:
+            "OpenAI-compatible chat. Use the 'manna' model for tool-enabled agentic conversations."
+    },
+    {
+        label: 'Agent',
+        icon: 'mdi-robot',
+        to: '/agent',
+        description:
+            'Autonomous task execution. The agent reasons step-by-step and calls tools to complete your request.'
+    },
+    {
+        label: 'Code',
+        icon: 'mdi-code-braces',
+        to: '/code',
+        description: 'Fast IDE tools: code completion, lint analysis, and AI-powered page review.'
+    },
+    {
+        label: 'Upload',
+        icon: 'mdi-upload',
+        to: '/upload',
+        description:
+            'Classify images, transcribe audio, or extract text from PDFs using specialised AI models.'
+    },
+    {
+        label: 'Swarm',
+        icon: 'mdi-sitemap',
+        to: '/swarm',
+        description:
+            'Break a complex task into subtasks, run them across multiple agents in parallel, and synthesise the results.'
+    },
+    {
+        label: 'Workflow',
+        icon: 'mdi-list-status',
+        to: '/workflow',
+        description:
+            'Define and execute multi-step pipelines with conditional logic, branching, and sequential or parallel task orchestration.'
+    },
+    {
+        label: 'System Info',
+        icon: 'mdi-information-outline',
+        to: '/system',
+        description: 'View routing profiles, loaded Ollama models, and the complete API reference.'
+    }
 ];
 </script>
