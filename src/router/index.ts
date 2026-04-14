@@ -45,6 +45,11 @@ const router = createRouter({
                     component: () => import('@/views/SwarmView.vue')
                 },
                 {
+                    path: 'workflow',
+                    name: 'workflow',
+                    component: () => import('@/views/WorkflowView.vue')
+                },
+                {
                     path: 'system',
                     name: 'system-info',
                     component: () => import('@/views/SystemInfoView.vue')

@@ -115,6 +115,7 @@ const quickActions = [
     { label: 'Code', icon: 'mdi-code-braces', to: '/code' },
     { label: 'Upload', icon: 'mdi-upload', to: '/upload' },
     { label: 'Swarm', icon: 'mdi-sitemap', to: '/swarm' },
+    { label: 'Workflow', icon: 'mdi-list-status', to: '/workflow' },
     { label: 'System Info', icon: 'mdi-information-outline', to: '/system' }
 ];
 </script>
