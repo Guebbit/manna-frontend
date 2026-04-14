@@ -214,7 +214,7 @@
                             @click="latestResult = entry"
                         >
                             <v-list-item-title class="text-truncate">
-                                {{ entry.steps[0] }}
+                                {{ entry.steps[0] ?? '(empty workflow)' }}
                                 <span v-if="entry.steps.length > 1" class="text-grey">
                                     + {{ entry.steps.length - 1 }} more
                                 </span>
