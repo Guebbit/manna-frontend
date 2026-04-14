@@ -13,7 +13,13 @@
  * Messages are streamed via SSE so the UI updates token-by-token.
  */
 import { defineStore } from 'pinia';
-
+import { ref, computed } from 'vue';
+import { v4 as uuidv4 } from 'uuid';
+import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
+import type { IOpenAiChatMessage } from '@/api/types';
+import { streamChat } from '@/api/manna';
+import { useNotificationsStore } from '@guebbit/vue-toolkit';
+import { ApiError } from '@/api/manna';
 
 /** A single chat conversation with its messages and metadata. */
 export interface IConversation {
@@ -109,37 +115,35 @@ export const useChatStore = defineStore('chat', () => {
         // Capture reference for use inside async callback
         const conversation = conversationReference;
 
-        return fetchAny(
-            async () => {
-                streaming.value = true;
-                try {
-                    const generator = streamChat({
-                        model: conversation.model,
-                        messages: conversation.messages.slice(0, -1),
-                        allowWrite
-                    });
+        return fetchAny(async () => {
+            streaming.value = true;
+            try {
+                const generator = streamChat({
+                    model: conversation.model,
+                    messages: conversation.messages.slice(0, -1),
+                    allowWrite
+                });
 
-                    for await (const chunk of generator) {
-                        const message = conversation.messages[assistantIndex];
-                        if (message && typeof message.content === 'string') {
-                            message.content += chunk;
-                        }
+                for await (const chunk of generator) {
+                    const message = conversation.messages[assistantIndex];
+                    if (message && typeof message.content === 'string') {
+                        message.content += chunk;
                     }
-                } catch (error: unknown) {
-                    conversation.messages.splice(assistantIndex, 1);
-                    throw error;
-                } finally {
-                    streaming.value = false;
                 }
+            } catch (error: unknown) {
+                conversation.messages.splice(assistantIndex, 1);
+                throw error;
+            } finally {
+                streaming.value = false;
             }
-        ).catch((error: unknown) => {
+        }).catch((error: unknown) => {
             if (error instanceof ApiError && error.retryAfterSeconds) {
                 notificationStore.addMessage(
-                    `Rate limited. Retry in ${String(error.retryAfterSeconds)}s`,
+                    `Rate limited. Retry in ${String(error.retryAfterSeconds)}s`
                 );
             } else {
                 notificationStore.addMessage(
-                    error instanceof Error ? error.message : 'Failed to send message',
+                    error instanceof Error ? error.message : 'Failed to send message'
                 );
             }
         });

@@ -14,6 +14,12 @@
  * at the start of each new submission.
  */
 import { defineStore } from 'pinia';
+import { ref } from 'vue';
+import { v4 as uuidv4 } from 'uuid';
+import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
+import type { ModelProfile, AgentStreamEvent } from '@/api/types';
+import { runTask, runTaskStream, ApiError } from '@/api/manna';
+import { useNotificationsStore, TOAST_TYPE } from './notification';
 
 /** A historical record of a submitted agent task and its outcome. */
 export interface ITaskHistoryEntry {
@@ -53,20 +59,19 @@ export const useAgentStore = defineStore('agent', () => {
         allowWrite = false
     ): Promise<ITaskHistoryEntry | undefined> => {
         const notificationStore = useNotificationsStore();
-        return fetchAny(
-            () =>
-                runTask({ task, profile, allowWrite }).then((response) => {
-                    const entry: ITaskHistoryEntry = {
-                        id: uuidv4(),
-                        task,
-                        result: response.result,
-                        profile,
-                        allowWrite,
-                        timestamp: new Date().toISOString()
-                    };
-                    taskHistory.value.unshift(entry);
-                    return entry;
-                })
+        return fetchAny(() =>
+            runTask({ task, profile, allowWrite }).then((response) => {
+                const entry: ITaskHistoryEntry = {
+                    id: uuidv4(),
+                    task,
+                    result: response.result,
+                    profile,
+                    allowWrite,
+                    timestamp: new Date().toISOString()
+                };
+                taskHistory.value.unshift(entry);
+                return entry;
+            })
         ).catch((error: unknown) => {
             if (error instanceof ApiError && error.retryAfterSeconds) {
                 notificationStore.addMessage(

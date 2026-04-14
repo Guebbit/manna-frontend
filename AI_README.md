@@ -116,7 +116,7 @@ src/
 ### 3.3 Naming Conventions (enforced by ESLint)
 
 | Artifact         | Convention       | Example           |
-| ---------------- | ---------------- |-------------------|
+| ---------------- | ---------------- | ----------------- |
 | Vue components   | `PascalCase.vue` | `HealthBadge.vue` |
 | TypeScript files | `camelCase.ts`   | `agent.ts`        |
 | Test files       | `*.spec.ts`      | `chat.spec.ts`    |
@@ -154,6 +154,20 @@ npm run complete:check   # build + unit tests + lint + prettier check
 | Handle errors via `ApiError` + notifications | Use bare `try/catch` that swallows |
 | One responsibility per file                  | Mix API calls, state, and UI logic |
 | Run `npm run complete:check` before pushing  | Push without checking              |
+
+---
+
+## 5. Mandatory Final Check
+
+> **RULE — Every AI-assisted flow MUST end with:**
+>
+> ```bash
+> npm run complete:check
+> ```
+>
+> This command runs `build + unit tests + lint + prettier check` in sequence.
+> If **any** step fails, the issues **must** be fixed before the flow is considered done.
+> Never skip this step and never push code that does not pass `complete:check`.
 
 ---
 

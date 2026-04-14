@@ -12,6 +12,11 @@
  *   `pdf-parse` (no AI involved — fast and deterministic).
  */
 import { defineStore } from 'pinia';
+import { computed, reactive, ref } from 'vue';
+import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
+import type { IImageClassifyResponse, ISpeechToTextResponse, IReadPdfResponse } from '@/api/types';
+import { uploadImageClassify, uploadSpeechToText, uploadReadPdf, ApiError } from '@/api/manna';
+import { useNotificationsStore, TOAST_TYPE } from './notification';
 
 /**
  * Pinia store managing file upload operations
@@ -68,12 +73,7 @@ export const useUploadStore = defineStore('upload', () => {
      * @param language - Optional language hint for the transcription engine.
      * @param prompt   - Optional prompt to guide transcription.
      */
-    const transcribeAudio = (
-        file: File,
-        model?: string,
-        language?: string,
-        prompt?: string
-    ) => {
+    const transcribeAudio = (file: File, model?: string, language?: string, prompt?: string) => {
         const notificationStore = useNotificationsStore();
         return fetchAny(
             () =>
