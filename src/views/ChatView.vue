@@ -52,18 +52,28 @@
                     :items="modelOptions"
                     density="compact"
                     variant="outlined"
-                    hide-details
                     style="max-width: 250px"
                     label="Model"
+                    hint="'manna' = agentic loop with tools. Specific model names (e.g. llama3.1:8b) = direct Ollama inference."
+                    persistent-hint
                 />
-                <v-switch
-                    v-model="allowWrite"
-                    label="Write mode"
-                    density="compact"
-                    color="warning"
-                    hide-details
-                    class="flex-grow-0"
-                />
+                <v-tooltip
+                    text="Grants the agentic loop permission to modify files. Only applies when using 'manna' models."
+                    location="top"
+                    max-width="280"
+                >
+                    <template #activator="{ props: tooltipProps }">
+                        <v-switch
+                            v-bind="tooltipProps"
+                            v-model="allowWrite"
+                            label="Write mode"
+                            density="compact"
+                            color="warning"
+                            hide-details
+                            class="flex-grow-0"
+                        />
+                    </template>
+                </v-tooltip>
             </v-card-title>
 
             <v-divider />
@@ -77,7 +87,12 @@
                     <div class="text-center text-grey">
                         <v-icon size="64" class="mb-4">mdi-chat-outline</v-icon>
                         <p class="text-h6">Start a new conversation</p>
-                        <p class="text-body-2">Select a model and type a message below</p>
+                        <p class="text-body-2 mb-2">Select a model and type a message below.</p>
+                        <p class="text-body-2">
+                            Chat uses the OpenAI-compatible endpoint.
+                            Selecting <strong>manna</strong> routes through the full agentic loop with tool access.
+                            Other model names go directly to Ollama for plain inference.
+                        </p>
                     </div>
                 </div>
 
@@ -153,6 +168,7 @@ const chatStore = useChatStore();
 const systemStore = useSystemStore();
 
 const userInput = ref('');
+// Default false: write mode only has effect when model is 'manna' / agentic
 const allowWrite = ref(false);
 const messagesContainer = ref<HTMLElement | undefined>(undefined);
 

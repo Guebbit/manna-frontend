@@ -23,6 +23,11 @@
                             <v-icon>mdi-refresh</v-icon>
                         </v-btn>
                     </v-card-title>
+                    <v-card-subtitle>
+                        Each profile maps to a specific Ollama model optimised for different
+                        workloads. The model router automatically selects the best profile per
+                        agent step, or you can force one manually in Agent / Swarm views.
+                    </v-card-subtitle>
                     <v-card-text v-if="systemStore.modes.length === 0" class="text-grey">
                         No routing profiles loaded. Click refresh to fetch.
                     </v-card-text>
@@ -73,6 +78,10 @@
                             <v-icon>mdi-refresh</v-icon>
                         </v-btn>
                     </v-card-title>
+                    <v-card-subtitle>
+                        All models currently loaded in the local Ollama instance.
+                        These are the actual LLMs available for inference.
+                    </v-card-subtitle>
                     <v-card-text v-if="systemStore.ollamaBaseUrl" class="text-caption text-grey pb-0">
                         Ollama: {{ systemStore.ollamaBaseUrl }}
                     </v-card-text>
@@ -127,6 +136,10 @@
                             <v-icon>mdi-refresh</v-icon>
                         </v-btn>
                     </v-card-title>
+                    <v-card-subtitle>
+                        Complete list of backend HTTP endpoints.
+                        Use this as a reference for direct API integration.
+                    </v-card-subtitle>
                     <v-card-text v-if="!systemStore.help" class="text-grey">
                         API reference not loaded. Click refresh to fetch.
                     </v-card-text>

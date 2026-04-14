@@ -1,10 +1,19 @@
+/**
+ * @module stores/agent
+ *
+ * Pinia store for autonomous agent task submission and history.
+ *
+ * Two submission modes are available:
+ * - {@link useAgentStore.submitTask}       — Waits for the complete JSON result before
+ *   resolving.  Use when you only care about the final answer.
+ * - {@link useAgentStore.submitTaskStream} — Connects to the SSE endpoint and populates
+ *   `streamEvents` reactively as the agent reasons and uses tools.  Use when you want to
+ *   show live progress to the user.
+ *
+ * The `streamEvents` array grows in real time during an active stream and is reset to `[]`
+ * at the start of each new submission.
+ */
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
-import { v4 as uuidv4 } from 'uuid';
-import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
-import type { ModelProfile, AgentStreamEvent } from '@/api/types';
-import { runTask, runTaskStream, ApiError } from '@/api/manna';
-import { useNotificationsStore, TOAST_TYPE } from './notification';
 
 /** A historical record of a submitted agent task and its outcome. */
 export interface ITaskHistoryEntry {

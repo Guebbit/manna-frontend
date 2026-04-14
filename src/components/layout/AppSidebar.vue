@@ -14,7 +14,9 @@
                 :prepend-icon="item.icon"
                 :title="item.title"
                 rounded="xl"
-            />
+            >
+                <v-tooltip v-if="rail" :text="item.title" location="end" activator="parent" />
+            </v-list-item>
         </v-list>
 
         <template #append>
@@ -47,6 +49,22 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * AppSidebar — the main application navigation drawer.
+ *
+ * Renders a Vuetify `v-navigation-drawer` with links to every major view.
+ * Supports a collapsed (`rail`) mode where only icons are shown, toggled via
+ * the chevron button in the footer area.
+ *
+ * The footer area also displays a live {@link HealthBadge} and the number of
+ * loaded models so the user always knows the backend connection state.
+ *
+ * @prop modelValue - Whether the drawer is open (v-model binding).
+ * @prop rail       - Whether the drawer is in collapsed rail mode.
+ *
+ * @emits update:modelValue - Emitted when the drawer open state changes.
+ * @emits update:rail       - Emitted when the rail mode is toggled.
+ */
 import { useSystemStore } from '@/stores/system';
 import HealthBadge from '@/components/shared/HealthBadge.vue';
 

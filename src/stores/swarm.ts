@@ -1,10 +1,21 @@
+/**
+ * @module stores/swarm
+ *
+ * Pinia store for multi-agent swarm task submission and history.
+ *
+ * The swarm pipeline follows three phases:
+ * 1. **Decompose** — an orchestrator LLM breaks the task into independent subtasks.
+ * 2. **Delegate**  — each subtask runs in its own agent loop (potentially in parallel).
+ * 3. **Synthesise** — the orchestrator merges all answers into one coherent result.
+ *
+ * Two submission modes are available:
+ * - {@link useSwarmStore.submitSwarm}       — Waits for the full JSON result including
+ *   per-subtask breakdowns (`subtaskResults`).
+ * - {@link useSwarmStore.submitSwarmStream} — Streams lifecycle events in real time.
+ *   Note: streaming mode does not deliver individual subtask payloads — `subtaskResults`
+ *   will be empty.  Use `submitSwarm()` when you need the per-subtask details.
+ */
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
-import { v4 as uuidv4 } from 'uuid';
-import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
-import type { ModelProfile, ISwarmResponse, SwarmStreamEvent } from '@/api/types';
-import { runSwarm, runSwarmStream, ApiError } from '@/api/manna';
-import { useNotificationsStore, TOAST_TYPE } from './notification';
 
 /** A historical record of a submitted swarm task and its outcome. */
 export interface ISwarmHistoryEntry {

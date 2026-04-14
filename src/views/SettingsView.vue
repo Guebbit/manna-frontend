@@ -14,7 +14,7 @@
                             v-model="apiUrl"
                             label="Manna API URL"
                             variant="outlined"
-                            hint="Default: http://localhost:3001"
+                            hint="The HTTP address of your Manna backend server. Default: http://localhost:3001. Change this if running Manna on a different host or port."
                             persistent-hint
                             @blur="saveUrl"
                         />
@@ -46,6 +46,8 @@
                             label="Default model profile"
                             variant="outlined"
                             density="compact"
+                            hint="Pre-selects this profile across all views. 'Auto' lets Manna's model router choose the best model per request."
+                            persistent-hint
                             @update:model-value="saveDefaults"
                         />
 
@@ -53,6 +55,8 @@
                             v-model="defaultWriteMode"
                             label="Default write mode (⚠ dangerous — allows file modifications)"
                             color="warning"
+                            hint="This default applies to new sessions. Each view can still override it independently."
+                            persistent-hint
                             @update:model-value="saveDefaults"
                         />
                     </v-card-text>
@@ -69,8 +73,10 @@
                         <p class="text-body-2 mb-2">
                             <strong>Manna</strong> is a local-first AI agent platform.
                         </p>
-                        <p class="text-caption text-grey">
-                            No authentication required. All data is stored in-memory.
+                        <p class="text-caption text-grey mb-2">
+                            No authentication required. All data is stored in-memory on the
+                            frontend (localStorage for settings only). The backend is stateless
+                            between restarts — conversation history lives in this browser tab only.
                         </p>
                         <v-divider class="my-3" />
                         <p class="text-caption">API: {{ apiUrl }}</p>

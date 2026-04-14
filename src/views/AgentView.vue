@@ -1,6 +1,10 @@
 <template>
     <div>
-        <h1 class="text-h4 mb-6">Agent Task</h1>
+        <h1 class="text-h4 mb-2">Agent Task</h1>
+        <p class="text-body-2 text-grey mb-6">
+            Give the agent a natural-language task. It will reason step-by-step, pick tools from
+            its registry, and execute them autonomously (up to 5 iterations).
+        </p>
 
         <v-row>
             <v-col cols="12" md="7">
@@ -14,6 +18,8 @@
                             variant="outlined"
                             rows="4"
                             auto-grow
+                            hint="Be specific: e.g. 'Read package.json and summarise all dependencies' or 'Search the web for Vue 3 best practices'."
+                            persistent-hint
                         />
 
                         <v-row class="mt-2">
@@ -24,38 +30,65 @@
                                     label="Model profile"
                                     variant="outlined"
                                     density="compact"
+                                    hint="Auto lets Manna's router pick the best model per step. Fast = low latency, Reasoning = complex tasks, Code = programming tasks."
+                                    persistent-hint
                                 />
                             </v-col>
                             <v-col cols="12" sm="6" class="d-flex align-center">
-                                <v-switch
-                                    v-model="allowWrite"
-                                    label="Allow write operations"
-                                    color="warning"
-                                    density="compact"
-                                    hide-details
-                                />
+                                <v-tooltip
+                                    text="⚠ When enabled, the agent can create, modify, and delete files on the server's filesystem. Leave off unless file modification is required."
+                                    location="top"
+                                    max-width="320"
+                                >
+                                    <template #activator="{ props: tooltipProps }">
+                                        <v-switch
+                                            v-bind="tooltipProps"
+                                            v-model="allowWrite"
+                                            label="Allow write operations"
+                                            color="warning"
+                                            density="compact"
+                                            hide-details
+                                        />
+                                    </template>
+                                </v-tooltip>
                             </v-col>
                         </v-row>
                     </v-card-text>
                     <v-card-actions>
-                        <v-btn
-                            color="primary"
-                            :loading="agentStore.loading && !agentStore.streaming"
-                            :disabled="!taskInput.trim() || agentStore.streaming"
-                            @click="submit"
+                        <v-tooltip
+                            text="Sends the task and waits for the complete result (no intermediate updates)."
+                            location="top"
                         >
-                            <v-icon start>mdi-play</v-icon>
-                            Run Task
-                        </v-btn>
-                        <v-btn
-                            color="secondary"
-                            :loading="agentStore.streaming"
-                            :disabled="!taskInput.trim() || (agentStore.loading && !agentStore.streaming)"
-                            @click="submitStream"
+                            <template #activator="{ props: tooltipProps }">
+                                <v-btn
+                                    v-bind="tooltipProps"
+                                    color="primary"
+                                    :loading="agentStore.loading && !agentStore.streaming"
+                                    :disabled="!taskInput.trim() || agentStore.streaming"
+                                    @click="submit"
+                                >
+                                    <v-icon start>mdi-play</v-icon>
+                                    Run Task
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
+                        <v-tooltip
+                            text="Sends the task and shows real-time events as the agent reasons and uses tools."
+                            location="top"
                         >
-                            <v-icon start>mdi-antenna</v-icon>
-                            Stream
-                        </v-btn>
+                            <template #activator="{ props: tooltipProps }">
+                                <v-btn
+                                    v-bind="tooltipProps"
+                                    color="secondary"
+                                    :loading="agentStore.streaming"
+                                    :disabled="!taskInput.trim() || (agentStore.loading && !agentStore.streaming)"
+                                    @click="submitStream"
+                                >
+                                    <v-icon start>mdi-antenna</v-icon>
+                                    Stream
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
                     </v-card-actions>
                 </v-card>
 
@@ -71,6 +104,10 @@
                             class="ml-2"
                         />
                     </v-card-title>
+                    <v-card-subtitle>
+                        Each event shows one step in the agent's reasoning chain: tool calls,
+                        model routing decisions, and completion.
+                    </v-card-subtitle>
                     <v-card-text>
                         <v-timeline density="compact" side="end">
                             <v-timeline-item
@@ -149,9 +186,15 @@ import CopyButton from '@/components/shared/CopyButton.vue';
 const agentStore = useAgentStore();
 
 const taskInput = ref('');
+// 'auto' is a UI-only sentinel value; it maps to `undefined` in API calls
+// so the backend model router can freely choose the best profile per step
 const selectedProfile = ref<ModelProfile | 'auto'>('auto');
+// Default false: write access is dangerous — the agent can modify server files
 const allowWrite = ref(false);
 const latestResult = ref<ITaskHistoryEntry | undefined>(undefined);
+// Separate ref from `agentStore.streaming` so we can distinguish
+// "stream has finished" from "stream was never started" and keep the
+// event timeline visible after streaming ends
 const streamFinished = ref(false);
 
 const profileOptions = [
@@ -177,6 +220,7 @@ async function submit(): Promise<void> {
     if (!task) return;
 
     streamFinished.value = false;
+    // Map 'auto' sentinel back to undefined so the router picks the profile
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
     const result = await agentStore.submitTask(task, profile, allowWrite.value);
     if (result) {
@@ -190,8 +234,10 @@ async function submitStream(): Promise<void> {
     if (!task) return;
 
     streamFinished.value = false;
+    // Map 'auto' sentinel back to undefined so the router picks the profile
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
     const result = await agentStore.submitTaskStream(task, profile, allowWrite.value);
+    // Mark stream as finished so the event timeline stays visible after streaming stops
     streamFinished.value = true;
     if (result) {
         latestResult.value = result;
