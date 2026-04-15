@@ -179,9 +179,12 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useAgentStore, type ITaskHistoryEntry } from '@/stores/agent';
-import type { ModelProfile, AgentStreamEvent } from '@/api/types';
+import type { ModelProfile } from '@/api/types';
 import MarkdownRenderer from '@/components/shared/MarkdownRenderer.vue';
 import CopyButton from '@/components/shared/CopyButton.vue';
+import { PROFILE_OPTIONS } from '@/utils/constants';
+import { formatTime } from '@/utils/formatting';
+import { agentEventColor, agentEventSummary } from '@/utils/eventFormatting';
 
 const agentStore = useAgentStore();
 
@@ -197,13 +200,7 @@ const latestResult = ref<ITaskHistoryEntry | undefined>(undefined);
 // event timeline visible after streaming ends
 const streamFinished = ref(false);
 
-const profileOptions = [
-    { title: 'Auto (router decides)', value: 'auto' },
-    { title: 'Fast', value: 'fast' },
-    { title: 'Reasoning', value: 'reasoning' },
-    { title: 'Code', value: 'code' },
-    { title: 'Default', value: 'default' }
-];
+const profileOptions = PROFILE_OPTIONS;
 
 // Auto-select latest result when history changes
 watch(
@@ -243,49 +240,5 @@ async function submitStream(): Promise<void> {
         latestResult.value = result;
         taskInput.value = '';
     }
-}
-
-function agentEventColor(type: AgentStreamEvent['type']): string {
-    const colors: Record<AgentStreamEvent['type'], string> = {
-        step: 'purple',
-        tool: 'orange',
-        route: 'teal',
-        done: 'success',
-        error: 'error',
-        max_steps: 'warning'
-    };
-    return colors[type] ?? 'grey';
-}
-
-function agentEventSummary(event: AgentStreamEvent): string {
-    switch (event.type) {
-        case 'step': {
-            return `Step ${String(event.data.step)}: ${event.data.action} — ${event.data.thought}`;
-        }
-        case 'tool': {
-            return event.data.error
-                ? `Tool ${event.data.tool} error: ${event.data.error}`
-                : `Tool ${event.data.tool} executed`;
-        }
-        case 'route': {
-            return `Routed to ${event.data.profile} (${event.data.model})`;
-        }
-        case 'done': {
-            return 'Agent completed';
-        }
-        case 'error': {
-            return `Error: ${event.data.error}`;
-        }
-        case 'max_steps': {
-            return `Max steps reached: ${event.data.summary}`;
-        }
-        default: {
-            return '';
-        }
-    }
-}
-
-function formatTime(iso: string): string {
-    return new Date(iso).toLocaleTimeString();
 }
 </script>

@@ -100,7 +100,7 @@
                         <tbody>
                             <tr v-for="model in systemStore.infoModels" :key="model.name">
                                 <td class="text-body-2">{{ model.name }}</td>
-                                <td class="text-caption">{{ formatSize(model.size) }}</td>
+                                <td class="text-caption">{{ formatModelSize(model.size) }}</td>
                                 <td class="text-caption">{{ formatDate(model.modifiedAt) }}</td>
                                 <td class="text-caption text-grey">
                                     {{ model.digest ? model.digest.slice(0, 12) + '…' : '—' }}
@@ -216,6 +216,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import { useSystemStore } from '@/stores/system';
+import { formatModelSize } from '@/utils/formatting';
 
 const systemStore = useSystemStore();
 
@@ -224,14 +225,6 @@ onMounted(() => {
     systemStore.fetchInfoModels();
     systemStore.fetchHelp();
 });
-
-function formatSize(bytes: number | null): string {
-    if (bytes === null) return '—';
-    const gb = bytes / (1024 * 1024 * 1024);
-    if (gb >= 1) return `${gb.toFixed(1)} GB`;
-    const mb = bytes / (1024 * 1024);
-    return `${mb.toFixed(0)} MB`;
-}
 
 function formatDate(iso: string | null): string {
     if (!iso) return '—';
