@@ -20,8 +20,8 @@ import type {
     ILintConventionsResponse,
     IPageReviewResponse
 } from '@/api/types';
-import { autocomplete, lintConventions, pageReview, ApiError } from '@/api/manna';
-import { useNotificationsStore, TOAST_TYPE } from './notification';
+import { autocomplete, lintConventions, pageReview } from '@/api/manna';
+import { handleApiError } from '@/utils/errorHandling';
 
 /**
  * Pinia store managing IDE code-intelligence operations
@@ -53,7 +53,6 @@ export const useIdeStore = defineStore('ide', () => {
      * @param language - Optional language identifier for context.
      */
     const submitAutocomplete = (prefix: string, suffix?: string, language?: string) => {
-        const notificationStore = useNotificationsStore();
         return fetchAny(
             () =>
                 autocomplete({ prefix, suffix, language }).then((data) => {
@@ -64,9 +63,7 @@ export const useIdeStore = defineStore('ide', () => {
                 loadingKey: '-autocomplete'
             }
         ).catch((error: unknown) => {
-            if (error instanceof ApiError) {
-                notificationStore.addMessage(error.message, TOAST_TYPE.DANGER, 8000);
-            }
+            handleApiError(error, 'Autocomplete failed');
             autocompleteResult.value = undefined;
         });
     };
@@ -84,7 +81,6 @@ export const useIdeStore = defineStore('ide', () => {
         model?: string;
         maxFindings?: number;
     }) => {
-        const notificationStore = useNotificationsStore();
         return fetchAny(
             () =>
                 lintConventions(parameters).then((data) => {
@@ -95,9 +91,7 @@ export const useIdeStore = defineStore('ide', () => {
                 loadingKey: '-lint'
             }
         ).catch((error: unknown) => {
-            if (error instanceof ApiError) {
-                notificationStore.addMessage(error.message, TOAST_TYPE.DANGER, 8000);
-            }
+            handleApiError(error, 'Lint analysis failed');
             lintResult.value = undefined;
         });
     };
@@ -114,7 +108,6 @@ export const useIdeStore = defineStore('ide', () => {
         projectContext?: string;
         model?: string;
     }) => {
-        const notificationStore = useNotificationsStore();
         return fetchAny(
             () =>
                 pageReview(parameters).then((data) => {
@@ -125,9 +118,7 @@ export const useIdeStore = defineStore('ide', () => {
                 loadingKey: '-review'
             }
         ).catch((error: unknown) => {
-            if (error instanceof ApiError) {
-                notificationStore.addMessage(error.message, TOAST_TYPE.DANGER, 8000);
-            }
+            handleApiError(error, 'Page review failed');
             reviewResult.value = undefined;
         });
     };

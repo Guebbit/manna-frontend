@@ -15,8 +15,8 @@ import { defineStore } from 'pinia';
 import { computed, reactive, ref } from 'vue';
 import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
 import type { IImageClassifyResponse, ISpeechToTextResponse, IReadPdfResponse } from '@/api/types';
-import { uploadImageClassify, uploadSpeechToText, uploadReadPdf, ApiError } from '@/api/manna';
-import { useNotificationsStore, TOAST_TYPE } from './notification';
+import { uploadImageClassify, uploadSpeechToText, uploadReadPdf } from '@/api/manna';
+import { handleApiError } from '@/utils/errorHandling';
 
 /**
  * Pinia store managing file upload operations
@@ -48,7 +48,6 @@ export const useUploadStore = defineStore('upload', () => {
      * @param model  - Optional model override.
      */
     const classifyImage = (file: File, prompt?: string, model?: string) => {
-        const notificationStore = useNotificationsStore();
         return fetchAny(
             () =>
                 uploadImageClassify({ file, prompt, model }).then((data) => {
@@ -58,9 +57,7 @@ export const useUploadStore = defineStore('upload', () => {
                 loadingKey: '-imageClassify'
             }
         ).catch((error: unknown) => {
-            if (error instanceof ApiError) {
-                notificationStore.addMessage(error.message, TOAST_TYPE.DANGER, 8000);
-            }
+            handleApiError(error, 'Image classification failed');
             imageClassifyResult.value = undefined;
         });
     };
@@ -74,7 +71,6 @@ export const useUploadStore = defineStore('upload', () => {
      * @param prompt   - Optional prompt to guide transcription.
      */
     const transcribeAudio = (file: File, model?: string, language?: string, prompt?: string) => {
-        const notificationStore = useNotificationsStore();
         return fetchAny(
             () =>
                 uploadSpeechToText({
@@ -89,9 +85,7 @@ export const useUploadStore = defineStore('upload', () => {
                 loadingKey: '-speechToText'
             }
         ).catch((error: unknown) => {
-            if (error instanceof ApiError) {
-                notificationStore.addMessage(error.message, TOAST_TYPE.DANGER, 8000);
-            }
+            handleApiError(error, 'Speech transcription failed');
             speechToTextResult.value = undefined;
         });
     };
@@ -102,7 +96,6 @@ export const useUploadStore = defineStore('upload', () => {
      * @param file - The PDF file to read.
      */
     const readPdf = (file: File) => {
-        const notificationStore = useNotificationsStore();
         return fetchAny(
             () =>
                 uploadReadPdf({ file }).then((data) => {
@@ -112,9 +105,7 @@ export const useUploadStore = defineStore('upload', () => {
                 loadingKey: '-readPdf'
             }
         ).catch((error: unknown) => {
-            if (error instanceof ApiError) {
-                notificationStore.addMessage(error.message, TOAST_TYPE.DANGER, 8000);
-            }
+            handleApiError(error, 'PDF extraction failed');
             readPdfResult.value = undefined;
         });
     };
