@@ -76,18 +76,32 @@ const JSON_HEADERS = { 'Content-Type': 'application/json' } as const;
  */
 async function handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
-        let errorMessage = response.statusText;
-        let retryAfter: number | undefined;
-        try {
-            const body = await response.json();
-            errorMessage = body.error ?? errorMessage;
-            retryAfter = body.retryAfterSeconds;
-        } catch {
-            /* ignore parse errors */
-        }
-        throw new ApiError(errorMessage, response.status, retryAfter);
+        await throwStreamError(response);
     }
     return response.json() as Promise<T>;
+}
+
+/**
+ * Reads error details from a failed response and throws an {@link ApiError}.
+ *
+ * Used by both JSON and streaming endpoints.  Streaming endpoints must check
+ * `response.ok` *before* consuming the body with a reader, so they call this
+ * helper directly instead of going through {@link handleResponse}.
+ *
+ * @param response - A fetch Response with a non-OK status.
+ * @throws {ApiError} Always — this function never returns normally.
+ */
+async function throwStreamError(response: Response): Promise<never> {
+    let errorMessage = response.statusText;
+    let retryAfter: number | undefined;
+    try {
+        const body = await response.json();
+        errorMessage = body.error ?? errorMessage;
+        retryAfter = body.retryAfterSeconds;
+    } catch {
+        /* ignore parse errors */
+    }
+    throw new ApiError(errorMessage, response.status, retryAfter);
 }
 
 /**
@@ -173,16 +187,7 @@ export async function* streamChat(
         body: JSON.stringify({ ...parameters, stream: true })
     });
 
-    if (!response.ok) {
-        let errorMessage = response.statusText;
-        try {
-            const body = await response.json();
-            errorMessage = body.error ?? errorMessage;
-        } catch {
-            /* ignore */
-        }
-        throw new ApiError(errorMessage, response.status);
-    }
+    if (!response.ok) await throwStreamError(response);
 
     const reader = response.body!.getReader();
     const decoder = new TextDecoder();
@@ -420,16 +425,7 @@ export async function* runTaskStream(
         body: JSON.stringify(parameters)
     });
 
-    if (!response.ok) {
-        let errorMessage = response.statusText;
-        try {
-            const body = await response.json();
-            errorMessage = body.error ?? errorMessage;
-        } catch {
-            /* ignore */
-        }
-        throw new ApiError(errorMessage, response.status);
-    }
+    if (!response.ok) await throwStreamError(response);
 
     yield* parseSseStream<AgentStreamEvent>(response);
 }
@@ -467,16 +463,7 @@ export async function* runSwarmStream(
         body: JSON.stringify(parameters)
     });
 
-    if (!response.ok) {
-        let errorMessage = response.statusText;
-        try {
-            const body = await response.json();
-            errorMessage = body.error ?? errorMessage;
-        } catch {
-            /* ignore */
-        }
-        throw new ApiError(errorMessage, response.status);
-    }
+    if (!response.ok) await throwStreamError(response);
 
     yield* parseSseStream<SwarmStreamEvent>(response);
 }
@@ -546,16 +533,7 @@ export async function* runWorkflowStream(
         body: JSON.stringify(parameters)
     });
 
-    if (!response.ok) {
-        let errorMessage = response.statusText;
-        try {
-            const body = await response.json();
-            errorMessage = body.error ?? errorMessage;
-        } catch {
-            /* ignore */
-        }
-        throw new ApiError(errorMessage, response.status);
-    }
+    if (!response.ok) await throwStreamError(response);
 
     yield* parseSseStream<WorkflowStreamEvent>(response);
 }

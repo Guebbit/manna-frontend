@@ -31,7 +31,7 @@
                                 class="rounded mb-2"
                             />
                             <p class="text-caption">
-                                {{ imageFile.name }} ({{ formatSize(imageFile.size) }})
+                                {{ imageFile.name }} ({{ formatFileSize(imageFile.size) }})
                             </p>
                         </div>
                         <v-text-field
@@ -93,7 +93,7 @@
                         <div v-if="audioFile" class="mt-3">
                             <audio controls :src="audioPreview" class="mb-2" />
                             <p class="text-caption">
-                                {{ audioFile.name }} ({{ formatSize(audioFile.size) }})
+                                {{ audioFile.name }} ({{ formatFileSize(audioFile.size) }})
                             </p>
                         </div>
                         <v-row class="mt-2">
@@ -164,7 +164,7 @@
                         />
                         <div v-if="pdfFile" class="mt-3">
                             <v-icon class="mr-1">mdi-file-pdf-box</v-icon>
-                            <span>{{ pdfFile.name }} ({{ formatSize(pdfFile.size) }})</span>
+                            <span>{{ pdfFile.name }} ({{ formatFileSize(pdfFile.size) }})</span>
                         </div>
                     </v-card-text>
                     <v-card-actions>
@@ -208,6 +208,7 @@ import { useUploadStore } from '@/stores/upload';
 import FileDropZone from '@/components/shared/FileDropZone.vue';
 import CopyButton from '@/components/shared/CopyButton.vue';
 import MarkdownRenderer from '@/components/shared/MarkdownRenderer.vue';
+import { formatFileSize } from '@/utils/formatting';
 
 const uploadStore = useUploadStore();
 const activeTab = ref('image');
@@ -264,12 +265,6 @@ function submitAudio(): void {
 function submitPdf(): void {
     if (!pdfFile.value) return;
     void uploadStore.readPdf(pdfFile.value);
-}
-
-function formatSize(bytes: number): string {
-    if (bytes < 1024) return `${String(bytes)} B`;
-    if (bytes < 1_048_576) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / 1_048_576).toFixed(1)} MB`;
 }
 </script>
 

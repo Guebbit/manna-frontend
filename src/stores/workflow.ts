@@ -8,8 +8,9 @@ import type {
     WorkflowStreamEvent,
     WorkflowCarryMode
 } from '@/api/types';
-import { runWorkflow, runWorkflowStream, ApiError } from '@/api/manna';
+import { runWorkflow, runWorkflowStream } from '@/api/manna';
 import { useNotificationsStore, TOAST_TYPE } from './notification';
+import { handleApiError } from '@/utils/errorHandling';
 
 /** A historical record of a submitted workflow and its outcome. */
 export interface IWorkflowHistoryEntry {
@@ -56,7 +57,6 @@ export const useWorkflowStore = defineStore('workflow', () => {
         allowWrite = false,
         maxStepsPerStep?: number
     ): Promise<IWorkflowHistoryEntry | undefined> => {
-        const notificationStore = useNotificationsStore();
         return fetchAny(
             () =>
                 runWorkflow({ steps, carry, profile, allowWrite, maxStepsPerStep }).then(
@@ -78,19 +78,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
                     }
                 )
         ).catch((error: unknown) => {
-            if (error instanceof ApiError && error.retryAfterSeconds) {
-                notificationStore.addMessage(
-                    `Rate limited. Retry in ${String(error.retryAfterSeconds)}s`,
-                    TOAST_TYPE.DANGER,
-                    8000
-                );
-            } else {
-                notificationStore.addMessage(
-                    error instanceof Error ? error.message : 'Workflow task failed',
-                    TOAST_TYPE.DANGER,
-                    8000
-                );
-            }
+            handleApiError(error, 'Workflow task failed');
             // eslint-disable-next-line unicorn/no-useless-undefined
             return undefined;
         });
@@ -154,19 +142,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
                 }
             }
         } catch (error: unknown) {
-            if (error instanceof ApiError && error.retryAfterSeconds) {
-                notificationStore.addMessage(
-                    `Rate limited. Retry in ${String(error.retryAfterSeconds)}s`,
-                    TOAST_TYPE.DANGER,
-                    8000
-                );
-            } else {
-                notificationStore.addMessage(
-                    error instanceof Error ? error.message : 'Workflow stream failed',
-                    TOAST_TYPE.DANGER,
-                    8000
-                );
-            }
+            handleApiError(error, 'Workflow stream failed');
             return undefined;
         } finally {
             streaming.value = false;

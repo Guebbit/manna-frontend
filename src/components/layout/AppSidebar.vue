@@ -67,6 +67,7 @@
  */
 import { useSystemStore } from '@/stores/system';
 import HealthBadge from '@/components/shared/HealthBadge.vue';
+import { NAV_ITEMS } from '@/utils/navigation';
 
 defineProps<{
     modelValue: boolean;
@@ -82,16 +83,5 @@ const emit = defineEmits<{
 
 const systemStore = useSystemStore();
 
-const navItems = [
-    { title: 'Dashboard', icon: 'mdi-view-dashboard', to: '/' },
-    { title: 'Chat', icon: 'mdi-chat', to: '/chat' },
-    { title: 'Agent Task', icon: 'mdi-robot', to: '/agent' },
-    { title: 'Code Tools', icon: 'mdi-code-braces', to: '/code' },
-    { title: 'Upload & Analyze', icon: 'mdi-upload', to: '/upload' },
-    { title: 'Graph Builder', icon: 'mdi-graph', to: '/graph' },
-    { title: 'Swarm', icon: 'mdi-sitemap', to: '/swarm' },
-    { title: 'Workflow', icon: 'mdi-list-status', to: '/workflow' },
-    { title: 'System Info', icon: 'mdi-information-outline', to: '/system' },
-    { title: 'Settings', icon: 'mdi-cog', to: '/settings' }
-];
+const navItems = NAV_ITEMS;
 </script>

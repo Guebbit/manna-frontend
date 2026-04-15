@@ -94,6 +94,7 @@
 import { ref } from 'vue';
 import { getMannaBaseUrl, setMannaBaseUrl, MANNA_BACKEND_VERSION } from '@/config';
 import { healthCheck } from '@/api/manna';
+import { PROFILE_OPTIONS } from '@/utils/constants';
 
 const apiUrl = ref(getMannaBaseUrl());
 const testing = ref(false);
@@ -102,13 +103,7 @@ const testResult = ref<'ok' | 'fail' | undefined>(undefined);
 const defaultProfile = ref(localStorage.getItem('manna-default-profile') ?? 'auto');
 const defaultWriteMode = ref(localStorage.getItem('manna-default-write') === 'true');
 
-const profileOptions = [
-    { title: 'Auto (router decides)', value: 'auto' },
-    { title: 'Fast', value: 'fast' },
-    { title: 'Reasoning', value: 'reasoning' },
-    { title: 'Code', value: 'code' },
-    { title: 'Default', value: 'default' }
-];
+const profileOptions = PROFILE_OPTIONS;
 
 function saveUrl(): void {
     setMannaBaseUrl(apiUrl.value);

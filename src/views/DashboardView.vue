@@ -102,7 +102,7 @@
                                 variant="tonal"
                                 class="mb-1"
                             >
-                                {{ action.label }}
+                                {{ action.title }}
                             </v-btn>
                             <p class="text-body-2 text-grey ml-1">{{ action.description }}</p>
                         </div>
@@ -116,56 +116,12 @@
 <script setup lang="ts">
 import { useSystemStore } from '@/stores/system';
 import HealthBadge from '@/components/shared/HealthBadge.vue';
+import { NAV_ITEMS } from '@/utils/navigation';
 
 const systemStore = useSystemStore();
 
-const quickActions = [
-    {
-        label: 'Chat',
-        icon: 'mdi-chat',
-        to: '/chat',
-        description:
-            "OpenAI-compatible chat. Use the 'manna' model for tool-enabled agentic conversations."
-    },
-    {
-        label: 'Agent',
-        icon: 'mdi-robot',
-        to: '/agent',
-        description:
-            'Autonomous task execution. The agent reasons step-by-step and calls tools to complete your request.'
-    },
-    {
-        label: 'Code',
-        icon: 'mdi-code-braces',
-        to: '/code',
-        description: 'Fast IDE tools: code completion, lint analysis, and AI-powered page review.'
-    },
-    {
-        label: 'Upload',
-        icon: 'mdi-upload',
-        to: '/upload',
-        description:
-            'Classify images, transcribe audio, or extract text from PDFs using specialised AI models.'
-    },
-    {
-        label: 'Swarm',
-        icon: 'mdi-sitemap',
-        to: '/swarm',
-        description:
-            'Break a complex task into subtasks, run them across multiple agents in parallel, and synthesise the results.'
-    },
-    {
-        label: 'Workflow',
-        icon: 'mdi-list-status',
-        to: '/workflow',
-        description:
-            'Define and execute multi-step pipelines with conditional logic, branching, and sequential or parallel task orchestration.'
-    },
-    {
-        label: 'System Info',
-        icon: 'mdi-information-outline',
-        to: '/system',
-        description: 'View routing profiles, loaded Ollama models, and the complete API reference.'
-    }
-];
+// Quick actions = all navigable pages except Dashboard (first) and Settings (last)
+const quickActions = NAV_ITEMS.filter(
+    (item) => item.to !== '/' && item.to !== '/settings'
+);
 </script>

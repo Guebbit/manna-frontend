@@ -19,7 +19,7 @@ import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
 import type { IOpenAiChatMessage } from '@/api/types';
 import { streamChat } from '@/api/manna';
 import { useNotificationsStore } from '@guebbit/vue-toolkit';
-import { ApiError } from '@/api/manna';
+import { handleApiError } from '@/utils/errorHandling';
 
 /** A single chat conversation with its messages and metadata. */
 export interface IConversation {
@@ -137,15 +137,7 @@ export const useChatStore = defineStore('chat', () => {
                 streaming.value = false;
             }
         }).catch((error: unknown) => {
-            if (error instanceof ApiError && error.retryAfterSeconds) {
-                notificationStore.addMessage(
-                    `Rate limited. Retry in ${String(error.retryAfterSeconds)}s`
-                );
-            } else {
-                notificationStore.addMessage(
-                    error instanceof Error ? error.message : 'Failed to send message'
-                );
-            }
+            handleApiError(error, 'Failed to send message');
         });
     };
 

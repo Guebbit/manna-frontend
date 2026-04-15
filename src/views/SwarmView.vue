@@ -122,14 +122,14 @@
                             <v-timeline-item
                                 v-for="(event, index) in swarmStore.streamEvents"
                                 :key="index"
-                                :dot-color="eventColor(event.type)"
+                                :dot-color="swarmEventColor(event.type)"
                                 size="small"
                             >
                                 <div class="d-flex align-center ga-2">
-                                    <v-chip :color="eventColor(event.type)" size="x-small" label>
+                                    <v-chip :color="swarmEventColor(event.type)" size="x-small" label>
                                         {{ event.type }}
                                     </v-chip>
-                                    <span class="text-body-2">{{ eventSummary(event) }}</span>
+                                    <span class="text-body-2">{{ swarmEventSummary(event) }}</span>
                                 </div>
                             </v-timeline-item>
                         </v-timeline>
@@ -235,9 +235,12 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useSwarmStore, type ISwarmHistoryEntry } from '@/stores/swarm';
-import type { ModelProfile, SwarmStreamEvent } from '@/api/types';
+import type { ModelProfile } from '@/api/types';
 import MarkdownRenderer from '@/components/shared/MarkdownRenderer.vue';
 import CopyButton from '@/components/shared/CopyButton.vue';
+import { PROFILE_OPTIONS } from '@/utils/constants';
+import { formatTime, formatDuration } from '@/utils/formatting';
+import { swarmEventColor, swarmEventSummary } from '@/utils/eventFormatting';
 
 const swarmStore = useSwarmStore();
 
@@ -251,13 +254,7 @@ const latestResult = ref<ISwarmHistoryEntry | undefined>(undefined);
 // Tracks whether a stream has completed so the event timeline stays visible afterwards
 const streamFinished = ref(false);
 
-const profileOptions = [
-    { title: 'Auto (router decides)', value: 'auto' },
-    { title: 'Fast', value: 'fast' },
-    { title: 'Reasoning', value: 'reasoning' },
-    { title: 'Code', value: 'code' },
-    { title: 'Default', value: 'default' }
-];
+const profileOptions = PROFILE_OPTIONS;
 
 watch(
     () => swarmStore.swarmHistory.length,
@@ -306,66 +303,5 @@ async function submitStream(): Promise<void> {
         latestResult.value = result;
         taskInput.value = '';
     }
-}
-
-function eventColor(type: SwarmStreamEvent['type']): string {
-    const colors: Record<SwarmStreamEvent['type'], string> = {
-        decomposed: 'blue',
-        subtask_start: 'cyan',
-        subtask_done: 'green',
-        subtask_error: 'red',
-        step: 'purple',
-        tool: 'orange',
-        route: 'teal',
-        done: 'success',
-        error: 'error'
-    };
-    return colors[type] ?? 'grey';
-}
-
-function eventSummary(event: SwarmStreamEvent): string {
-    switch (event.type) {
-        case 'decomposed': {
-            return `Decomposed into ${event.data.subtaskCount} subtasks`;
-        }
-        case 'subtask_start': {
-            return `Subtask ${event.data.subtaskId} started (${event.data.profile})`;
-        }
-        case 'subtask_done': {
-            return `Subtask ${event.data.subtaskId} done in ${formatDuration(event.data.durationMs)}`;
-        }
-        case 'subtask_error': {
-            return `Subtask ${event.data.subtaskId} failed: ${event.data.error}`;
-        }
-        case 'step': {
-            return `Step ${event.data.step}: ${event.data.action}`;
-        }
-        case 'tool': {
-            return event.data.error
-                ? `Tool ${event.data.tool} error: ${event.data.error}`
-                : `Tool ${event.data.tool} executed`;
-        }
-        case 'route': {
-            return `Routed to ${event.data.profile} (${event.data.model})`;
-        }
-        case 'done': {
-            return `Completed in ${formatDuration(event.data.totalDurationMs)}`;
-        }
-        case 'error': {
-            return `Error: ${event.data.error}`;
-        }
-        default: {
-            return '';
-        }
-    }
-}
-
-function formatDuration(ms: number): string {
-    if (ms < 1000) return `${ms}ms`;
-    return `${(ms / 1000).toFixed(1)}s`;
-}
-
-function formatTime(iso: string): string {
-    return new Date(iso).toLocaleTimeString();
 }
 </script>

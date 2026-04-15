@@ -128,14 +128,14 @@
                             <v-timeline-item
                                 v-for="(event, index) in workflowStore.streamEvents"
                                 :key="index"
-                                :dot-color="eventColor(event.type)"
+                                :dot-color="workflowEventColor(event.type)"
                                 size="small"
                             >
                                 <div class="d-flex align-center ga-2">
-                                    <v-chip :color="eventColor(event.type)" size="x-small" label>
+                                    <v-chip :color="workflowEventColor(event.type)" size="x-small" label>
                                         {{ event.type }}
                                     </v-chip>
-                                    <span class="text-body-2">{{ eventSummary(event) }}</span>
+                                    <span class="text-body-2">{{ workflowEventSummary(event) }}</span>
                                 </div>
                             </v-timeline-item>
                         </v-timeline>
@@ -245,8 +245,11 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useWorkflowStore, type IWorkflowHistoryEntry } from '@/stores/workflow';
-import type { ModelProfile, WorkflowStreamEvent, WorkflowCarryMode } from '@/api/types';
+import type { ModelProfile, WorkflowCarryMode } from '@/api/types';
 import MarkdownRenderer from '@/components/shared/MarkdownRenderer.vue';
+import { PROFILE_OPTIONS } from '@/utils/constants';
+import { formatTime, formatDuration } from '@/utils/formatting';
+import { workflowEventColor, workflowEventSummary } from '@/utils/eventFormatting';
 
 const workflowStore = useWorkflowStore();
 
@@ -260,13 +263,7 @@ const streamFinished = ref(false);
 
 const hasValidSteps = computed(() => steps.value.some((s) => s.trim().length > 0));
 
-const profileOptions = [
-    { title: 'Auto (router decides)', value: 'auto' },
-    { title: 'Fast', value: 'fast' },
-    { title: 'Reasoning', value: 'reasoning' },
-    { title: 'Code', value: 'code' },
-    { title: 'Default', value: 'default' }
-];
+const profileOptions = PROFILE_OPTIONS;
 
 const carryOptions = [
     { title: 'Summary (default) — condensed prior output', value: 'summary' },
@@ -332,64 +329,5 @@ async function submitStream(): Promise<void> {
         latestResult.value = result;
         steps.value = [''];
     }
-}
-
-function eventColor(type: WorkflowStreamEvent['type']): string {
-    const colors: Record<WorkflowStreamEvent['type'], string> = {
-        workflow_start: 'blue',
-        step_start: 'cyan',
-        step: 'purple',
-        tool: 'orange',
-        route: 'teal',
-        step_done: 'green',
-        done: 'success',
-        error: 'error'
-    };
-    return colors[type] ?? 'grey';
-}
-
-function eventSummary(event: WorkflowStreamEvent): string {
-    switch (event.type) {
-        case 'workflow_start': {
-            return `Workflow started with ${event.data.stepCount} step${event.data.stepCount === 1 ? '' : 's'}`;
-        }
-        case 'step_start': {
-            return `Step ${event.data.index + 1} started: ${event.data.task}`;
-        }
-        case 'step': {
-            return `Step ${event.data.workflowIndex + 1}, iteration ${event.data.step}: ${event.data.action}`;
-        }
-        case 'tool': {
-            return event.data.error
-                ? `Tool ${event.data.tool} error: ${event.data.error}`
-                : `Tool ${event.data.tool} executed`;
-        }
-        case 'route': {
-            return `Routed to ${event.data.profile} (${event.data.model})`;
-        }
-        case 'step_done': {
-            return event.data.success
-                ? `Step ${event.data.index + 1} done in ${formatDuration(event.data.durationMs)}`
-                : `Step ${event.data.index + 1} failed: ${event.data.error ?? 'unknown error'}`;
-        }
-        case 'done': {
-            return `Workflow completed in ${formatDuration(event.data.totalDurationMs)}`;
-        }
-        case 'error': {
-            return `Error: ${event.data.error}`;
-        }
-        default: {
-            return '';
-        }
-    }
-}
-
-function formatDuration(ms: number): string {
-    if (ms < 1000) return `${ms}ms`;
-    return `${(ms / 1000).toFixed(1)}s`;
-}
-
-function formatTime(iso: string): string {
-    return new Date(iso).toLocaleTimeString();
 }
 </script>

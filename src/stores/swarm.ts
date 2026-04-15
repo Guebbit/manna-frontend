@@ -20,8 +20,9 @@ import { ref } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
 import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
 import type { ModelProfile, ISwarmResponse, SwarmStreamEvent } from '@/api/types';
-import { runSwarm, runSwarmStream, ApiError } from '@/api/manna';
+import { runSwarm, runSwarmStream } from '@/api/manna';
 import { useNotificationsStore, TOAST_TYPE } from './notification';
+import { handleApiError } from '@/utils/errorHandling';
 
 /** A historical record of a submitted swarm task and its outcome. */
 export interface ISwarmHistoryEntry {
@@ -66,7 +67,6 @@ export const useSwarmStore = defineStore('swarm', () => {
         allowWrite = false,
         maxSubtasks?: number
     ): Promise<ISwarmHistoryEntry | undefined> => {
-        const notificationStore = useNotificationsStore();
         return fetchAny(() =>
             runSwarm({ task, profile, allowWrite, maxSubtasks }).then((response) => {
                 const entry: ISwarmHistoryEntry = {
@@ -85,19 +85,7 @@ export const useSwarmStore = defineStore('swarm', () => {
                 return entry;
             })
         ).catch((error: unknown) => {
-            if (error instanceof ApiError && error.retryAfterSeconds) {
-                notificationStore.addMessage(
-                    `Rate limited. Retry in ${String(error.retryAfterSeconds)}s`,
-                    TOAST_TYPE.DANGER,
-                    8000
-                );
-            } else {
-                notificationStore.addMessage(
-                    error instanceof Error ? error.message : 'Swarm task failed',
-                    TOAST_TYPE.DANGER,
-                    8000
-                );
-            }
+            handleApiError(error, 'Swarm task failed');
             // eslint-disable-next-line unicorn/no-useless-undefined
             return undefined;
         });
@@ -160,19 +148,7 @@ export const useSwarmStore = defineStore('swarm', () => {
                 }
             }
         } catch (error: unknown) {
-            if (error instanceof ApiError && error.retryAfterSeconds) {
-                notificationStore.addMessage(
-                    `Rate limited. Retry in ${String(error.retryAfterSeconds)}s`,
-                    TOAST_TYPE.DANGER,
-                    8000
-                );
-            } else {
-                notificationStore.addMessage(
-                    error instanceof Error ? error.message : 'Swarm stream failed',
-                    TOAST_TYPE.DANGER,
-                    8000
-                );
-            }
+            handleApiError(error, 'Swarm stream failed');
             return undefined;
         } finally {
             streaming.value = false;
