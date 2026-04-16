@@ -20,7 +20,7 @@ openapi.yaml     copied from Guebbit/manna — source of truth for all API types
 Common change patterns
 | Goal | Primary files |
 |---|---|
-| Add API endpoint | `openapi.yaml` (backend), run `genapi`, update `src/api/manna.ts` |
+| Add API endpoint | `openapi.yaml` (backend), run `npm run genapi`, update `src/api/manna.ts` |
 | Add SSE event type | `src/api/sseEvents.ts` |
 | Add store | `src/stores/<name>.ts` |
 | Add view/route | `src/views/<Name>View.vue` + `src/router/index.ts` |

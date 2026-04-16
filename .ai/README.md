@@ -19,7 +19,7 @@ Key invariants
 
 Update protocol
 
-- Backend API changes → copy new `openapi.yaml` from `Guebbit/manna`, run `genapi`, update `src/api/manna.ts` + `src/api/sseEvents.ts`, update affected stores/views
+- Backend API changes → copy new `openapi.yaml` from `Guebbit/manna`, run `npm run genapi`, update `src/api/manna.ts` + `src/api/sseEvents.ts`, update affected stores/views
 - New store → one file per store, setup-style `defineStore`
 - New view → lazy-loaded in `src/router/`
 - Env var changes → update `.ai/ENV.md`
