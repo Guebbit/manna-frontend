@@ -15,11 +15,7 @@
 import { defineStore } from 'pinia';
 import { computed, reactive, ref } from 'vue';
 import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
-import type {
-    IAutocompleteResponse,
-    ILintConventionsResponse,
-    IPageReviewResponse
-} from '@/api/types';
+import type { AutocompleteResponse, LintResponse, PageReviewResponse } from '../../api/models';
 import { autocomplete, lintConventions, pageReview } from '@/api/manna';
 import { handleApiError } from '@/utils/errorHandling';
 
@@ -35,9 +31,9 @@ export const useIdeStore = defineStore('ide', () => {
         loadingKey: 'ide'
     });
 
-    const autocompleteResult = ref<IAutocompleteResponse | undefined>(undefined);
-    const lintResult = ref<ILintConventionsResponse | undefined>(undefined);
-    const reviewResult = ref<IPageReviewResponse | undefined>(undefined);
+    const autocompleteResult = ref<AutocompleteResponse | undefined>(undefined);
+    const lintResult = ref<LintResponse | undefined>(undefined);
+    const reviewResult = ref<PageReviewResponse | undefined>(undefined);
 
     const loading = reactive({
         autocomplete: computed(() => getLoading('ide-autocomplete')),
@@ -71,12 +67,12 @@ export const useIdeStore = defineStore('ide', () => {
     /**
      * Submits source code for convention-aware linting analysis.
      *
-     * @param parameters - The lint request options (content, language, model, etc.).
+     * @param parameters - The lint request options (code, language, model, etc.).
      */
     const submitLint = (parameters: {
-        content: string;
+        code: string;
         language?: string;
-        filePath?: string;
+        filename?: string;
         includeLlm?: boolean;
         model?: string;
         maxFindings?: number;
@@ -99,12 +95,12 @@ export const useIdeStore = defineStore('ide', () => {
     /**
      * Submits source code for an AI-powered page-level review.
      *
-     * @param parameters - The review request options (content, language, model, etc.).
+     * @param parameters - The review request options (code, language, model, etc.).
      */
     const submitReview = (parameters: {
-        content: string;
+        code: string;
         language?: string;
-        filePath?: string;
+        filename?: string;
         projectContext?: string;
         model?: string;
     }) => {

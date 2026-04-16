@@ -17,7 +17,8 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
 import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
-import type { ModelProfile, AgentStreamEvent } from '@/api/types';
+import type { RunRequestProfileEnum as ModelProfile } from '../../api/models';
+import type { AgentStreamEvent } from '@/api/sseEvents';
 import { runTask, runTaskStream } from '@/api/manna';
 import { useNotificationsStore, TOAST_TYPE } from './notification';
 import { handleApiError } from '@/utils/errorHandling';
@@ -64,7 +65,7 @@ export const useAgentStore = defineStore('agent', () => {
                 const entry: ITaskHistoryEntry = {
                     id: uuidv4(),
                     task,
-                    result: response.result,
+                    result: response.result ?? '',
                     profile,
                     allowWrite,
                     timestamp: new Date().toISOString()

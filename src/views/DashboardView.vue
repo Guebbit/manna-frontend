@@ -64,12 +64,12 @@
                     <v-card-text>
                         <v-chip
                             v-for="model in systemStore.models"
-                            :key="model.id"
+                            :key="model.name"
                             class="mr-1 mb-1"
                             size="small"
                             variant="outlined"
                         >
-                            {{ model.id }}
+                            {{ model.name }}
                         </v-chip>
                         <p v-if="systemStore.models.length === 0" class="text-grey">
                             No models loaded
@@ -121,7 +121,5 @@ import { NAV_ITEMS } from '@/utils/navigation';
 const systemStore = useSystemStore();
 
 // Quick actions = all navigable pages except Dashboard (first) and Settings (last)
-const quickActions = NAV_ITEMS.filter(
-    (item) => item.to !== '/' && item.to !== '/settings'
-);
+const quickActions = NAV_ITEMS.filter((item) => item.to !== '/' && item.to !== '/settings');
 </script>

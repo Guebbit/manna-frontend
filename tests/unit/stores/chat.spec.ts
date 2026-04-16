@@ -15,23 +15,23 @@ describe('useChatStore', () => {
 
     it('creates a new conversation', () => {
         const store = useChatStore();
-        const id = store.newConversation('manna');
+        const id = store.newConversation('default');
         expect(store.conversations).toHaveLength(1);
         expect(store.activeConversationId).toBe(id);
-        expect(store.conversations[0].model).toBe('manna');
+        expect(store.conversations[0].profile).toBe('default');
     });
 
     it('deletes a conversation', () => {
         const store = useChatStore();
-        const id = store.newConversation('manna');
+        const id = store.newConversation('default');
         store.deleteConversation(id);
         expect(store.conversations).toHaveLength(0);
     });
 
     it('switches active when current is deleted', () => {
         const store = useChatStore();
-        store.newConversation('manna');
-        const id2 = store.newConversation('manna-fast');
+        store.newConversation('default');
+        const id2 = store.newConversation('fast');
         store.deleteConversation(id2);
         expect(store.activeConversationId).toBe(store.conversations[0]?.id);
     });

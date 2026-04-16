@@ -9,7 +9,7 @@
  * TypeScript narrows the `data` field automatically in each case branch.
  */
 
-import type { AgentStreamEvent, SwarmStreamEvent, WorkflowStreamEvent } from '@/api/types';
+import type { AgentStreamEvent, SwarmStreamEvent, WorkflowStreamEvent } from '@/api/sseEvents';
 import { formatDuration } from './formatting';
 
 /* ─── Colour maps ────────────────────────────────────────────── */
@@ -157,11 +157,11 @@ export function workflowEventSummary(event: WorkflowStreamEvent): string {
         }
         case 'step_done': {
             return event.data.success
-                ? `Step ${event.data.index + 1} done in ${formatDuration(event.data.durationMs)}`
-                : `Step ${event.data.index + 1} failed: ${event.data.error ?? 'unknown error'}`;
+                ? `Step ${(event.data.index ?? 0) + 1} done in ${formatDuration(event.data.durationMs ?? 0)}`
+                : `Step ${(event.data.index ?? 0) + 1} failed: ${event.data.error ?? 'unknown error'}`;
         }
         case 'done': {
-            return `Workflow completed in ${formatDuration(event.data.totalDurationMs)}`;
+            return `Workflow completed in ${formatDuration(event.data.totalDurationMs ?? 0)}`;
         }
         case 'error': {
             return `Error: ${event.data.error}`;

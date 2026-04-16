@@ -24,7 +24,7 @@
         "test:e2e:dev": "start-server-and-test 'vite dev --port 4173' http://localhost:4173 'cypress open --e2e'",
         "kill:win": "cmd \"/C TASKKILL /IM node.exe /F\"",
         "kill:gnu": "pkill -9 node",
-        "genapi": "rm -rf api && openapi-generator-cli generate -i openapi.yaml -g typescript-axios -o ./api",
+        "genapi": "rm -rf api && openapi-generator-cli generate -i openapi.yaml -g typescript-fetch -o ./api --additional-properties=supportsES6=true,withInterfaces=true,typescriptThreePlus=true",
         "update:all": "npx npm-check-updates -u",
         "complete": "npm run build && npm run test && npm run lint:fix && npm run prettier:fix",
         "complete:check": "npm run build && npm run test:unit && npm run lint && npx prettier . --check",

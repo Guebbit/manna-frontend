@@ -2,8 +2,8 @@
     <div>
         <h1 class="text-h4 mb-2">Code Tools</h1>
         <p class="text-body-2 text-grey mb-6">
-            Direct IDE endpoints — fast, single-purpose code intelligence. These bypass the
-            agent loop for lower latency, calling specialised models directly.
+            Direct IDE endpoints — fast, single-purpose code intelligence. These bypass the agent
+            loop for lower latency, calling specialised models directly.
         </p>
 
         <v-tabs v-model="activeTab" color="primary">
@@ -63,7 +63,7 @@
                     <v-card-title class="d-flex align-center">
                         Completion
                         <v-spacer />
-                        <CopyButton :text="ideStore.autocompleteResult.completion" />
+                        <CopyButton :text="ideStore.autocompleteResult.completion ?? ''" />
                         <v-tooltip
                             text="Round-trip time including model inference. Powered by a fast code-specialised model."
                             location="top"
@@ -99,15 +99,15 @@
                             </v-col>
                             <v-col cols="12" sm="6">
                                 <v-text-field
-                                    v-model="lintFilePath"
-                                    label="File path (optional)"
+                                    v-model="lintFilename"
+                                    label="Filename (optional)"
                                     variant="outlined"
                                     density="compact"
                                 />
                             </v-col>
                         </v-row>
                         <v-textarea
-                            v-model="lintContent"
+                            v-model="lintCode"
                             label="Code to lint"
                             variant="outlined"
                             rows="8"
@@ -149,7 +149,7 @@
                         <v-btn
                             color="primary"
                             :loading="ideStore.loading.lint"
-                            :disabled="!lintContent.trim()"
+                            :disabled="!lintCode.trim()"
                             @click="submitLint"
                         >
                             <v-icon start>mdi-magnify</v-icon>
@@ -163,13 +163,13 @@
                     <v-card-title>
                         Findings
                         <v-chip size="small" color="error" class="ml-2">
-                            {{ ideStore.lintResult.summary.errors }} errors
+                            {{ ideStore.lintResult.summary?.errors ?? 0 }} errors
                         </v-chip>
                         <v-chip size="small" color="warning" class="ml-1">
-                            {{ ideStore.lintResult.summary.warnings }} warnings
+                            {{ ideStore.lintResult.summary?.warnings ?? 0 }} warnings
                         </v-chip>
                         <v-chip size="small" color="info" class="ml-1">
-                            {{ ideStore.lintResult.summary.infos }} info
+                            {{ ideStore.lintResult.summary?.infos ?? 0 }} info
                         </v-chip>
                     </v-card-title>
                     <v-card-text>
@@ -177,10 +177,10 @@
                             <thead>
                                 <tr>
                                     <th>Severity</th>
-                                    <th>Source</th>
                                     <th>Message</th>
                                     <th>Line</th>
                                     <th>Rule</th>
+                                    <th>Suggestion</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -196,19 +196,10 @@
                                             {{ finding.severity }}
                                         </v-chip>
                                     </td>
-                                    <td>
-                                        <v-tooltip
-                                            :text="sourceTooltip(finding.source)"
-                                            location="top"
-                                        >
-                                            <template #activator="{ props: tooltipProps }">
-                                                <span v-bind="tooltipProps">{{ finding.source }}</span>
-                                            </template>
-                                        </v-tooltip>
-                                    </td>
                                     <td>{{ finding.message }}</td>
                                     <td>{{ finding.line ?? '–' }}</td>
                                     <td class="text-caption">{{ finding.rule ?? '–' }}</td>
+                                    <td>{{ finding.suggestion ?? '–' }}</td>
                                 </tr>
                             </tbody>
                         </v-table>
@@ -232,8 +223,8 @@
                             </v-col>
                             <v-col cols="12" sm="4">
                                 <v-text-field
-                                    v-model="reviewFilePath"
-                                    label="File path (optional)"
+                                    v-model="reviewFilename"
+                                    label="Filename (optional)"
                                     variant="outlined"
                                     density="compact"
                                 />
@@ -248,7 +239,7 @@
                             </v-col>
                         </v-row>
                         <v-textarea
-                            v-model="reviewContent"
+                            v-model="reviewCode"
                             label="Code to review"
                             variant="outlined"
                             rows="8"
@@ -267,7 +258,7 @@
                         <v-btn
                             color="primary"
                             :loading="ideStore.loading.review"
-                            :disabled="!reviewContent.trim()"
+                            :disabled="!reviewCode.trim()"
                             @click="submitReview"
                         >
                             <v-icon start>mdi-file-search</v-icon>
@@ -277,61 +268,42 @@
                 </v-card>
 
                 <!-- Review Results -->
-                <div v-if="ideStore.reviewResult" class="mt-4">
-                    <v-expansion-panels>
-                        <v-expansion-panel v-for="(category, key) in reviewCategories" :key="key">
-                            <v-expansion-panel-title>
-                                <v-icon start>{{ category.icon }}</v-icon>
-                                {{ category.label }}
-                                <v-chip size="x-small" class="ml-2">
-                                    {{ category.items.length }}
-                                </v-chip>
-                            </v-expansion-panel-title>
-                            <v-expansion-panel-text>
-                                <v-card
-                                    v-for="(suggestion, sIndex) in category.items"
-                                    :key="sIndex"
-                                    class="mb-2"
-                                    variant="outlined"
-                                >
-                                    <v-card-title class="text-subtitle-2 d-flex align-center">
-                                        {{ suggestion.title }}
-                                        <v-spacer />
-                                        <v-tooltip
-                                            :text="priorityTooltip(suggestion.priority)"
-                                            location="top"
-                                        >
-                                            <template #activator="{ props: tooltipProps }">
-                                                <v-chip
-                                                    v-bind="tooltipProps"
-                                                    size="x-small"
-                                                    :color="priorityColor(suggestion.priority)"
-                                                >
-                                                    {{ suggestion.priority }}
-                                                </v-chip>
-                                            </template>
-                                        </v-tooltip>
-                                    </v-card-title>
-                                    <v-card-text class="text-body-2">
-                                        {{ suggestion.detail }}
-                                    </v-card-text>
-                                </v-card>
-                                <p v-if="category.items.length === 0" class="text-grey">
-                                    No suggestions in this category.
-                                </p>
-                            </v-expansion-panel-text>
-                        </v-expansion-panel>
-                    </v-expansion-panels>
-                </div>
+                <v-card v-if="ideStore.reviewResult" class="mt-4">
+                    <v-card-title>
+                        Findings
+                        <v-chip size="x-small" class="ml-2">
+                            {{ ideStore.reviewResult.findings?.length ?? 0 }}
+                        </v-chip>
+                    </v-card-title>
+                    <v-card-text>
+                        <v-list
+                            v-if="(ideStore.reviewResult.findings?.length ?? 0) > 0"
+                            density="compact"
+                        >
+                            <v-list-item
+                                v-for="(finding, index) in ideStore.reviewResult.findings"
+                                :key="index"
+                            >
+                                <v-list-item-title class="text-body-2">
+                                    {{
+                                        typeof finding === 'string'
+                                            ? finding
+                                            : JSON.stringify(finding)
+                                    }}
+                                </v-list-item-title>
+                            </v-list-item>
+                        </v-list>
+                        <p v-else class="text-grey">No findings returned.</p>
+                    </v-card-text>
+                </v-card>
             </v-tabs-window-item>
         </v-tabs-window>
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import { useIdeStore } from '@/stores/ide';
-import type { ICategorizedSuggestion } from '@/api/types';
 import CopyButton from '@/components/shared/CopyButton.vue';
 
 const ideStore = useIdeStore();
@@ -344,16 +316,16 @@ const autoSuffix = ref('');
 const autoLanguage = ref('typescript');
 
 // Lint
-const lintContent = ref('');
+const lintCode = ref('');
 const lintLanguage = ref('typescript');
-const lintFilePath = ref('');
+const lintFilename = ref('');
 const lintIncludeLlm = ref(true);
 const lintMaxFindings = ref(80);
 
 // Review
-const reviewContent = ref('');
+const reviewCode = ref('');
 const reviewLanguage = ref('typescript');
-const reviewFilePath = ref('');
+const reviewFilename = ref('');
 const reviewProjectContext = ref('');
 const reviewModel = ref('');
 
@@ -385,9 +357,9 @@ function submitAutocomplete(): void {
 
 function submitLint(): void {
     void ideStore.submitLint({
-        content: lintContent.value,
+        code: lintCode.value,
         language: lintLanguage.value || undefined,
-        filePath: lintFilePath.value || undefined,
+        filename: lintFilename.value || undefined,
         includeLlm: lintIncludeLlm.value,
         maxFindings: lintMaxFindings.value
     });
@@ -395,72 +367,18 @@ function submitLint(): void {
 
 function submitReview(): void {
     void ideStore.submitReview({
-        content: reviewContent.value,
+        code: reviewCode.value,
         language: reviewLanguage.value || undefined,
-        filePath: reviewFilePath.value || undefined,
+        filename: reviewFilename.value || undefined,
         projectContext: reviewProjectContext.value || undefined,
         model: reviewModel.value || undefined
     });
 }
 
-function severityColor(severity: string): string {
+function severityColor(severity = ''): string {
     const map: Record<string, string> = { error: 'error', warning: 'warning', info: 'info' };
     return map[severity] ?? 'grey';
 }
-
-function priorityColor(priority: string): string {
-    const map: Record<string, string> = { high: 'error', medium: 'warning', low: 'success' };
-    return map[priority] ?? 'grey';
-}
-
-function sourceTooltip(source: string): string {
-    const map: Record<string, string> = {
-        typescript: 'Compiler diagnostic (type error, syntax error)',
-        convention: 'Rule-based convention check (naming, formatting, imports)',
-        llm: 'AI-powered suggestion — goes beyond what static analysis can detect'
-    };
-    return map[source] ?? source;
-}
-
-function priorityTooltip(priority: string): string {
-    const map: Record<string, string> = {
-        high: 'Should fix before merging — correctness or security concern',
-        medium: 'Recommended improvement — improves quality or maintainability',
-        low: 'Nice-to-have polish — minor style or enhancement suggestion'
-    };
-    return map[priority] ?? priority;
-}
-
-const reviewCategories = computed(() => {
-    const categories = ideStore.reviewResult?.categories;
-    if (!categories) return [];
-    return [
-        {
-            key: 'correctness',
-            label: 'Correctness',
-            icon: 'mdi-check-circle',
-            items: categories.correctness as ICategorizedSuggestion[]
-        },
-        {
-            key: 'maintainability',
-            label: 'Maintainability',
-            icon: 'mdi-wrench',
-            items: categories.maintainability as ICategorizedSuggestion[]
-        },
-        {
-            key: 'standards',
-            label: 'Standards',
-            icon: 'mdi-book-open-variant',
-            items: categories.standards as ICategorizedSuggestion[]
-        },
-        {
-            key: 'enhancements',
-            label: 'Enhancements',
-            icon: 'mdi-lightbulb',
-            items: categories.enhancements as ICategorizedSuggestion[]
-        }
-    ];
-});
 </script>
 
 <style scoped>

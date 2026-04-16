@@ -2,8 +2,8 @@
     <div>
         <h1 class="text-h4 mb-2">Agent Task</h1>
         <p class="text-body-2 text-grey mb-6">
-            Give the agent a natural-language task. It will reason step-by-step, pick tools from
-            its registry, and execute them autonomously (up to 5 iterations).
+            Give the agent a natural-language task. It will reason step-by-step, pick tools from its
+            registry, and execute them autonomously (up to 5 iterations).
         </p>
 
         <v-row>
@@ -81,7 +81,10 @@
                                     v-bind="tooltipProps"
                                     color="secondary"
                                     :loading="agentStore.streaming"
-                                    :disabled="!taskInput.trim() || (agentStore.loading && !agentStore.streaming)"
+                                    :disabled="
+                                        !taskInput.trim() ||
+                                        (agentStore.loading && !agentStore.streaming)
+                                    "
                                     @click="submitStream"
                                 >
                                     <v-icon start>mdi-antenna</v-icon>
@@ -105,8 +108,8 @@
                         />
                     </v-card-title>
                     <v-card-subtitle>
-                        Each event shows one step in the agent's reasoning chain: tool calls,
-                        model routing decisions, and completion.
+                        Each event shows one step in the agent's reasoning chain: tool calls, model
+                        routing decisions, and completion.
                     </v-card-subtitle>
                     <v-card-text>
                         <v-timeline density="compact" side="end">
@@ -179,7 +182,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useAgentStore, type ITaskHistoryEntry } from '@/stores/agent';
-import type { ModelProfile } from '@/api/types';
+import type { RunRequestProfileEnum as ModelProfile } from '../../api/models';
 import MarkdownRenderer from '@/components/shared/MarkdownRenderer.vue';
 import CopyButton from '@/components/shared/CopyButton.vue';
 import { PROFILE_OPTIONS } from '@/utils/constants';

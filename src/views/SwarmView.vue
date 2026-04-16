@@ -94,7 +94,10 @@
                                     v-bind="tooltipProps"
                                     color="secondary"
                                     :loading="swarmStore.streaming"
-                                    :disabled="!taskInput.trim() || (swarmStore.loading && !swarmStore.streaming)"
+                                    :disabled="
+                                        !taskInput.trim() ||
+                                        (swarmStore.loading && !swarmStore.streaming)
+                                    "
                                     @click="submitStream"
                                 >
                                     <v-icon start>mdi-antenna</v-icon>
@@ -126,7 +129,11 @@
                                 size="small"
                             >
                                 <div class="d-flex align-center ga-2">
-                                    <v-chip :color="swarmEventColor(event.type)" size="x-small" label>
+                                    <v-chip
+                                        :color="swarmEventColor(event.type)"
+                                        size="x-small"
+                                        label
+                                    >
                                         {{ event.type }}
                                     </v-chip>
                                     <span class="text-body-2">{{ swarmEventSummary(event) }}</span>
@@ -142,7 +149,9 @@
                         Result
                         <v-spacer />
                         <v-chip size="small" color="primary" class="mr-2">
-                            {{ latestResult.subtaskCount }} subtask{{ latestResult.subtaskCount === 1 ? '' : 's' }}
+                            {{ latestResult.subtaskCount }} subtask{{
+                                latestResult.subtaskCount === 1 ? '' : 's'
+                            }}
                         </v-chip>
                         <v-chip size="small" color="secondary">
                             {{ formatDuration(latestResult.totalDurationMs) }}
@@ -156,18 +165,18 @@
 
                 <!-- Subtask Breakdown -->
                 <v-card
-                    v-if="latestResult && latestResult.response.subtaskResults.length > 0"
+                    v-if="latestResult && (latestResult.response.subtaskResults?.length ?? 0) > 0"
                     class="mt-4"
                 >
                     <v-card-title>Subtask Breakdown</v-card-title>
                     <v-card-subtitle>
-                        Each subtask ran independently with its own agent loop.
-                        Expand a row to see the individual answer.
+                        Each subtask ran independently with its own agent loop. Expand a row to see
+                        the individual answer.
                     </v-card-subtitle>
                     <v-card-text>
                         <v-expansion-panels>
                             <v-expansion-panel
-                                v-for="sub in latestResult.response.subtaskResults"
+                                v-for="sub in latestResult.response.subtaskResults ?? []"
                                 :key="sub.id"
                             >
                                 <v-expansion-panel-title>
@@ -176,20 +185,24 @@
                                             :color="sub.success ? 'success' : 'error'"
                                             size="small"
                                         >
-                                            {{ sub.success ? 'mdi-check-circle' : 'mdi-close-circle' }}
+                                            {{
+                                                sub.success
+                                                    ? 'mdi-check-circle'
+                                                    : 'mdi-close-circle'
+                                            }}
                                         </v-icon>
                                         <span class="text-truncate">{{ sub.description }}</span>
                                         <v-chip size="x-small" class="ml-auto">
                                             {{ sub.profile }}
                                         </v-chip>
                                         <v-chip size="x-small" variant="outlined">
-                                            {{ formatDuration(sub.durationMs) }}
+                                            {{ formatDuration(sub.durationMs ?? 0) }}
                                         </v-chip>
                                     </div>
                                 </v-expansion-panel-title>
                                 <v-expansion-panel-text>
                                     <p v-if="sub.error" class="text-error">{{ sub.error }}</p>
-                                    <MarkdownRenderer v-else :content="sub.answer" />
+                                    <MarkdownRenderer v-else :content="sub.answer ?? ''" />
                                 </v-expansion-panel-text>
                             </v-expansion-panel>
                         </v-expansion-panels>
@@ -235,7 +248,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useSwarmStore, type ISwarmHistoryEntry } from '@/stores/swarm';
-import type { ModelProfile } from '@/api/types';
+import type { SwarmRequestProfileEnum as ModelProfile } from '../../api/models';
 import MarkdownRenderer from '@/components/shared/MarkdownRenderer.vue';
 import CopyButton from '@/components/shared/CopyButton.vue';
 import { PROFILE_OPTIONS } from '@/utils/constants';
@@ -272,12 +285,7 @@ async function submitJson(): Promise<void> {
     streamFinished.value = false;
     // Map 'auto' sentinel to undefined so the model router picks per subtask
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
-    const result = await swarmStore.submitSwarm(
-        task,
-        profile,
-        allowWrite.value,
-        maxSubtasks.value
-    );
+    const result = await swarmStore.submitSwarm(task, profile, allowWrite.value, maxSubtasks.value);
     if (result) {
         latestResult.value = result;
         taskInput.value = '';

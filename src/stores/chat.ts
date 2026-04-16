@@ -1,32 +1,31 @@
 /**
  * @module stores/chat
  *
- * Pinia store for OpenAI-compatible chat conversations.
+ * Pinia store for agent-backed chat conversations.
  *
- * The chat system mirrors the OpenAI `/v1/chat/completions` interface.  Model
- * selection determines the routing path on the backend:
- * - `'manna'` (and `'manna-*'` variants) — routed through the full agentic loop,
- *   giving the model access to all 18 registered tools (file ops, web search, etc.).
- * - Any other identifier (e.g. `'llama3.1:8b'`) — direct Ollama inference with no
- *   tool access, for lower latency plain-chat use cases.
- *
- * Messages are streamed via SSE so the UI updates token-by-token.
+ * Messages are streamed from `POST /run/stream`. Each user message is submitted as
+ * an agent task and the assistant answer is finalized on the `done` event.
  */
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
 import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
-import type { IOpenAiChatMessage } from '@/api/types';
-import { streamChat } from '@/api/manna';
-import { useNotificationsStore } from '@guebbit/vue-toolkit';
+import type { RunRequestProfileEnum as ModelProfile } from '../../api/models';
+import { runTaskStream } from '@/api/manna';
 import { handleApiError } from '@/utils/errorHandling';
+
+/** A single local chat message. */
+export interface IChatMessage {
+    role: 'user' | 'assistant';
+    content: string;
+}
 
 /** A single chat conversation with its messages and metadata. */
 export interface IConversation {
     id: string;
     title: string;
-    messages: IOpenAiChatMessage[];
-    model: string;
+    messages: IChatMessage[];
+    profile?: ModelProfile;
     createdAt: string;
 }
 
@@ -51,16 +50,16 @@ export const useChatStore = defineStore('chat', () => {
     /**
      * Creates a new conversation, adds it to the top of the list, and activates it.
      *
-     * @param model - The model identifier to use for this conversation (default `'manna'`).
+     * @param profile - Optional routing profile hint for this conversation.
      * @returns The UUID of the newly created conversation.
      */
-    function newConversation(model = 'manna'): string {
+    function newConversation(profile?: ModelProfile): string {
         const id = uuidv4();
         conversations.value.unshift({
             id,
             title: 'New conversation',
             messages: [],
-            model,
+            profile,
             createdAt: new Date().toISOString()
         });
         activeConversationId.value = id;
@@ -90,7 +89,6 @@ export const useChatStore = defineStore('chat', () => {
      * @returns Resolves when the full assistant reply has been received.
      */
     const sendMessage = (content: string, allowWrite = false) => {
-        const notificationStore = useNotificationsStore();
         let conversationReference = activeConversation.value;
 
         if (!conversationReference) {
@@ -99,7 +97,6 @@ export const useChatStore = defineStore('chat', () => {
         }
         if (!conversationReference) return Promise.resolve();
 
-        // Set title from first message
         if (conversationReference.messages.length === 0) {
             conversationReference.title =
                 content.length > 60 ? content.slice(0, 60) + '…' : content;
@@ -107,27 +104,26 @@ export const useChatStore = defineStore('chat', () => {
 
         conversationReference.messages.push({ role: 'user', content });
 
-        // Add an empty assistant placeholder before streaming so the UI renders
-        // the typing cursor immediately without waiting for the first token
         const assistantIndex = conversationReference.messages.length;
         conversationReference.messages.push({ role: 'assistant', content: '' });
 
-        // Capture reference for use inside async callback
         const conversation = conversationReference;
 
         return fetchAny(async () => {
             streaming.value = true;
             try {
-                const generator = streamChat({
-                    model: conversation.model,
-                    messages: conversation.messages.slice(0, -1),
-                    allowWrite
+                const generator = runTaskStream({
+                    task: content,
+                    allowWrite,
+                    profile: conversation.profile
                 });
 
-                for await (const chunk of generator) {
-                    const message = conversation.messages[assistantIndex];
-                    if (message && typeof message.content === 'string') {
-                        message.content += chunk;
+                for await (const event of generator) {
+                    if (event.type === 'done') {
+                        const message = conversation.messages[assistantIndex];
+                        if (message) {
+                            message.content = event.data.result;
+                        }
                     }
                 }
             } catch (error: unknown) {
