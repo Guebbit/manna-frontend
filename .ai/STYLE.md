@@ -1,6 +1,6 @@
 # Style contract
 
-SOLID (all five principles apply — see AI_README §1 for table)
+SOLID (all five principles apply)
 
 Naming
 
