@@ -3,9 +3,12 @@ openapi: '3.1.0'
 info:
     title: Manna AI Agent API
     version: '1.0.0'
+    contact:
+        name: Manna API
+        url: https://github.com/Guebbit/manna
     description: |
         Local-first agentic AI platform. Exposes the agent reasoning loop, IDE-specific
-        direct-LLM endpoints, file-upload helpers, OpenAI-compatible endpoints,
+        direct-LLM endpoints, file-upload helpers,
         and a multi-library PDF ingestion and semantic search system.
 
         **Base URL (default):** `http://localhost:3001`
@@ -21,12 +24,15 @@ tags:
       description: IDE-specific direct-LLM endpoints (bypass the agent loop)
     - name: upload
       description: File-upload helpers (image, audio, PDF)
-    - name: openai-compat
-      description: OpenAI-compatible endpoints for Open WebUI integration (temporary)
     - name: swarm
       description: |
           Multi-agent swarm orchestration. Decomposes complex tasks into subtasks,
           delegates each to a specialised agent instance, and synthesises a final answer.
+    - name: workflow
+      description: |
+          Sequential multi-step workflow orchestration. Accepts an explicit ordered list
+          of steps and runs each as a bounded independent agent sub-run, with configurable
+          context carry between steps.
     - name: info
       description: Informational endpoints — metadata about the Manna instance (no LLM calls)
     - name: library
@@ -54,16 +60,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                type: object
-                                properties:
-                                    status:
-                                        type: string
-                                        example: ok
-                                    timestamp:
-                                        type: string
-                                        format: date-time
-                                        description: ISO 8601 timestamp of when the health check was served.
-                                        example: '2026-04-13T20:05:07.044Z'
+                                $ref: '#/components/schemas/HealthResponse'
 
     /run:
         post:
@@ -123,7 +120,7 @@ paths:
                 - `step` — emitted after each LLM response: `{ step, action, thought }`
                 - `tool` — emitted after each tool execution: `{ tool, result? }` or `{ tool, error }`
                 - `route` — emitted when a model profile is selected: `{ profile, model, reason }`
-                - `done` — final answer ready: `{ result }`
+                - `done` — final answer ready: `{ result, meta? }`
                 - `error` — agent threw: `{ error }`
                 - `max_steps` — loop exhausted: `{ task, summary }`
             operationId: postRunStream
@@ -216,6 +213,7 @@ paths:
 
                 SSE event types: `decomposed`, `subtask_start`, `subtask_done`,
                 `subtask_error`, `step`, `tool`, `route`, `done`, `error`.
+                The terminal `done` event includes `{ answer, totalDurationMs, subtaskCount, meta? }`.
             operationId: postRunSwarmStream
             requestBody:
                 required: true
@@ -233,6 +231,104 @@ paths:
                                 description: |
                                     Server-Sent Events stream. Each event is typed
                                     (decomposed, subtask_start, subtask_done, step, tool, route, done, error).
+                '400':
+                    $ref: '#/components/responses/BadRequest'
+                '500':
+                    $ref: '#/components/responses/InternalError'
+
+    # ── Workflow endpoints ─────────────────────────────────────────────────────
+
+    /workflow:
+        post:
+            tags: [workflow]
+            summary: Run an explicit ordered list of steps sequentially
+            description: |
+                Accepts an array of step task strings and runs each as an independent bounded
+                `agent.run()` sub-call.  Each step has its own `maxStepsPerStep` iteration cap
+                (defaulting to `AGENTS_MAX_STEPS`), so a misbehaving step cannot consume the
+                entire budget.
+
+                ### Context carry modes (`carry`)
+
+                | Mode      | Behaviour |
+                |-----------|-----------|
+                | `none`    | Steps are fully isolated — no prior context forwarded. |
+                | `summary` | A compact bullet-point summary of prior step results is prepended to each subsequent step prompt. **(default)** |
+                | `full`    | The complete verbatim output of every prior step is appended. Context may grow quickly. |
+
+                Use `POST /workflow` when your outer loop is already structured as an ordered list
+                and you want each step bounded independently.
+            operationId: postWorkflow
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/WorkflowRequest'
+                        examples:
+                            basic:
+                                summary: Two-step workflow (default carry=summary)
+                                value:
+                                    steps:
+                                        - task: 'List all TypeScript files under packages/'
+                                        - task: 'Summarise the purpose of each listed file'
+                            withOptions:
+                                summary: Multi-step write workflow with per-step cap
+                                value:
+                                    steps:
+                                        - task: 'Read the existing index.ts and summarise its structure'
+                                        - task: 'Create a new helper module at src/utils/helper.ts'
+                                        - task: 'Write unit tests for the helper module'
+                                    allowWrite: true
+                                    profile: code
+                                    carry: full
+                                    maxStepsPerStep: 10
+            responses:
+                '200':
+                    description: 'All steps completed (some may have `success: false` if individual steps errored)'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/WorkflowResponse'
+                '400':
+                    $ref: '#/components/responses/BadRequest'
+                '500':
+                    $ref: '#/components/responses/InternalError'
+
+    /workflow/stream:
+        post:
+            tags: [workflow]
+            summary: Run a sequential workflow with SSE streaming
+            description: |
+                Same as `POST /workflow`, but streams lifecycle events as Server-Sent Events.
+                The connection stays open until all steps complete.
+
+                SSE event types (in order):
+                - `workflow_start` — before the first step; `{ stepCount }`.
+                - `step_start`     — before each step; `{ index, task }`.
+                - `step`           — inner agent iteration; `{ workflowIndex, step, action, thought }`.
+                - `tool`           — tool result/error; `{ workflowIndex, tool, result? | error? }`.
+                - `route`          — model routing decision; `{ workflowIndex, profile, model, reason }`.
+                - `step_done`      — after each step; full `WorkflowStepResult` object.
+                - `done`           — after all steps; full `WorkflowResponse` object plus optional `meta`.
+                - `error`          — on fatal error; `{ error }`.
+            operationId: postWorkflowStream
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/WorkflowRequest'
+            responses:
+                '200':
+                    description: SSE event stream
+                    content:
+                        text/event-stream:
+                            schema:
+                                type: string
+                                description: |
+                                    Server-Sent Events stream. Each event is typed
+                                    (workflow_start, step_start, step, tool, route, step_done, done, error).
                 '400':
                     $ref: '#/components/responses/BadRequest'
                 '500':
@@ -282,7 +378,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/LintRequest'
+                            $ref: '#/components/schemas/LintConventionsRequest'
             responses:
                 '200':
                     description: Lint findings
@@ -342,7 +438,7 @@ paths:
                                 file:
                                     type: string
                                     format: binary
-                                    description: Image file (JPEG, PNG, WebP, etc.)
+                                    description: 'Allowed image MIME types: image/jpeg, image/png, image/gif, image/webp.'
                                 prompt:
                                     type: string
                                     description: Optional prompt to guide the classification
@@ -360,6 +456,8 @@ paths:
                                     result:
                                         type: string
                                         description: Model's description of the image
+                                    meta:
+                                        $ref: '#/components/schemas/ResponseMeta'
                 '400':
                     $ref: '#/components/responses/BadRequest'
                 '500':
@@ -384,7 +482,7 @@ paths:
                                 file:
                                     type: string
                                     format: binary
-                                    description: Audio file (MP3, WAV, M4A, etc.)
+                                    description: 'Allowed audio MIME types: audio/mpeg, audio/wav, audio/ogg, audio/webm, audio/mp4.'
                                 model:
                                     type: string
                                     description: Override the STT model
@@ -405,6 +503,98 @@ paths:
                                     text:
                                         type: string
                                         description: Transcribed text
+                                    meta:
+                                        $ref: '#/components/schemas/ResponseMeta'
+                '400':
+                    $ref: '#/components/responses/BadRequest'
+                '500':
+                    $ref: '#/components/responses/InternalError'
+
+    /upload/image-sketch:
+        post:
+            tags: [upload]
+            summary: Generate sketch/line-art from an uploaded image
+            description: |
+                Accepts a multipart image upload and forwards it to the configured image processor (`IMAGE_PROCESSOR_URL/sketch`).
+                Optional `prompt` and `negative_prompt` are passed through to the processor.
+                Content negotiation:
+                - `Accept: image/png` returns raw PNG bytes
+                - otherwise returns JSON `{ image, duration_ms, model }`
+            operationId: uploadImageSketch
+            requestBody:
+                required: true
+                content:
+                    multipart/form-data:
+                        schema:
+                            type: object
+                            required: [file]
+                            properties:
+                                file:
+                                    type: string
+                                    format: binary
+                                    description: 'Allowed image MIME types: image/jpeg, image/png, image/gif, image/webp.'
+                                prompt:
+                                    type: string
+                                    description: Optional positive prompt for sketch generation
+                                negative_prompt:
+                                    type: string
+                                    description: Optional negative prompt for sketch generation
+            responses:
+                '200':
+                    description: Sketch generation result
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ImageProcessorResponse'
+                        image/png:
+                            schema:
+                                type: string
+                                format: binary
+                '400':
+                    $ref: '#/components/responses/BadRequest'
+                '500':
+                    $ref: '#/components/responses/InternalError'
+
+    /upload/image-colorize:
+        post:
+            tags: [upload]
+            summary: Colorize an uploaded image
+            description: |
+                Accepts a multipart image upload and forwards it to the configured image processor (`IMAGE_PROCESSOR_URL/colorize`).
+                Optional `prompt` and `negative_prompt` are passed through to the processor.
+                Content negotiation:
+                - `Accept: image/png` returns raw PNG bytes
+                - otherwise returns JSON `{ image, duration_ms, model }`
+            operationId: uploadImageColorize
+            requestBody:
+                required: true
+                content:
+                    multipart/form-data:
+                        schema:
+                            type: object
+                            required: [file]
+                            properties:
+                                file:
+                                    type: string
+                                    format: binary
+                                    description: 'Allowed image MIME types: image/jpeg, image/png, image/gif, image/webp.'
+                                prompt:
+                                    type: string
+                                    description: Optional positive prompt for colorization
+                                negative_prompt:
+                                    type: string
+                                    description: Optional negative prompt for colorization
+            responses:
+                '200':
+                    description: Colorization result
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ImageProcessorResponse'
+                        image/png:
+                            schema:
+                                type: string
+                                format: binary
                 '400':
                     $ref: '#/components/responses/BadRequest'
                 '500':
@@ -429,7 +619,7 @@ paths:
                                 file:
                                     type: string
                                     format: binary
-                                    description: PDF file
+                                    description: 'Allowed document MIME type: application/pdf.'
             responses:
                 '200':
                     description: Extracted PDF content
@@ -444,6 +634,8 @@ paths:
                                     pages:
                                         type: integer
                                         description: Total number of pages in the PDF
+                                    meta:
+                                        $ref: '#/components/schemas/ResponseMeta'
                 '400':
                     $ref: '#/components/responses/BadRequest'
                 '500':
@@ -492,6 +684,8 @@ paths:
                                                 description:
                                                     type: string
                                                     description: Human-readable summary.
+                                    meta:
+                                        $ref: '#/components/schemas/ResponseMeta'
 
     /info/models:
         get:
@@ -540,6 +734,8 @@ paths:
                                                     type: object
                                                     nullable: true
                                                     description: Ollama model metadata (family, parameter_size, quantization_level, etc.).
+                                    meta:
+                                        $ref: '#/components/schemas/ResponseMeta'
                 '502':
                     description: Ollama unreachable or returned an error.
                     content:
@@ -598,85 +794,8 @@ paths:
                                                                 type: boolean
                                                             description:
                                                                 type: string
-
-    # ── OpenAI-compatible (temporary) ─────────────────────────────────────────
-
-    /v1/models:
-        get:
-            tags: [openai-compat]
-            summary: List available Manna model profiles (OpenAI format)
-            description: |
-                Returns Manna profiles in OpenAI model-list format. Intended for Open WebUI
-                and other OpenAI-compatible clients. **This endpoint is temporary** and will
-                be removed when the custom Manna frontend ships.
-            operationId: getV1Models
-            responses:
-                '200':
-                    description: OpenAI-format model list
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                properties:
-                                    object:
-                                        type: string
-                                        example: list
-                                    data:
-                                        type: array
-                                        items:
-                                            type: object
-
-    /v1/chat/completions:
-        post:
-            tags: [openai-compat]
-            summary: OpenAI-compatible chat completions (routes through agent loop)
-            description: |
-                Translates an OpenAI chat request into a Manna `agent.run()` call and returns
-                the result in OpenAI response format. Supports streaming (SSE).
-
-                **This endpoint is temporary** and will be removed when the custom Manna frontend ships.
-            operationId: postV1ChatCompletions
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            type: object
-                            required: [model, messages]
-                            properties:
-                                model:
-                                    type: string
-                                    enum:
-                                        [
-                                            manna,
-                                            manna-agent,
-                                            manna-fast,
-                                            manna-reasoning,
-                                            manna-code
-                                        ]
-                                messages:
-                                    type: array
-                                    items:
-                                        type: object
-                                stream:
-                                    type: boolean
-                                    default: false
-                                allowWrite:
-                                    type: boolean
-                                    default: false
-            responses:
-                '200':
-                    description: Chat completion result (OpenAI format)
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                '400':
-                    $ref: '#/components/responses/BadRequest'
-                '429':
-                    description: Rate limit exceeded
-                '500':
-                    $ref: '#/components/responses/InternalError'
+                                    meta:
+                                        $ref: '#/components/schemas/ResponseMeta'
 
     # ── Library endpoints ──────────────────────────────────────────────────────
 
@@ -892,11 +1011,88 @@ components:
     schemas:
         ErrorResponse:
             type: object
+            required: [error]
             properties:
                 error:
                     type: string
                     description: Human-readable error message.
                     example: "Library 'scientific-american' not found"
+
+        ResponseMeta:
+            type: object
+            description: Optional operational metadata attached to successful responses.
+            properties:
+                durationMs:
+                    type: number
+                    description: Wall-clock request duration in milliseconds.
+                startedAt:
+                    type: string
+                    description: ISO 8601 timestamp when processing started.
+                promptTokens:
+                    type: integer
+                    description: Prompt token count when provided by the model backend.
+                completionTokens:
+                    type: integer
+                    description: Completion token count when provided by the model backend.
+                totalTokens:
+                    type: integer
+                    description: Prompt + completion token count when both are available.
+                model:
+                    type: string
+                    description: Single model identifier when only one model was used.
+                models:
+                    type: array
+                    items:
+                        type: string
+                    description: Model identifiers used during multi-step or routed execution.
+                profile:
+                    type: string
+                    description: Effective profile used by the operation when applicable.
+                steps:
+                    type: integer
+                    description: Number of reasoning or orchestration steps executed.
+                toolCalls:
+                    type: integer
+                    description: Number of tool calls executed.
+                contextLength:
+                    type: integer
+                    description: Final context length in characters when available.
+                requestId:
+                    type: string
+                    description: Request correlation identifier when available.
+                memoryUsed:
+                    type: boolean
+                    description: Whether memory retrieval returned non-empty context.
+
+        HealthResponse:
+            type: object
+            required: [status, timestamp]
+            properties:
+                status:
+                    type: string
+                    description: Health status marker.
+                    example: ok
+                timestamp:
+                    type: string
+                    format: date-time
+                    description: ISO 8601 timestamp of when the health check was served.
+                    example: '2026-04-13T20:05:07.044Z'
+                meta:
+                    $ref: '#/components/schemas/ResponseMeta'
+
+        ImageProcessorResponse:
+            type: object
+            required: [image, duration_ms, model]
+            properties:
+                image:
+                    type: string
+                    description: Base64-encoded PNG image produced by the processor.
+                duration_ms:
+                    type: number
+                    description: Processing duration in milliseconds.
+                model:
+                    type: string
+                    description: Model identifier returned by the processor.
 
         # ── Core schemas ─────────────────────────────────────────────────────────
 
@@ -927,6 +1123,8 @@ components:
                 result:
                     type: string
                     description: The agent's final answer as a plain string.
+                meta:
+                    $ref: '#/components/schemas/ResponseMeta'
 
         # ── Swarm schemas ────────────────────────────────────────────────────────
 
@@ -983,7 +1181,7 @@ components:
         SwarmResponse:
             type: object
             properties:
-                result:
+                answer:
                     type: string
                     description: The synthesised final answer.
                 subtaskResults:
@@ -1003,6 +1201,91 @@ components:
                 totalDurationMs:
                     type: number
                     description: Total wall-clock duration of the entire swarm run.
+                meta:
+                    $ref: '#/components/schemas/ResponseMeta'
+
+        # ── Workflow schemas ─────────────────────────────────────────────────────
+
+        WorkflowRequest:
+            type: object
+            required: [steps]
+            properties:
+                steps:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/StepDefinition'
+                    minItems: 1
+                    maxItems: 50
+                    description: |
+                        Ordered list of workflow step definitions.
+                    example:
+                        - task: 'List all TypeScript files under packages/'
+                        - task: 'Summarise the purpose of each listed file'
+                allowWrite:
+                    type: boolean
+                    default: false
+                    description: |
+                        When `true`, unlocks `write_file`, `scaffold_project`, and `document_ingest`
+                        tools for all steps.
+                profile:
+                    type: string
+                    enum: [fast, reasoning, code, default]
+                    description: |
+                        Force a specific model profile for all steps, bypassing automatic routing.
+                carry:
+                    type: string
+                    enum: [none, summary, full]
+                    default: summary
+                    description: |
+                        How prior step outputs are carried into subsequent steps.
+                        `none` = isolated; `summary` = compact bullet summary (default);
+                        `full` = verbatim full output.
+                maxStepsPerStep:
+                    type: integer
+                    minimum: 1
+                    maximum: 100
+                    description: |
+                        Per-step agent-loop iteration cap.  Overrides `AGENTS_MAX_STEPS` for this
+                        request only.  Defaults to `AGENTS_MAX_STEPS` (env var, default 5).
+
+        WorkflowStepResult:
+            type: object
+            properties:
+                index:
+                    type: integer
+                    description: Zero-based position of this step in the workflow.
+                task:
+                    type: string
+                    description: The original task string for this step.
+                result:
+                    type: string
+                    description: The agent's final answer for this step.
+                success:
+                    type: boolean
+                    description: Whether this step completed without throwing.
+                durationMs:
+                    type: number
+                    description: Wall-clock execution time for this step in milliseconds.
+                error:
+                    type: string
+                    description: Error message (only present when `success` is `false`).
+
+        WorkflowResponse:
+            type: object
+            properties:
+                steps:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/WorkflowStepResult'
+                    description: Per-step results in execution order.
+                allSucceeded:
+                    type: boolean
+                    description: '`true` when every step completed successfully.'
+                totalDurationMs:
+                    type: number
+                    description: Total wall-clock duration across all steps in milliseconds.
+                meta:
+                    $ref: '#/components/schemas/ResponseMeta'
 
         # ── IDE schemas ───────────────────────────────────────────────────────────
 
@@ -1034,8 +1317,20 @@ components:
                     description: Whether the result was served from cache.
                 latencyMs:
                     type: integer
+                meta:
+                    $ref: '#/components/schemas/ResponseMeta'
 
-        LintRequest:
+        StepDefinition:
+            type: object
+            required: [task]
+            properties:
+                task:
+                    type: string
+                    minLength: 1
+                    description: Task text to run for this workflow step.
+            description: Workflow step input definition.
+
+        LintConventionsRequest:
             type: object
             required: [code]
             properties:
@@ -1045,6 +1340,22 @@ components:
                 language:
                     type: string
                     description: Programming language identifier.
+                filename:
+                    type: string
+                    description: Optional source file name/path for context.
+                includeLlm:
+                    type: boolean
+                    default: true
+                    description: Whether to include the optional LLM enrichment pass.
+                model:
+                    type: string
+                    description: Override the model used for LLM enrichment.
+                maxFindings:
+                    type: integer
+                    minimum: 1
+                    maximum: 200
+                    default: 80
+                    description: Maximum number of findings returned.
 
         LintResponse:
             type: object
@@ -1089,6 +1400,8 @@ components:
                     type: string
                 latencyMs:
                     type: integer
+                meta:
+                    $ref: '#/components/schemas/ResponseMeta'
 
         PageReviewRequest:
             type: object
@@ -1117,6 +1430,8 @@ components:
                         type: object
                 latencyMs:
                     type: integer
+                meta:
+                    $ref: '#/components/schemas/ResponseMeta'
 
         # ── Library schemas ───────────────────────────────────────────────────────
 

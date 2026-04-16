@@ -3,11 +3,12 @@ import { ref } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
 import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
 import type {
-    ModelProfile,
-    IWorkflowResponse,
-    WorkflowStreamEvent,
-    WorkflowCarryMode
-} from '@/api/types';
+    WorkflowRequestCarryEnum as WorkflowCarryMode,
+    WorkflowRequestProfileEnum as ModelProfile,
+    WorkflowResponse,
+    StepDefinition
+} from '../../api/models';
+import type { WorkflowStreamEvent } from '@/api/sseEvents';
 import { runWorkflow, runWorkflowStream } from '@/api/manna';
 import { useNotificationsStore, TOAST_TYPE } from './notification';
 import { handleApiError } from '@/utils/errorHandling';
@@ -23,7 +24,7 @@ export interface IWorkflowHistoryEntry {
     allSucceeded: boolean;
     totalDurationMs: number;
     timestamp: string;
-    response: IWorkflowResponse;
+    response: WorkflowResponse;
 }
 
 /**
@@ -57,26 +58,37 @@ export const useWorkflowStore = defineStore('workflow', () => {
         allowWrite = false,
         maxStepsPerStep?: number
     ): Promise<IWorkflowHistoryEntry | undefined> => {
-        return fetchAny(
-            () =>
-                runWorkflow({ steps, carry, profile, allowWrite, maxStepsPerStep }).then(
-                    (response) => {
-                        const entry: IWorkflowHistoryEntry = {
-                            id: uuidv4(),
-                            steps,
-                            carry,
-                            profile,
-                            allowWrite,
-                            maxStepsPerStep,
-                            allSucceeded: response.allSucceeded,
-                            totalDurationMs: response.totalDurationMs,
-                            timestamp: new Date().toISOString(),
-                            response
-                        };
-                        workflowHistory.value.unshift(entry);
-                        return entry;
-                    }
-                )
+        const stepDefinitions: StepDefinition[] = steps.map((task) => ({ task }));
+
+        return fetchAny(() =>
+            runWorkflow({
+                steps: stepDefinitions,
+                carry,
+                profile,
+                allowWrite,
+                maxStepsPerStep
+            }).then((response) => {
+                const normalizedResponse: WorkflowResponse = {
+                    steps: response.steps ?? [],
+                    allSucceeded: response.allSucceeded ?? false,
+                    totalDurationMs: response.totalDurationMs ?? 0,
+                    meta: response.meta
+                };
+                const entry: IWorkflowHistoryEntry = {
+                    id: uuidv4(),
+                    steps,
+                    carry,
+                    profile,
+                    allowWrite,
+                    maxStepsPerStep,
+                    allSucceeded: normalizedResponse.allSucceeded ?? false,
+                    totalDurationMs: normalizedResponse.totalDurationMs ?? 0,
+                    timestamp: new Date().toISOString(),
+                    response: normalizedResponse
+                };
+                workflowHistory.value.unshift(entry);
+                return entry;
+            })
         ).catch((error: unknown) => {
             handleApiError(error, 'Workflow task failed');
             // eslint-disable-next-line unicorn/no-useless-undefined
@@ -102,12 +114,14 @@ export const useWorkflowStore = defineStore('workflow', () => {
         maxStepsPerStep?: number
     ): Promise<IWorkflowHistoryEntry | undefined> => {
         const notificationStore = useNotificationsStore();
+        const stepDefinitions: StepDefinition[] = steps.map((task) => ({ task }));
+
         streaming.value = true;
         streamEvents.value = [];
 
         try {
             for await (const event of runWorkflowStream({
-                steps,
+                steps: stepDefinitions,
                 carry,
                 profile,
                 allowWrite,
@@ -123,13 +137,14 @@ export const useWorkflowStore = defineStore('workflow', () => {
                         profile,
                         allowWrite,
                         maxStepsPerStep,
-                        allSucceeded: event.data.allSucceeded,
-                        totalDurationMs: event.data.totalDurationMs,
+                        allSucceeded: event.data.allSucceeded ?? false,
+                        totalDurationMs: event.data.totalDurationMs ?? 0,
                         timestamp: new Date().toISOString(),
                         response: {
-                            steps: event.data.steps,
-                            allSucceeded: event.data.allSucceeded,
-                            totalDurationMs: event.data.totalDurationMs
+                            steps: event.data.steps ?? [],
+                            allSucceeded: event.data.allSucceeded ?? false,
+                            totalDurationMs: event.data.totalDurationMs ?? 0,
+                            meta: event.data.meta
                         }
                     };
                     workflowHistory.value.unshift(entry);

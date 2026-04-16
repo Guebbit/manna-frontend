@@ -12,32 +12,27 @@
  */
 import { getMannaBaseUrl } from '@/config';
 import type {
-    IRunRequest,
-    IRunResponse,
-    IAutocompleteRequest,
-    IAutocompleteResponse,
-    ILintConventionsRequest,
-    ILintConventionsResponse,
-    IPageReviewRequest,
-    IPageReviewResponse,
-    IImageClassifyResponse,
-    ISpeechToTextResponse,
-    IReadPdfResponse,
-    IHealthResponse,
-    IOpenAiModelListResponse,
-    IOpenAiChatCompletionRequest,
-    IOpenAiChatCompletionResponse,
-    AgentStreamEvent,
-    ISwarmRequest,
-    ISwarmResponse,
-    SwarmStreamEvent,
-    IInfoModesResponse,
-    IInfoModelsResponse,
-    IHelpResponse,
-    IWorkflowRequest,
-    IWorkflowResponse,
-    WorkflowStreamEvent
-} from './types';
+    AutocompleteRequest,
+    AutocompleteResponse,
+    GetHelp200Response,
+    GetInfoModels200Response,
+    GetInfoModes200Response,
+    HealthResponse,
+    LintConventionsRequest,
+    LintResponse,
+    PageReviewRequest,
+    PageReviewResponse,
+    RunRequest,
+    RunResponse,
+    SwarmRequest,
+    SwarmResponse,
+    UploadImageClassify200Response,
+    UploadReadPdf200Response,
+    UploadSpeechToText200Response,
+    WorkflowRequest,
+    WorkflowResponse
+} from '../../api/models';
+import type { AgentStreamEvent, SwarmStreamEvent, WorkflowStreamEvent } from './sseEvents';
 
 /* ─── Error class ────────────────────────────────────────────── */
 
@@ -120,9 +115,9 @@ function baseUrl(): string {
  *
  * @returns The health status payload from the server.
  */
-export async function healthCheck(): Promise<IHealthResponse> {
+export async function healthCheck(): Promise<HealthResponse> {
     const response = await fetch(`${baseUrl()}/health`);
-    return handleResponse<IHealthResponse>(response);
+    return handleResponse<HealthResponse>(response);
 }
 
 /* ─── Agent ──────────────────────────────────────────────────── */
@@ -133,87 +128,13 @@ export async function healthCheck(): Promise<IHealthResponse> {
  * @param parameters - The task description, profile, and write-access flag.
  * @returns The agent's result string.
  */
-export async function runTask(parameters: IRunRequest): Promise<IRunResponse> {
+export async function runTask(parameters: RunRequest): Promise<RunResponse> {
     const response = await fetch(`${baseUrl()}/run`, {
         method: 'POST',
         headers: JSON_HEADERS,
         body: JSON.stringify(parameters)
     });
-    return handleResponse<IRunResponse>(response);
-}
-
-/* ─── OpenAI Compat ──────────────────────────────────────────── */
-
-/**
- * Fetches the list of available models from the OpenAI-compatible endpoint.
- *
- * @returns The model list response containing all available model objects.
- */
-export async function listModels(): Promise<IOpenAiModelListResponse> {
-    const response = await fetch(`${baseUrl()}/v1/models`);
-    return handleResponse<IOpenAiModelListResponse>(response);
-}
-
-/**
- * Sends a non-streaming chat completion request.
- *
- * @param parameters - The chat messages, model, and optional generation settings.
- * @returns The complete assistant response with usage statistics.
- */
-export async function chatCompletion(
-    parameters: IOpenAiChatCompletionRequest
-): Promise<IOpenAiChatCompletionResponse> {
-    const response = await fetch(`${baseUrl()}/v1/chat/completions`, {
-        method: 'POST',
-        headers: JSON_HEADERS,
-        body: JSON.stringify({ ...parameters, stream: false })
-    });
-    return handleResponse<IOpenAiChatCompletionResponse>(response);
-}
-
-/**
- * Opens a streaming chat completion and yields content deltas as they arrive.
- *
- * @param parameters - The chat messages and model (stream flag is forced to `true`).
- * @yields Individual text chunks from the assistant's response.
- * @throws {ApiError} When the initial HTTP response is not OK.
- */
-export async function* streamChat(
-    parameters: Omit<IOpenAiChatCompletionRequest, 'stream'>
-): AsyncGenerator<string> {
-    const response = await fetch(`${baseUrl()}/v1/chat/completions`, {
-        method: 'POST',
-        headers: JSON_HEADERS,
-        body: JSON.stringify({ ...parameters, stream: true })
-    });
-
-    if (!response.ok) await throwStreamError(response);
-
-    const reader = response.body!.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-
-    while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? '';
-
-        for (const line of lines) {
-            if (!line.startsWith('data: ')) continue;
-            const data = line.slice(6).trim();
-            if (data === '[DONE]') return;
-            try {
-                const chunk = JSON.parse(data);
-                const delta = chunk.choices?.[0]?.delta?.content;
-                if (delta) yield delta as string;
-            } catch {
-                /* skip malformed chunks */
-            }
-        }
-    }
+    return handleResponse<RunResponse>(response);
 }
 
 /* ─── IDE ────────────────────────────────────────────────────── */
@@ -224,47 +145,43 @@ export async function* streamChat(
  * @param parameters - The code prefix, optional suffix, and language.
  * @returns The completion suggestion with metadata.
  */
-export async function autocomplete(
-    parameters: IAutocompleteRequest
-): Promise<IAutocompleteResponse> {
+export async function autocomplete(parameters: AutocompleteRequest): Promise<AutocompleteResponse> {
     const response = await fetch(`${baseUrl()}/autocomplete`, {
         method: 'POST',
         headers: JSON_HEADERS,
         body: JSON.stringify(parameters)
     });
-    return handleResponse<IAutocompleteResponse>(response);
+    return handleResponse<AutocompleteResponse>(response);
 }
 
 /**
  * Submits code for convention-aware linting analysis.
  *
- * @param parameters - The source content, language, file path, and LLM options.
+ * @param parameters - The source code, language, filename, and LLM options.
  * @returns Lint findings grouped by severity with an overall summary.
  */
-export async function lintConventions(
-    parameters: ILintConventionsRequest
-): Promise<ILintConventionsResponse> {
+export async function lintConventions(parameters: LintConventionsRequest): Promise<LintResponse> {
     const response = await fetch(`${baseUrl()}/lint-conventions`, {
         method: 'POST',
         headers: JSON_HEADERS,
         body: JSON.stringify(parameters)
     });
-    return handleResponse<ILintConventionsResponse>(response);
+    return handleResponse<LintResponse>(response);
 }
 
 /**
  * Requests an AI-powered page-level code review.
  *
- * @param parameters - The source content, language, file path, and optional model.
- * @returns Categorised review suggestions (correctness, maintainability, etc.).
+ * @param parameters - The source code, language, filename, and optional model.
+ * @returns Review findings with request metadata.
  */
-export async function pageReview(parameters: IPageReviewRequest): Promise<IPageReviewResponse> {
+export async function pageReview(parameters: PageReviewRequest): Promise<PageReviewResponse> {
     const response = await fetch(`${baseUrl()}/page-review`, {
         method: 'POST',
         headers: JSON_HEADERS,
         body: JSON.stringify(parameters)
     });
-    return handleResponse<IPageReviewResponse>(response);
+    return handleResponse<PageReviewResponse>(response);
 }
 
 /* ─── Upload (multipart) ─────────────────────────────────────── */
@@ -302,17 +219,17 @@ async function uploadFile<T>(
  * Uploads an image for AI classification.
  *
  * @param parameters - The image file and optional prompt/model overrides.
- * @returns The classification result with the model used.
+ * @returns The classification result.
  */
 export async function uploadImageClassify(parameters: {
     file: File;
     prompt?: string;
     model?: string;
-}): Promise<IImageClassifyResponse> {
+}): Promise<UploadImageClassify200Response> {
     const extra: Record<string, string> = {};
     if (parameters.prompt) extra.prompt = parameters.prompt;
     if (parameters.model) extra.model = parameters.model;
-    return uploadFile<IImageClassifyResponse>(
+    return uploadFile<UploadImageClassify200Response>(
         '/upload/image-classify',
         parameters.file,
         'file',
@@ -324,19 +241,19 @@ export async function uploadImageClassify(parameters: {
  * Uploads an audio file for speech-to-text transcription.
  *
  * @param parameters - The audio file, optional model, language hint, and prompt.
- * @returns The transcription text and model used.
+ * @returns The transcription payload.
  */
 export async function uploadSpeechToText(parameters: {
     file: File;
     model?: string;
     language?: string;
     prompt?: string;
-}): Promise<ISpeechToTextResponse> {
+}): Promise<UploadSpeechToText200Response> {
     const extra: Record<string, string> = {};
     if (parameters.model) extra.model = parameters.model;
     if (parameters.language) extra.language = parameters.language;
     if (parameters.prompt) extra.prompt = parameters.prompt;
-    return uploadFile<ISpeechToTextResponse>(
+    return uploadFile<UploadSpeechToText200Response>(
         '/upload/speech-to-text',
         parameters.file,
         'file',
@@ -348,13 +265,11 @@ export async function uploadSpeechToText(parameters: {
  * Uploads a PDF file for text extraction.
  *
  * @param parameters - The PDF file to read.
- * @returns The extracted text content and page count.
+ * @returns The extracted text payload.
  */
-export async function uploadReadPdf(parameters: { file: File }): Promise<IReadPdfResponse> {
-    return uploadFile<IReadPdfResponse>('/upload/read-pdf', parameters.file);
+export async function uploadReadPdf(parameters: { file: File }): Promise<UploadReadPdf200Response> {
+    return uploadFile<UploadReadPdf200Response>('/upload/read-pdf', parameters.file);
 }
-
-
 
 /* ─── SSE helper ─────────────────────────────────────────────── */
 
@@ -416,9 +331,7 @@ async function* parseSseStream<T extends { type: string; data: unknown }>(
  * @yields Typed `AgentStreamEvent` objects (step, tool, route, done, error, max_steps).
  * @throws {ApiError} When the initial HTTP response is not OK.
  */
-export async function* runTaskStream(
-    parameters: IRunRequest
-): AsyncGenerator<AgentStreamEvent> {
+export async function* runTaskStream(parameters: RunRequest): AsyncGenerator<AgentStreamEvent> {
     const response = await fetch(`${baseUrl()}/run/stream`, {
         method: 'POST',
         headers: JSON_HEADERS,
@@ -438,13 +351,13 @@ export async function* runTaskStream(
  * @param parameters - The task, profile, write-access flag, and optional subtask limit.
  * @returns The swarm result including subtask breakdown and timing.
  */
-export async function runSwarm(parameters: ISwarmRequest): Promise<ISwarmResponse> {
+export async function runSwarm(parameters: SwarmRequest): Promise<SwarmResponse> {
     const response = await fetch(`${baseUrl()}/run/swarm`, {
         method: 'POST',
         headers: JSON_HEADERS,
         body: JSON.stringify(parameters)
     });
-    return handleResponse<ISwarmResponse>(response);
+    return handleResponse<SwarmResponse>(response);
 }
 
 /**
@@ -454,9 +367,7 @@ export async function runSwarm(parameters: ISwarmRequest): Promise<ISwarmRespons
  * @yields Typed `SwarmStreamEvent` objects.
  * @throws {ApiError} When the initial HTTP response is not OK.
  */
-export async function* runSwarmStream(
-    parameters: ISwarmRequest
-): AsyncGenerator<SwarmStreamEvent> {
+export async function* runSwarmStream(parameters: SwarmRequest): AsyncGenerator<SwarmStreamEvent> {
     const response = await fetch(`${baseUrl()}/run/swarm/stream`, {
         method: 'POST',
         headers: JSON_HEADERS,
@@ -475,9 +386,9 @@ export async function* runSwarmStream(
  *
  * @returns Mode list including profile names, model identifiers, and descriptions.
  */
-export async function fetchInfoModes(): Promise<IInfoModesResponse> {
+export async function fetchInfoModes(): Promise<GetInfoModes200Response> {
     const response = await fetch(`${baseUrl()}/info/modes`);
-    return handleResponse<IInfoModesResponse>(response);
+    return handleResponse<GetInfoModes200Response>(response);
 }
 
 /**
@@ -485,9 +396,9 @@ export async function fetchInfoModes(): Promise<IInfoModesResponse> {
  *
  * @returns Model list with metadata (name, size, digest, modified date).
  */
-export async function fetchInfoModels(): Promise<IInfoModelsResponse> {
+export async function fetchInfoModels(): Promise<GetInfoModels200Response> {
     const response = await fetch(`${baseUrl()}/info/models`);
-    return handleResponse<IInfoModelsResponse>(response);
+    return handleResponse<GetInfoModels200Response>(response);
 }
 
 /**
@@ -495,9 +406,9 @@ export async function fetchInfoModels(): Promise<IInfoModelsResponse> {
  *
  * @returns API reference including endpoint descriptors and parameter schemas.
  */
-export async function fetchHelp(): Promise<IHelpResponse> {
+export async function fetchHelp(): Promise<GetHelp200Response> {
     const response = await fetch(`${baseUrl()}/help`);
-    return handleResponse<IHelpResponse>(response);
+    return handleResponse<GetHelp200Response>(response);
 }
 
 /* ─── Workflow ─────────────────────────────────────────────────── */
@@ -508,13 +419,13 @@ export async function fetchHelp(): Promise<IHelpResponse> {
  * @param parameters - The ordered step list, carry mode, profile, and write-access flag.
  * @returns The workflow result including per-step breakdown and timing.
  */
-export async function runWorkflow(parameters: IWorkflowRequest): Promise<IWorkflowResponse> {
+export async function runWorkflow(parameters: WorkflowRequest): Promise<WorkflowResponse> {
     const response = await fetch(`${baseUrl()}/workflow`, {
         method: 'POST',
         headers: JSON_HEADERS,
         body: JSON.stringify(parameters)
     });
-    return handleResponse<IWorkflowResponse>(response);
+    return handleResponse<WorkflowResponse>(response);
 }
 
 /**
@@ -525,7 +436,7 @@ export async function runWorkflow(parameters: IWorkflowRequest): Promise<IWorkfl
  * @throws {ApiError} When the initial HTTP response is not OK.
  */
 export async function* runWorkflowStream(
-    parameters: IWorkflowRequest
+    parameters: WorkflowRequest
 ): AsyncGenerator<WorkflowStreamEvent> {
     const response = await fetch(`${baseUrl()}/workflow/stream`, {
         method: 'POST',

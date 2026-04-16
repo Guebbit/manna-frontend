@@ -132,10 +132,16 @@
                                 size="small"
                             >
                                 <div class="d-flex align-center ga-2">
-                                    <v-chip :color="workflowEventColor(event.type)" size="x-small" label>
+                                    <v-chip
+                                        :color="workflowEventColor(event.type)"
+                                        size="x-small"
+                                        label
+                                    >
                                         {{ event.type }}
                                     </v-chip>
-                                    <span class="text-body-2">{{ workflowEventSummary(event) }}</span>
+                                    <span class="text-body-2">{{
+                                        workflowEventSummary(event)
+                                    }}</span>
                                 </div>
                             </v-timeline-item>
                         </v-timeline>
@@ -177,17 +183,17 @@
                                             }}
                                         </v-icon>
                                         <span class="text-caption text-grey mr-1">
-                                            #{{ step.index + 1 }}
+                                            #{{ (step.index ?? 0) + 1 }}
                                         </span>
                                         <span class="text-truncate">{{ step.task }}</span>
                                         <v-chip size="x-small" variant="outlined" class="ml-auto">
-                                            {{ formatDuration(step.durationMs) }}
+                                            {{ formatDuration(step.durationMs ?? 0) }}
                                         </v-chip>
                                     </div>
                                 </v-expansion-panel-title>
                                 <v-expansion-panel-text>
                                     <p v-if="step.error" class="text-error">{{ step.error }}</p>
-                                    <MarkdownRenderer v-else :content="step.result" />
+                                    <MarkdownRenderer v-else :content="step.result ?? ''" />
                                 </v-expansion-panel-text>
                             </v-expansion-panel>
                         </v-expansion-panels>
@@ -245,7 +251,10 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useWorkflowStore, type IWorkflowHistoryEntry } from '@/stores/workflow';
-import type { ModelProfile, WorkflowCarryMode } from '@/api/types';
+import type {
+    WorkflowRequestCarryEnum as WorkflowCarryMode,
+    WorkflowRequestProfileEnum as ModelProfile
+} from '../../api/models';
 import MarkdownRenderer from '@/components/shared/MarkdownRenderer.vue';
 import { PROFILE_OPTIONS } from '@/utils/constants';
 import { formatTime, formatDuration } from '@/utils/formatting';

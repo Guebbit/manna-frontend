@@ -19,7 +19,8 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
 import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
-import type { ModelProfile, ISwarmResponse, SwarmStreamEvent } from '@/api/types';
+import type { SwarmRequestProfileEnum as ModelProfile, SwarmResponse } from '../../api/models';
+import type { SwarmStreamEvent } from '@/api/sseEvents';
 import { runSwarm, runSwarmStream } from '@/api/manna';
 import { useNotificationsStore, TOAST_TYPE } from './notification';
 import { handleApiError } from '@/utils/errorHandling';
@@ -35,7 +36,7 @@ export interface ISwarmHistoryEntry {
     subtaskCount: number;
     totalDurationMs: number;
     timestamp: string;
-    response: ISwarmResponse;
+    response: SwarmResponse;
 }
 
 /**
@@ -69,17 +70,24 @@ export const useSwarmStore = defineStore('swarm', () => {
     ): Promise<ISwarmHistoryEntry | undefined> => {
         return fetchAny(() =>
             runSwarm({ task, profile, allowWrite, maxSubtasks }).then((response) => {
+                const normalizedResponse: SwarmResponse = {
+                    answer: response.answer ?? '',
+                    subtaskResults: response.subtaskResults ?? [],
+                    decomposition: response.decomposition ?? { reasoning: '', subtaskCount: 0 },
+                    totalDurationMs: response.totalDurationMs ?? 0,
+                    meta: response.meta
+                };
                 const entry: ISwarmHistoryEntry = {
                     id: uuidv4(),
                     task,
-                    result: response.result,
+                    result: normalizedResponse.answer ?? '',
                     profile,
                     allowWrite,
                     maxSubtasks,
-                    subtaskCount: response.subtaskResults.length,
-                    totalDurationMs: response.totalDurationMs,
+                    subtaskCount: normalizedResponse.subtaskResults?.length ?? 0,
+                    totalDurationMs: normalizedResponse.totalDurationMs ?? 0,
                     timestamp: new Date().toISOString(),
-                    response
+                    response: normalizedResponse
                 };
                 swarmHistory.value.unshift(entry);
                 return entry;
@@ -132,7 +140,7 @@ export const useSwarmStore = defineStore('swarm', () => {
                         // Streaming mode does not deliver full subtask payloads;
                         // subtaskResults is empty and decomposition.reasoning is unavailable.
                         response: {
-                            result: event.data.result,
+                            answer: event.data.result,
                             subtaskResults: [],
                             decomposition: { reasoning: '', subtaskCount: event.data.subtaskCount },
                             totalDurationMs: event.data.totalDurationMs

@@ -25,8 +25,8 @@
                     </v-card-title>
                     <v-card-subtitle>
                         Each profile maps to a specific Ollama model optimised for different
-                        workloads. The model router automatically selects the best profile per
-                        agent step, or you can force one manually in Agent / Swarm views.
+                        workloads. The model router automatically selects the best profile per agent
+                        step, or you can force one manually in Agent / Swarm views.
                     </v-card-subtitle>
                     <v-card-text v-if="systemStore.modes.length === 0" class="text-grey">
                         No routing profiles loaded. Click refresh to fetch.
@@ -79,10 +79,13 @@
                         </v-btn>
                     </v-card-title>
                     <v-card-subtitle>
-                        All models currently loaded in the local Ollama instance.
-                        These are the actual LLMs available for inference.
+                        All models currently loaded in the local Ollama instance. These are the
+                        actual LLMs available for inference.
                     </v-card-subtitle>
-                    <v-card-text v-if="systemStore.ollamaBaseUrl" class="text-caption text-grey pb-0">
+                    <v-card-text
+                        v-if="systemStore.ollamaBaseUrl"
+                        class="text-caption text-grey pb-0"
+                    >
                         Ollama: {{ systemStore.ollamaBaseUrl }}
                     </v-card-text>
                     <v-card-text v-if="systemStore.infoModels.length === 0" class="text-grey">
@@ -100,8 +103,12 @@
                         <tbody>
                             <tr v-for="model in systemStore.infoModels" :key="model.name">
                                 <td class="text-body-2">{{ model.name }}</td>
-                                <td class="text-caption">{{ formatModelSize(model.size) }}</td>
-                                <td class="text-caption">{{ formatDate(model.modifiedAt) }}</td>
+                                <td class="text-caption">
+                                    {{ formatModelSize(model.size ?? null) }}
+                                </td>
+                                <td class="text-caption">
+                                    {{ formatDate(model.modifiedAt ?? null) }}
+                                </td>
                                 <td class="text-caption text-grey">
                                     {{ model.digest ? model.digest.slice(0, 12) + '…' : '—' }}
                                 </td>
@@ -117,12 +124,7 @@
                     <v-card-title class="d-flex align-center">
                         <v-icon start>mdi-api</v-icon>
                         API Reference
-                        <v-chip
-                            v-if="systemStore.help"
-                            class="ml-2"
-                            size="small"
-                            color="info"
-                        >
+                        <v-chip v-if="systemStore.help" class="ml-2" size="small" color="info">
                             {{ systemStore.help.endpointCount }} endpoints
                         </v-chip>
                         <v-spacer />
@@ -137,8 +139,8 @@
                         </v-btn>
                     </v-card-title>
                     <v-card-subtitle>
-                        Complete list of backend HTTP endpoints.
-                        Use this as a reference for direct API integration.
+                        Complete list of backend HTTP endpoints. Use this as a reference for direct
+                        API integration.
                     </v-card-subtitle>
                     <v-card-text v-if="!systemStore.help" class="text-grey">
                         API reference not loaded. Click refresh to fetch.
@@ -148,12 +150,12 @@
                         <v-expansion-panels>
                             <v-expansion-panel
                                 v-for="ep in systemStore.help.endpoints"
-                                :key="ep.method + ep.path"
+                                :key="(ep.method ?? '') + (ep.path ?? '')"
                             >
                                 <v-expansion-panel-title>
                                     <div class="d-flex align-center ga-2">
                                         <v-chip
-                                            :color="methodColor(ep.method)"
+                                            :color="methodColor(ep.method ?? '')"
                                             size="x-small"
                                             label
                                         >
@@ -167,7 +169,7 @@
                                 </v-expansion-panel-title>
                                 <v-expansion-panel-text>
                                     <v-table
-                                        v-if="ep.params.length > 0"
+                                        v-if="(ep.params?.length ?? 0) > 0"
                                         density="compact"
                                         class="text-caption"
                                     >
@@ -180,11 +182,10 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr
-                                                v-for="param in ep.params"
-                                                :key="param.name"
-                                            >
-                                                <td><code>{{ param.name }}</code></td>
+                                            <tr v-for="param in ep.params ?? []" :key="param.name">
+                                                <td>
+                                                    <code>{{ param.name }}</code>
+                                                </td>
                                                 <td>{{ param.type }}</td>
                                                 <td>
                                                     <v-icon

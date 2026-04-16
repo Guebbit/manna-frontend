@@ -1,28 +1,18 @@
 /**
  * @module stores/system
  *
- * Pinia store for backend health status, model lists, routing profiles, and API reference.
- *
- * Three distinct model-related data sets are managed separately:
- * - `models`      — OpenAI-compatible model list from `/v1/models`.  These IDs are
- *   used as the `model` field in chat requests.
- * - `infoModels`  — Raw Ollama model metadata from `/info/models` (name, size, digest,
- *   modified date).  Useful for administration / capacity planning.
- * - `modes`       — Manna agent routing profiles from `/info/modes`.  Each profile maps
- *   to a specific Ollama model configured via environment variables.  The automatic model
- *   router selects the best profile per agent step; users can also force a profile manually.
+ * Pinia store for backend health status, model metadata, routing profiles, and API reference.
  */
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
 import type {
-    IHealthResponse,
-    IOpenAiModelObject,
-    IInfoMode,
-    IInfoModel,
-    IHelpResponse
-} from '@/api/types';
-import { healthCheck, listModels, fetchInfoModes, fetchInfoModels, fetchHelp } from '@/api/manna';
+    GetHelp200Response,
+    GetInfoModels200ResponseModelsInner,
+    GetInfoModes200ResponseModesInner,
+    HealthResponse
+} from '../../api/models';
+import { healthCheck, fetchInfoModes, fetchInfoModels, fetchHelp } from '@/api/manna';
 
 /**
  * Pinia store managing backend health status, available model list,
@@ -36,21 +26,21 @@ export const useSystemStore = defineStore('system', () => {
         loadingKey: 'system'
     });
 
-    const health = ref<IHealthResponse | undefined>(undefined);
+    const health = ref<HealthResponse | undefined>(undefined);
     const healthLoading = computed(() => getLoading('system-health'));
     const healthError = ref<string | undefined>(undefined);
 
-    const models = ref<IOpenAiModelObject[]>([]);
+    const models = ref<GetInfoModels200ResponseModelsInner[]>([]);
     const modelsLoading = computed(() => getLoading('system-models'));
 
-    const modes = ref<IInfoMode[]>([]);
+    const modes = ref<GetInfoModes200ResponseModesInner[]>([]);
     const modesLoading = computed(() => getLoading('system-modes'));
 
-    const infoModels = ref<IInfoModel[]>([]);
+    const infoModels = ref<GetInfoModels200ResponseModelsInner[]>([]);
     const infoModelsLoading = computed(() => getLoading('system-info-models'));
     const ollamaBaseUrl = ref('');
 
-    const help = ref<IHelpResponse | undefined>(undefined);
+    const help = ref<GetHelp200Response | undefined>(undefined);
     const helpLoading = computed(() => getLoading('system-help'));
 
     /**
@@ -75,14 +65,14 @@ export const useSystemStore = defineStore('system', () => {
     };
 
     /**
-     * Fetches the list of available models from the OpenAI-compatible endpoint.
+     * Fetches available models from `/info/models` for dashboard display.
      * Silently resets to an empty array on failure.
      */
     const fetchModels = () =>
         fetchAny(
             () =>
-                listModels().then((response) => {
-                    models.value = response.data;
+                fetchInfoModels().then((response) => {
+                    models.value = response.models ?? [];
                 }),
             {
                 lastUpdateKey: 'models',
@@ -100,7 +90,7 @@ export const useSystemStore = defineStore('system', () => {
         fetchAny(
             () =>
                 fetchInfoModes().then((response) => {
-                    modes.value = response.modes;
+                    modes.value = response.modes ?? [];
                 }),
             {
                 lastUpdateKey: 'modes',
@@ -118,8 +108,8 @@ export const useSystemStore = defineStore('system', () => {
         fetchAny(
             () =>
                 fetchInfoModels().then((response) => {
-                    infoModels.value = response.models;
-                    ollamaBaseUrl.value = response.ollamaBaseUrl;
+                    infoModels.value = response.models ?? [];
+                    ollamaBaseUrl.value = response.ollamaBaseUrl ?? '';
                 }),
             {
                 lastUpdateKey: 'info-models',

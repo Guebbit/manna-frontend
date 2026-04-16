@@ -45,20 +45,20 @@
 
         <!-- Main chat area -->
         <v-card class="flex-grow-1 d-flex flex-column" variant="flat">
-            <!-- Model selector bar -->
+            <!-- Profile selector bar -->
             <v-card-title class="d-flex align-center ga-3 py-2">
                 <v-select
-                    v-model="selectedModel"
-                    :items="modelOptions"
+                    v-model="selectedProfile"
+                    :items="profileOptions"
                     density="compact"
                     variant="outlined"
                     style="max-width: 250px"
-                    label="Model"
-                    hint="'manna' = agentic loop with tools. Specific model names (e.g. llama3.1:8b) = direct Ollama inference."
+                    label="Routing profile"
+                    hint="Choose how the backend routes the task: fast, reasoning, code, or default."
                     persistent-hint
                 />
                 <v-tooltip
-                    text="Grants the agentic loop permission to modify files. Only applies when using 'manna' models."
+                    text="Grants the agentic loop permission to modify files."
                     location="top"
                     max-width="280"
                 >
@@ -87,11 +87,12 @@
                     <div class="text-center text-grey">
                         <v-icon size="64" class="mb-4">mdi-chat-outline</v-icon>
                         <p class="text-h6">Start a new conversation</p>
-                        <p class="text-body-2 mb-2">Select a model and type a message below.</p>
+                        <p class="text-body-2 mb-2">
+                            Select a routing profile and type a message below.
+                        </p>
                         <p class="text-body-2">
-                            Chat uses the OpenAI-compatible endpoint.
-                            Selecting <strong>manna</strong> routes through the full agentic loop with tool access.
-                            Other model names go directly to Ollama for plain inference.
+                            Chat uses the agent stream endpoint. The selected routing profile is
+                            passed as a hint for backend model routing.
                         </p>
                     </div>
                 </div>
@@ -159,30 +160,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onMounted } from 'vue';
+import { ref, watch, nextTick, onMounted } from 'vue';
 import { useChatStore } from '@/stores/chat';
-import { useSystemStore } from '@/stores/system';
+import type { RunRequestProfileEnum as ModelProfile } from '../../api/models';
 import MarkdownRenderer from '@/components/shared/MarkdownRenderer.vue';
 
 const chatStore = useChatStore();
-const systemStore = useSystemStore();
 
 const userInput = ref('');
 // Default false: write mode only has effect when model is 'manna' / agentic
 const allowWrite = ref(false);
 const messagesContainer = ref<HTMLElement | undefined>(undefined);
 
-const modelOptions = computed(() => {
-    if (systemStore.models.length > 0) {
-        return systemStore.models.map((m) => m.id);
-    }
-    return ['manna', 'manna-fast', 'manna-reasoning', 'manna-code'];
-});
+const profileOptions: ModelProfile[] = ['fast', 'reasoning', 'code', 'default'];
 
-const selectedModel = ref('manna');
+const selectedProfile = ref<ModelProfile>('default');
 
 function onNewConversation(): void {
-    chatStore.newConversation(selectedModel.value);
+    chatStore.newConversation(selectedProfile.value);
 }
 
 function scrollToBottom(): void {
@@ -219,10 +214,10 @@ async function sendMessage(): Promise<void> {
 
     // Ensure a conversation exists with the right model
     if (!chatStore.activeConversation) {
-        chatStore.newConversation(selectedModel.value);
+        chatStore.newConversation(selectedProfile.value);
     }
     if (chatStore.activeConversation) {
-        chatStore.activeConversation.model = selectedModel.value;
+        chatStore.activeConversation.profile = selectedProfile.value;
     }
 
     userInput.value = '';
@@ -231,7 +226,7 @@ async function sendMessage(): Promise<void> {
 
 onMounted(() => {
     if (chatStore.conversations.length === 0) {
-        chatStore.newConversation(selectedModel.value);
+        chatStore.newConversation(selectedProfile.value);
     }
 });
 </script>

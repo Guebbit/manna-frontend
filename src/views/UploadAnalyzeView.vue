@@ -2,8 +2,8 @@
     <div>
         <h1 class="text-h4 mb-2">Upload &amp; Analyze</h1>
         <p class="text-body-2 text-grey mb-6">
-            Upload files for AI-powered analysis: classify images with a vision model,
-            transcribe audio with Whisper, or extract text from PDFs (fast and deterministic).
+            Upload files for AI-powered analysis: classify images with a vision model, transcribe
+            audio with Whisper, or extract text from PDFs (fast and deterministic).
         </p>
 
         <v-tabs v-model="activeTab" color="primary">
@@ -69,13 +69,10 @@
                     <v-card-title class="d-flex align-center">
                         Result
                         <v-spacer />
-                        <CopyButton :text="uploadStore.imageClassifyResult.response" />
-                        <v-chip size="small" class="ml-2">
-                            {{ uploadStore.imageClassifyResult.model }}
-                        </v-chip>
+                        <CopyButton :text="uploadStore.imageClassifyResult.result ?? ''" />
                     </v-card-title>
                     <v-card-text>
-                        <MarkdownRenderer :content="uploadStore.imageClassifyResult.response" />
+                        <MarkdownRenderer :content="uploadStore.imageClassifyResult.result ?? ''" />
                     </v-card-text>
                 </v-card>
             </v-tabs-window-item>
@@ -144,7 +141,7 @@
                     <v-card-title class="d-flex align-center">
                         Transcription
                         <v-spacer />
-                        <CopyButton :text="uploadStore.speechToTextResult.text" />
+                        <CopyButton :text="uploadStore.speechToTextResult.text ?? ''" />
                     </v-card-title>
                     <v-card-text>
                         <pre class="result-pre">{{ uploadStore.speechToTextResult.text }}</pre>
@@ -184,12 +181,12 @@
                     <v-card-title class="d-flex align-center">
                         PDF Content
                         <v-chip size="small" class="ml-2" color="primary">
-                            {{ uploadStore.readPdfResult.pageCount }} page{{
-                                uploadStore.readPdfResult.pageCount === 1 ? '' : 's'
+                            {{ uploadStore.readPdfResult.pages }} page{{
+                                uploadStore.readPdfResult.pages === 1 ? '' : 's'
                             }}
                         </v-chip>
                         <v-spacer />
-                        <CopyButton :text="uploadStore.readPdfResult.text" />
+                        <CopyButton :text="uploadStore.readPdfResult.text ?? ''" />
                     </v-card-title>
                     <v-card-text>
                         <pre class="result-pre" style="max-height: 500px; overflow-y: auto">{{

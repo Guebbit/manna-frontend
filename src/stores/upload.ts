@@ -14,7 +14,11 @@
 import { defineStore } from 'pinia';
 import { computed, reactive, ref } from 'vue';
 import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
-import type { IImageClassifyResponse, ISpeechToTextResponse, IReadPdfResponse } from '@/api/types';
+import type {
+    UploadImageClassify200Response,
+    UploadReadPdf200Response,
+    UploadSpeechToText200Response
+} from '../../api/models';
 import { uploadImageClassify, uploadSpeechToText, uploadReadPdf } from '@/api/manna';
 import { handleApiError } from '@/utils/errorHandling';
 
@@ -30,9 +34,9 @@ export const useUploadStore = defineStore('upload', () => {
         loadingKey: 'upload'
     });
 
-    const imageClassifyResult = ref<IImageClassifyResponse | undefined>(undefined);
-    const speechToTextResult = ref<ISpeechToTextResponse | undefined>(undefined);
-    const readPdfResult = ref<IReadPdfResponse | undefined>(undefined);
+    const imageClassifyResult = ref<UploadImageClassify200Response | undefined>(undefined);
+    const speechToTextResult = ref<UploadSpeechToText200Response | undefined>(undefined);
+    const readPdfResult = ref<UploadReadPdf200Response | undefined>(undefined);
 
     const loading = reactive({
         imageClassify: computed(() => getLoading('upload-imageClassify')),
