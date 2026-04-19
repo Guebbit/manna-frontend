@@ -19,6 +19,7 @@ import * as directives from 'vuetify/directives';
 
 import App from './App.vue';
 import router from './router';
+import { i18n, loadLocale } from '@/utils/i18n';
 
 const vuetify = createVuetify({
     components,
@@ -46,4 +47,6 @@ const vuetify = createVuetify({
     }
 });
 
-createApp(App).use(createPinia()).use(router).use(vuetify).mount('#app');
+const app = createApp(App);
+app.use(createPinia()).use(router).use(vuetify).use(i18n);
+loadLocale(i18n.global.locale.value as string).then(() => app.mount('#app'));

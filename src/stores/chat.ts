@@ -1,150 +1,194 @@
-/**
- * @module stores/chat
- *
- * Pinia store for agent-backed chat conversations.
- *
- * Messages are streamed from `POST /run/stream`. Each user message is submitted as
- * an agent task and the assistant answer is finalized on the `done` event.
- */
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
-import { v4 as uuidv4 } from 'uuid';
+import { ref } from 'vue';
 import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
-import type { RunRequestProfileEnum as ModelProfile } from '../../api/models';
-import { runTaskStream } from '@/api/manna';
 import { handleApiError } from '@/utils/errorHandling';
+import {
+    listConversations,
+    createConversation,
+    getConversation,
+    updateConversation,
+    deleteChatConversation,
+    addChatMessage,
+    editChatMessage,
+    deleteChatMessage,
+    runTaskStream
+} from '@/api/manna';
+import type { Conversation, ChatMessage, ConversationWithMessages } from '@/api/manna';
+import type {
+    CreateConversationRequest,
+    UpdateConversationRequest,
+    CreateMessageRequest,
+    UpdateMessageRequest,
+    RunRequestProfileEnum as ModelProfile
+} from '@api';
 
-/** A single local chat message. */
-export interface IChatMessage {
-    role: 'user' | 'assistant';
-    content: string;
-}
-
-/** A single chat conversation with its messages and metadata. */
-export interface IConversation {
-    id: string;
-    title: string;
-    messages: IChatMessage[];
-    profile?: ModelProfile;
-    createdAt: string;
-}
-
-/**
- * Pinia store managing chat conversations and streaming message delivery.
- */
 export const useChatStore = defineStore('chat', () => {
     const { getLoading, setLoading } = useCoreStore();
-    const { loading, fetchAny } = useStructureRestApi({
-        getLoading,
-        setLoading
-    });
+    const { loading, fetchAny } = useStructureRestApi({ getLoading, setLoading });
 
-    const conversations = ref<IConversation[]>([]);
-    const activeConversationId = ref<string | undefined>(undefined);
+    const conversations = ref<Conversation[]>([]);
+    const messageCache = ref<Record<string, ChatMessage[]>>({});
     const streaming = ref(false);
 
-    const activeConversation = computed(() =>
-        conversations.value.find((c) => c.id === activeConversationId.value)
-    );
-
-    /**
-     * Creates a new conversation, adds it to the top of the list, and activates it.
-     *
-     * @param profile - Optional routing profile hint for this conversation.
-     * @returns The UUID of the newly created conversation.
-     */
-    function newConversation(profile?: ModelProfile): string {
-        const id = uuidv4();
-        conversations.value.unshift({
-            id,
-            title: 'New conversation',
-            messages: [],
-            profile,
-            createdAt: new Date().toISOString()
+    const loadConversations = () =>
+        fetchAny(async () => {
+            conversations.value = await listConversations();
+        }).catch((error: unknown) => {
+            handleApiError(error, 'Failed to load conversations');
         });
-        activeConversationId.value = id;
-        return id;
-    }
 
-    /**
-     * Removes a conversation by ID and switches the active conversation if needed.
-     *
-     * @param id - The UUID of the conversation to delete.
-     */
-    function deleteConversation(id: string): void {
+    const loadConversation = (id: string) => {
+        if (messageCache.value[id]) return Promise.resolve();
+        return fetchAny(async () => {
+            const conv: ConversationWithMessages = await getConversation(id);
+            const { messages, ...meta } = conv;
+            const index = conversations.value.findIndex((c) => c.id === id);
+            if (index !== -1) conversations.value[index] = meta;
+            messageCache.value = { ...messageCache.value, [id]: messages };
+        }).catch((error: unknown) => {
+            handleApiError(error, 'Failed to load conversation');
+            throw error;
+        });
+    };
+
+    const newConversation = (
+        request: CreateConversationRequest = {}
+    ): Promise<Conversation | undefined> =>
+        fetchAny(async () => {
+            const conv = await createConversation(request);
+            conversations.value.unshift(conv);
+            messageCache.value = { ...messageCache.value, [conv.id]: [] };
+            return conv;
+        }).catch((error: unknown) => {
+            handleApiError(error, 'Failed to create conversation');
+        }) as Promise<Conversation | undefined>;
+
+    const renameConversation = (id: string, request: UpdateConversationRequest) => {
+        const conv = conversations.value.find((c) => c.id === id);
+        const prevTitle = conv?.title;
+        if (conv && request.title !== undefined) conv.title = request.title;
+
+        return fetchAny(async () => {
+            const updated = await updateConversation(id, request);
+            const index = conversations.value.findIndex((c) => c.id === id);
+            if (index !== -1) conversations.value[index] = updated;
+        }).catch((error: unknown) => {
+            if (conv && prevTitle !== undefined) conv.title = prevTitle;
+            handleApiError(error, 'Failed to rename conversation');
+        });
+    };
+
+    const deleteConversation = (id: string) => {
         const index = conversations.value.findIndex((c) => c.id === id);
-        if (index === -1) return;
-        conversations.value.splice(index, 1);
-        if (activeConversationId.value === id) {
-            activeConversationId.value = conversations.value[0]?.id;
-        }
-    }
+        const removed = index === -1 ? undefined : conversations.value.splice(index, 1)[0];
 
-    /**
-     * Sends a user message and streams the assistant reply into the active conversation.
-     * Creates a new conversation if none is active.
-     *
-     * @param content    - The user's plain-text message.
-     * @param allowWrite - When `true`, grants the backend write-access to the filesystem.
-     * @returns Resolves when the full assistant reply has been received.
-     */
-    const sendMessage = (content: string, allowWrite = false) => {
-        let conversationReference = activeConversation.value;
+        return fetchAny(async () => {
+            await deleteChatConversation(id);
+            const cache = { ...messageCache.value };
+            delete cache[id];
+            messageCache.value = cache;
+        }).catch((error: unknown) => {
+            if (removed !== undefined) conversations.value.splice(index, 0, removed);
+            handleApiError(error, 'Failed to delete conversation');
+        });
+    };
 
-        if (!conversationReference) {
-            const id = newConversation();
-            conversationReference = conversations.value.find((c) => c.id === id);
-        }
-        if (!conversationReference) return Promise.resolve();
+    const sendMessage = (
+        conversationId: string,
+        request: CreateMessageRequest
+    ): Promise<ChatMessage | undefined> =>
+        fetchAny(async () => {
+            const message = await addChatMessage(conversationId, request);
+            messageCache.value = {
+                ...messageCache.value,
+                [conversationId]: [...(messageCache.value[conversationId] ?? []), message]
+            };
+            return message;
+        }).catch((error: unknown) => {
+            handleApiError(error, 'Failed to send message');
+        }) as Promise<ChatMessage | undefined>;
 
-        if (conversationReference.messages.length === 0) {
-            conversationReference.title =
-                content.length > 60 ? content.slice(0, 60) + '…' : content;
-        }
+    const editMessage = (
+        conversationId: string,
+        messageId: string,
+        request: UpdateMessageRequest
+    ): Promise<ChatMessage | undefined> =>
+        fetchAny(async () => {
+            const updated = await editChatMessage(conversationId, messageId, request);
+            const msgs = messageCache.value[conversationId];
+            if (msgs) {
+                const i = msgs.findIndex((m) => m.id === messageId);
+                if (i !== -1) msgs[i] = updated;
+            }
+            return updated;
+        }).catch((error: unknown) => {
+            handleApiError(error, 'Failed to edit message');
+        }) as Promise<ChatMessage | undefined>;
 
-        conversationReference.messages.push({ role: 'user', content });
+    const deleteMessage = (conversationId: string, messageId: string) => {
+        const msgs = messageCache.value[conversationId];
+        const messageIndex = msgs?.findIndex((m) => m.id === messageId) ?? -1;
+        const removed = messageIndex === -1 ? undefined : msgs!.splice(messageIndex, 1)[0];
 
-        const assistantIndex = conversationReference.messages.length;
-        conversationReference.messages.push({ role: 'assistant', content: '' });
+        return fetchAny(async () => {
+            await deleteChatMessage(conversationId, messageId);
+        }).catch((error: unknown) => {
+            if (removed !== undefined && msgs) msgs.splice(messageIndex, 0, removed);
+            handleApiError(error, 'Failed to delete message');
+        });
+    };
 
-        const conversation = conversationReference;
+    const runWithAgent = (conversationId: string, profile: ModelProfile, allowWrite = false) => {
+        const msgs = messageCache.value[conversationId] ?? [];
+        const lastUserMessage = msgs.toReversed().find((m: ChatMessage) => m.role === 'user');
+        if (!lastUserMessage) return Promise.resolve();
 
         return fetchAny(async () => {
             streaming.value = true;
+            let result = '';
             try {
                 const generator = runTaskStream({
-                    task: content,
+                    task: lastUserMessage.content,
                     allowWrite,
-                    profile: conversation.profile
+                    profile
                 });
-
                 for await (const event of generator) {
-                    if (event.type === 'done') {
-                        const message = conversation.messages[assistantIndex];
-                        if (message) {
-                            message.content = event.data.result;
-                        }
-                    }
+                    if (event.type === 'done') result = event.data.result;
                 }
-            } catch (error: unknown) {
-                conversation.messages.splice(assistantIndex, 1);
-                throw error;
+                if (result) {
+                    const message = await addChatMessage(conversationId, {
+                        role: 'assistant',
+                        content: result
+                    });
+                    messageCache.value = {
+                        ...messageCache.value,
+                        [conversationId]: [...(messageCache.value[conversationId] ?? []), message]
+                    };
+                }
             } finally {
                 streaming.value = false;
             }
         }).catch((error: unknown) => {
-            handleApiError(error, 'Failed to send message');
+            streaming.value = false;
+            handleApiError(error, 'Agent run failed');
         });
     };
 
     return {
         conversations,
-        activeConversationId,
+        messageCache,
         streaming,
         loading,
-        activeConversation,
+        loadConversations,
+        loadConversation,
         newConversation,
+        renameConversation,
         deleteConversation,
-        sendMessage
+        sendMessage,
+        editMessage,
+        deleteMessage,
+        runWithAgent
     };
 });
+
+export { type Conversation as IConversation, type ChatMessage as IChatMessage } from '@/api/manna';

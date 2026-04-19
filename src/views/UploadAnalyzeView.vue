@@ -1,15 +1,12 @@
 <template>
     <div>
-        <h1 class="text-h4 mb-2">Upload &amp; Analyze</h1>
-        <p class="text-body-2 text-grey mb-6">
-            Upload files for AI-powered analysis: classify images with a vision model, transcribe
-            audio with Whisper, or extract text from PDFs (fast and deterministic).
-        </p>
+        <h1 class="text-h4 mb-2">{{ t('upload.title') }}</h1>
+        <p class="text-body-2 text-grey mb-6">{{ t('upload.subtitle') }}</p>
 
         <v-tabs v-model="activeTab" color="primary">
-            <v-tab value="image">Image Classify</v-tab>
-            <v-tab value="speech">Speech to Text</v-tab>
-            <v-tab value="pdf">Read PDF</v-tab>
+            <v-tab value="image">{{ t('upload.tabImage') }}</v-tab>
+            <v-tab value="speech">{{ t('upload.tabSpeech') }}</v-tab>
+            <v-tab value="pdf">{{ t('upload.tabPdf') }}</v-tab>
         </v-tabs>
 
         <v-tabs-window v-model="activeTab" class="mt-4">
@@ -19,8 +16,8 @@
                     <v-card-text>
                         <FileDropZone
                             accept="image/*"
-                            label="Drop an image here or click to browse"
-                            hint="PNG, JPG, WEBP, GIF — max 50 MB"
+                            :label="t('upload.imageDropLabel')"
+                            :hint="t('upload.imageDropHint')"
                             @file="onImageFile"
                         />
                         <div v-if="imageFile" class="mt-3">
@@ -36,19 +33,19 @@
                         </div>
                         <v-text-field
                             v-model="imagePrompt"
-                            label="Custom prompt (optional)"
+                            :label="t('upload.customPrompt')"
                             variant="outlined"
                             density="compact"
                             class="mt-3"
-                            hint="Override the default prompt. E.g. 'Describe all text visible in this image' or 'Is this a cat or a dog?'."
+                            :hint="t('upload.customPromptHint')"
                             persistent-hint
                         />
                         <v-text-field
                             v-model="imageModel"
-                            label="Model override (optional)"
+                            :label="t('upload.imageModelOverride')"
                             variant="outlined"
                             density="compact"
-                            hint="Leave empty to use the default vision model. Specify an Ollama multimodal model name to override (e.g. llava:13b)."
+                            :hint="t('upload.imageModelHint')"
                             persistent-hint
                         />
                     </v-card-text>
@@ -60,19 +57,21 @@
                             @click="submitImage"
                         >
                             <v-icon start>mdi-image-search</v-icon>
-                            Classify
+                            {{ t('upload.classify') }}
                         </v-btn>
                     </v-card-actions>
                 </v-card>
 
                 <v-card v-if="uploadStore.imageClassifyResult" class="mt-4">
                     <v-card-title class="d-flex align-center">
-                        Result
+                        {{ t('common.result') }}
                         <v-spacer />
-                        <CopyButton :text="uploadStore.imageClassifyResult.result ?? ''" />
+                        <CopyButton :text="uploadStore.imageClassifyResult.data?.response ?? ''" />
                     </v-card-title>
                     <v-card-text>
-                        <MarkdownRenderer :content="uploadStore.imageClassifyResult.result ?? ''" />
+                        <MarkdownRenderer
+                            :content="uploadStore.imageClassifyResult.data?.response ?? ''"
+                        />
                     </v-card-text>
                 </v-card>
             </v-tabs-window-item>
@@ -83,8 +82,8 @@
                     <v-card-text>
                         <FileDropZone
                             accept="audio/*"
-                            label="Drop an audio file here or click to browse"
-                            hint="WAV, MP3, OGG, etc. — max 50 MB"
+                            :label="t('upload.audioDropLabel')"
+                            :hint="t('upload.audioDropHint')"
                             @file="onAudioFile"
                         />
                         <div v-if="audioFile" class="mt-3">
@@ -97,17 +96,17 @@
                             <v-col cols="12" sm="4">
                                 <v-text-field
                                     v-model="sttLanguage"
-                                    label="Language hint (e.g. en, it)"
+                                    :label="t('upload.languageHint')"
                                     variant="outlined"
                                     density="compact"
-                                    hint="ISO 639-1 code (e.g. 'en', 'it', 'de'). Helps Whisper produce more accurate transcriptions."
+                                    :hint="t('upload.languageHintDesc')"
                                     persistent-hint
                                 />
                             </v-col>
                             <v-col cols="12" sm="4">
                                 <v-text-field
                                     v-model="sttModel"
-                                    label="Model override"
+                                    :label="t('upload.sttModelOverride')"
                                     variant="outlined"
                                     density="compact"
                                 />
@@ -115,10 +114,10 @@
                             <v-col cols="12" sm="4">
                                 <v-text-field
                                     v-model="sttPrompt"
-                                    label="Context prompt"
+                                    :label="t('upload.contextPrompt')"
                                     variant="outlined"
                                     density="compact"
-                                    hint="Provide domain-specific vocabulary or context to improve accuracy (e.g. technical terms, proper nouns)."
+                                    :hint="t('upload.contextPromptHint')"
                                     persistent-hint
                                 />
                             </v-col>
@@ -132,19 +131,21 @@
                             @click="submitAudio"
                         >
                             <v-icon start>mdi-microphone</v-icon>
-                            Transcribe
+                            {{ t('upload.transcribe') }}
                         </v-btn>
                     </v-card-actions>
                 </v-card>
 
                 <v-card v-if="uploadStore.speechToTextResult" class="mt-4">
                     <v-card-title class="d-flex align-center">
-                        Transcription
+                        {{ t('upload.transcription') }}
                         <v-spacer />
-                        <CopyButton :text="uploadStore.speechToTextResult.text ?? ''" />
+                        <CopyButton :text="uploadStore.speechToTextResult.data?.text ?? ''" />
                     </v-card-title>
                     <v-card-text>
-                        <pre class="result-pre">{{ uploadStore.speechToTextResult.text }}</pre>
+                        <pre class="result-pre">{{
+                            uploadStore.speechToTextResult.data?.text
+                        }}</pre>
                     </v-card-text>
                 </v-card>
             </v-tabs-window-item>
@@ -155,8 +156,8 @@
                     <v-card-text>
                         <FileDropZone
                             accept="application/pdf"
-                            label="Drop a PDF file here or click to browse"
-                            hint="PDF files — max 50 MB. Text is extracted without AI — fast and deterministic."
+                            :label="t('upload.pdfDropLabel')"
+                            :hint="t('upload.pdfDropHint')"
                             @file="onPdfFile"
                         />
                         <div v-if="pdfFile" class="mt-3">
@@ -172,25 +173,28 @@
                             @click="submitPdf"
                         >
                             <v-icon start>mdi-file-document-outline</v-icon>
-                            Extract Text
+                            {{ t('upload.extractText') }}
                         </v-btn>
                     </v-card-actions>
                 </v-card>
 
                 <v-card v-if="uploadStore.readPdfResult" class="mt-4">
                     <v-card-title class="d-flex align-center">
-                        PDF Content
+                        {{ t('upload.pdfContent') }}
                         <v-chip size="small" class="ml-2" color="primary">
-                            {{ uploadStore.readPdfResult.pages }} page{{
-                                uploadStore.readPdfResult.pages === 1 ? '' : 's'
+                            {{
+                                t(
+                                    'upload.pageCount',
+                                    uploadStore.readPdfResult.data?.pageCount ?? 0
+                                )
                             }}
                         </v-chip>
                         <v-spacer />
-                        <CopyButton :text="uploadStore.readPdfResult.text ?? ''" />
+                        <CopyButton :text="uploadStore.readPdfResult.data?.text ?? ''" />
                     </v-card-title>
                     <v-card-text>
                         <pre class="result-pre" style="max-height: 500px; overflow-y: auto">{{
-                            uploadStore.readPdfResult.text
+                            uploadStore.readPdfResult.data?.text
                         }}</pre>
                     </v-card-text>
                 </v-card>
@@ -201,29 +205,28 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useUploadStore } from '@/stores/upload';
 import FileDropZone from '@/components/shared/FileDropZone.vue';
 import CopyButton from '@/components/shared/CopyButton.vue';
 import MarkdownRenderer from '@/components/shared/MarkdownRenderer.vue';
 import { formatFileSize } from '@/utils/formatting';
 
+const { t } = useI18n();
 const uploadStore = useUploadStore();
 const activeTab = ref('image');
 
-// Image
 const imageFile = ref<File | undefined>(undefined);
 const imagePreview = ref('');
 const imagePrompt = ref('');
 const imageModel = ref('');
 
-// Audio
 const audioFile = ref<File | undefined>(undefined);
 const audioPreview = ref('');
 const sttLanguage = ref('');
 const sttModel = ref('');
 const sttPrompt = ref('');
 
-// PDF
 const pdfFile = ref<File | undefined>(undefined);
 
 function onImageFile(file: File): void {

@@ -1,15 +1,12 @@
 <template>
     <div>
-        <h1 class="text-h4 mb-2">Code Tools</h1>
-        <p class="text-body-2 text-grey mb-6">
-            Direct IDE endpoints — fast, single-purpose code intelligence. These bypass the agent
-            loop for lower latency, calling specialised models directly.
-        </p>
+        <h1 class="text-h4 mb-2">{{ t('codeTools.title') }}</h1>
+        <p class="text-body-2 text-grey mb-6">{{ t('codeTools.subtitle') }}</p>
 
         <v-tabs v-model="activeTab" color="primary">
-            <v-tab value="autocomplete">Autocomplete</v-tab>
-            <v-tab value="lint">Lint &amp; Conventions</v-tab>
-            <v-tab value="review">Page Review</v-tab>
+            <v-tab value="autocomplete">{{ t('codeTools.tabAutocomplete') }}</v-tab>
+            <v-tab value="lint">{{ t('codeTools.tabLint') }}</v-tab>
+            <v-tab value="review">{{ t('codeTools.tabReview') }}</v-tab>
         </v-tabs>
 
         <v-tabs-window v-model="activeTab" class="mt-4">
@@ -20,29 +17,29 @@
                         <v-select
                             v-model="autoLanguage"
                             :items="languages"
-                            label="Language"
+                            :label="t('codeTools.language')"
                             variant="outlined"
                             density="compact"
                             class="mb-3"
-                            hint="Helps the model produce syntax-correct completions for your language."
+                            :hint="t('codeTools.languageHint')"
                             persistent-hint
                         />
                         <v-textarea
                             v-model="autoPrefix"
-                            label="Code prefix (before cursor)"
+                            :label="t('codeTools.codePrefix')"
                             variant="outlined"
                             rows="6"
                             class="code-textarea"
-                            hint="The code before your cursor position. The model continues writing from here."
+                            :hint="t('codeTools.codePrefixHint')"
                             persistent-hint
                         />
                         <v-textarea
                             v-model="autoSuffix"
-                            label="Code suffix (after cursor)"
+                            :label="t('codeTools.codeSuffix')"
                             variant="outlined"
                             rows="3"
                             class="code-textarea"
-                            hint="The code after your cursor. Enables fill-in-the-middle (FIM) mode for better context-aware completions."
+                            :hint="t('codeTools.codeSuffixHint')"
                             persistent-hint
                         />
                     </v-card-text>
@@ -54,20 +51,17 @@
                             @click="submitAutocomplete"
                         >
                             <v-icon start>mdi-lightning-bolt</v-icon>
-                            Complete
+                            {{ t('codeTools.complete') }}
                         </v-btn>
                     </v-card-actions>
                 </v-card>
 
                 <v-card v-if="ideStore.autocompleteResult" class="mt-4">
                     <v-card-title class="d-flex align-center">
-                        Completion
+                        {{ t('codeTools.completion') }}
                         <v-spacer />
                         <CopyButton :text="ideStore.autocompleteResult.completion ?? ''" />
-                        <v-tooltip
-                            text="Round-trip time including model inference. Powered by a fast code-specialised model."
-                            location="top"
-                        >
+                        <v-tooltip :text="t('codeTools.completionTooltip')" location="top">
                             <template #activator="{ props: tooltipProps }">
                                 <v-chip v-bind="tooltipProps" size="small" class="ml-2">
                                     {{ ideStore.autocompleteResult.latencyMs }}ms
@@ -92,7 +86,7 @@
                                 <v-select
                                     v-model="lintLanguage"
                                     :items="languages"
-                                    label="Language"
+                                    :label="t('codeTools.language')"
                                     variant="outlined"
                                     density="compact"
                                 />
@@ -100,7 +94,7 @@
                             <v-col cols="12" sm="6">
                                 <v-text-field
                                     v-model="lintFilename"
-                                    label="Filename (optional)"
+                                    :label="t('codeTools.filename')"
                                     variant="outlined"
                                     density="compact"
                                 />
@@ -108,7 +102,7 @@
                         </v-row>
                         <v-textarea
                             v-model="lintCode"
-                            label="Code to lint"
+                            :label="t('codeTools.codeToLint')"
                             variant="outlined"
                             rows="8"
                             class="code-textarea"
@@ -116,7 +110,7 @@
                         <v-row class="mt-1">
                             <v-col cols="auto">
                                 <v-tooltip
-                                    text="When off, only deterministic TypeScript/convention rules run (fastest). When on, an AI model also reviews the code for style, bugs, and best practices."
+                                    :text="t('codeTools.includeLlmTooltip')"
                                     location="top"
                                     max-width="320"
                                 >
@@ -124,7 +118,7 @@
                                         <v-switch
                                             v-bind="tooltipProps"
                                             v-model="lintIncludeLlm"
-                                            label="Include LLM analysis"
+                                            :label="t('codeTools.includeLlm')"
                                             density="compact"
                                             hide-details
                                         />
@@ -134,12 +128,12 @@
                             <v-col cols="12" sm="4">
                                 <v-slider
                                     v-model="lintMaxFindings"
-                                    label="Max findings"
+                                    :label="t('codeTools.maxFindings')"
                                     :min="1"
                                     :max="200"
                                     :step="1"
                                     thumb-label
-                                    hint="Cap the number of reported issues. Useful for large files."
+                                    :hint="t('codeTools.maxFindingsHint')"
                                     persistent-hint
                                 />
                             </v-col>
@@ -153,7 +147,7 @@
                             @click="submitLint"
                         >
                             <v-icon start>mdi-magnify</v-icon>
-                            Lint
+                            {{ t('codeTools.lint') }}
                         </v-btn>
                     </v-card-actions>
                 </v-card>
@@ -161,26 +155,38 @@
                 <!-- Lint Results -->
                 <v-card v-if="ideStore.lintResult" class="mt-4">
                     <v-card-title>
-                        Findings
+                        {{ t('common.findings') }}
                         <v-chip size="small" color="error" class="ml-2">
-                            {{ ideStore.lintResult.summary?.errors ?? 0 }} errors
+                            {{
+                                t('codeTools.errorsCount', {
+                                    n: ideStore.lintResult.summary?.errors ?? 0
+                                })
+                            }}
                         </v-chip>
                         <v-chip size="small" color="warning" class="ml-1">
-                            {{ ideStore.lintResult.summary?.warnings ?? 0 }} warnings
+                            {{
+                                t('codeTools.warningsCount', {
+                                    n: ideStore.lintResult.summary?.warnings ?? 0
+                                })
+                            }}
                         </v-chip>
                         <v-chip size="small" color="info" class="ml-1">
-                            {{ ideStore.lintResult.summary?.infos ?? 0 }} info
+                            {{
+                                t('codeTools.infoCount', {
+                                    n: ideStore.lintResult.summary?.infos ?? 0
+                                })
+                            }}
                         </v-chip>
                     </v-card-title>
                     <v-card-text>
                         <v-table density="compact">
                             <thead>
                                 <tr>
-                                    <th>Severity</th>
-                                    <th>Message</th>
-                                    <th>Line</th>
-                                    <th>Rule</th>
-                                    <th>Suggestion</th>
+                                    <th>{{ t('codeTools.severity') }}</th>
+                                    <th>{{ t('codeTools.message') }}</th>
+                                    <th>{{ t('codeTools.line') }}</th>
+                                    <th>{{ t('codeTools.rule') }}</th>
+                                    <th>{{ t('codeTools.suggestion') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -197,9 +203,9 @@
                                         </v-chip>
                                     </td>
                                     <td>{{ finding.message }}</td>
-                                    <td>{{ finding.line ?? '–' }}</td>
-                                    <td class="text-caption">{{ finding.rule ?? '–' }}</td>
-                                    <td>{{ finding.suggestion ?? '–' }}</td>
+                                    <td>{{ finding.line ?? '\u2013' }}</td>
+                                    <td class="text-caption">{{ finding.rule ?? '\u2013' }}</td>
+                                    <td>\u2013</td>
                                 </tr>
                             </tbody>
                         </v-table>
@@ -216,7 +222,7 @@
                                 <v-select
                                     v-model="reviewLanguage"
                                     :items="languages"
-                                    label="Language"
+                                    :label="t('codeTools.language')"
                                     variant="outlined"
                                     density="compact"
                                 />
@@ -224,7 +230,7 @@
                             <v-col cols="12" sm="4">
                                 <v-text-field
                                     v-model="reviewFilename"
-                                    label="Filename (optional)"
+                                    :label="t('codeTools.filename')"
                                     variant="outlined"
                                     density="compact"
                                 />
@@ -232,7 +238,7 @@
                             <v-col cols="12" sm="4">
                                 <v-text-field
                                     v-model="reviewModel"
-                                    label="Model override (optional)"
+                                    :label="t('codeTools.modelOverride')"
                                     variant="outlined"
                                     density="compact"
                                 />
@@ -240,17 +246,17 @@
                         </v-row>
                         <v-textarea
                             v-model="reviewCode"
-                            label="Code to review"
+                            :label="t('codeTools.codeToReview')"
                             variant="outlined"
                             rows="8"
                             class="code-textarea"
                         />
                         <v-textarea
                             v-model="reviewProjectContext"
-                            label="Project context (optional)"
+                            :label="t('codeTools.projectContext')"
                             variant="outlined"
                             rows="2"
-                            hint="Describe your project briefly (e.g. 'Vue 3 SPA with Pinia stores') so the reviewer gives more relevant, targeted suggestions."
+                            :hint="t('codeTools.projectContextHint')"
                             persistent-hint
                         />
                     </v-card-text>
@@ -262,7 +268,7 @@
                             @click="submitReview"
                         >
                             <v-icon start>mdi-file-search</v-icon>
-                            Review
+                            {{ t('codeTools.review') }}
                         </v-btn>
                     </v-card-actions>
                 </v-card>
@@ -270,7 +276,7 @@
                 <!-- Review Results -->
                 <v-card v-if="ideStore.reviewResult" class="mt-4">
                     <v-card-title>
-                        Findings
+                        {{ t('common.findings') }}
                         <v-chip size="x-small" class="ml-2">
                             {{ ideStore.reviewResult.findings?.length ?? 0 }}
                         </v-chip>
@@ -293,7 +299,7 @@
                                 </v-list-item-title>
                             </v-list-item>
                         </v-list>
-                        <p v-else class="text-grey">No findings returned.</p>
+                        <p v-else class="text-grey">{{ t('codeTools.noFindingsReturned') }}</p>
                     </v-card-text>
                 </v-card>
             </v-tabs-window-item>
@@ -303,26 +309,25 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useIdeStore } from '@/stores/ide';
 import CopyButton from '@/components/shared/CopyButton.vue';
 
+const { t } = useI18n();
 const ideStore = useIdeStore();
 
 const activeTab = ref('autocomplete');
 
-// Autocomplete
 const autoPrefix = ref('');
 const autoSuffix = ref('');
 const autoLanguage = ref('typescript');
 
-// Lint
 const lintCode = ref('');
 const lintLanguage = ref('typescript');
 const lintFilename = ref('');
 const lintIncludeLlm = ref(true);
 const lintMaxFindings = ref(80);
 
-// Review
 const reviewCode = ref('');
 const reviewLanguage = ref('typescript');
 const reviewFilename = ref('');

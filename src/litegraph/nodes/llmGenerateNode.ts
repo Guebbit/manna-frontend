@@ -17,7 +17,7 @@ export class LlmGenerateNode extends LGraphNode {
         this.addOutput('response', 'string');
         this.addWidget('text', 'prompt', '', 'prompt');
         this.addWidget('combo', 'profile', 'default', 'profile', {
-            values: [...PROFILE_OPTIONS],
+            values: [...PROFILE_OPTIONS]
         });
         this.title = 'LLM Generate';
         this.color = '#4a148c';

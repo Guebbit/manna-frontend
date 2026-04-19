@@ -8,10 +8,10 @@ import { computed, ref } from 'vue';
 import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
 import type {
     GetHelp200Response,
-    GetInfoModels200ResponseModelsInner,
-    GetInfoModes200ResponseModesInner,
+    GetInfoModels200ResponseAllOfDataModelsInner,
+    GetInfoModes200ResponseAllOfDataModesInner,
     HealthResponse
-} from '../../api/models';
+} from '@api';
 import { healthCheck, fetchInfoModes, fetchInfoModels, fetchHelp } from '@/api/manna';
 
 /**
@@ -30,13 +30,13 @@ export const useSystemStore = defineStore('system', () => {
     const healthLoading = computed(() => getLoading('system-health'));
     const healthError = ref<string | undefined>(undefined);
 
-    const models = ref<GetInfoModels200ResponseModelsInner[]>([]);
+    const models = ref<GetInfoModels200ResponseAllOfDataModelsInner[]>([]);
     const modelsLoading = computed(() => getLoading('system-models'));
 
-    const modes = ref<GetInfoModes200ResponseModesInner[]>([]);
+    const modes = ref<GetInfoModes200ResponseAllOfDataModesInner[]>([]);
     const modesLoading = computed(() => getLoading('system-modes'));
 
-    const infoModels = ref<GetInfoModels200ResponseModelsInner[]>([]);
+    const infoModels = ref<GetInfoModels200ResponseAllOfDataModelsInner[]>([]);
     const infoModelsLoading = computed(() => getLoading('system-info-models'));
     const ollamaBaseUrl = ref('');
 
@@ -72,7 +72,7 @@ export const useSystemStore = defineStore('system', () => {
         fetchAny(
             () =>
                 fetchInfoModels().then((response) => {
-                    models.value = response.models ?? [];
+                    models.value = response.data?.models ?? [];
                 }),
             {
                 lastUpdateKey: 'models',
@@ -90,7 +90,7 @@ export const useSystemStore = defineStore('system', () => {
         fetchAny(
             () =>
                 fetchInfoModes().then((response) => {
-                    modes.value = response.modes ?? [];
+                    modes.value = response.data?.modes ?? [];
                 }),
             {
                 lastUpdateKey: 'modes',
@@ -108,8 +108,8 @@ export const useSystemStore = defineStore('system', () => {
         fetchAny(
             () =>
                 fetchInfoModels().then((response) => {
-                    infoModels.value = response.models ?? [];
-                    ollamaBaseUrl.value = response.ollamaBaseUrl ?? '';
+                    infoModels.value = response.data?.models ?? [];
+                    ollamaBaseUrl.value = response.data?.ollamaBaseUrl ?? '';
                 }),
             {
                 lastUpdateKey: 'info-models',

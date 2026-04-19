@@ -20,7 +20,9 @@ export default defineConfig({
             // eslint-disable-next-line @typescript-eslint/naming-convention
             '@': fileURLToPath(new URL('src', import.meta.url)),
             // eslint-disable-next-line @typescript-eslint/naming-convention
-            '@types': fileURLToPath(new URL('src/types', import.meta.url))
+            '@types': fileURLToPath(new URL('src/types', import.meta.url)),
+            // eslint-disable-next-line @typescript-eslint/naming-convention
+            '@api': fileURLToPath(new URL('api', import.meta.url))
         }
     }
 });

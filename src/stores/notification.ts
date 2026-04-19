@@ -21,7 +21,7 @@ export enum EToastType {
     /** Maps to the string `'error'` to match the Vuetify colour name and the `IToastType.DANGER` value. */
     DANGER = 'error',
     WARNING = 'warning',
-    SUCCESS = 'success',
+    SUCCESS = 'success'
 }
 
 /**
@@ -34,10 +34,7 @@ export const TOAST_TYPE = EToastType;
  * The notification store shape exposed by `useNotificationsStore`, with the
  * `addMessage` parameter typed to accept our local `EToastType` enum.
  */
-export type INotificationsStore = Omit<
-    ReturnType<typeof _useNotificationsStore>,
-    'addMessage'
-> & {
+export type INotificationsStore = Omit<ReturnType<typeof _useNotificationsStore>, 'addMessage'> & {
     /**
      * Adds a new toast notification.
      *

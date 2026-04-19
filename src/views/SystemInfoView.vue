@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h1 class="text-h4 mb-6">System Info</h1>
+        <h1 class="text-h4 mb-6">{{ t('systemInfo.title') }}</h1>
 
         <v-row>
             <!-- Routing Modes -->
@@ -8,7 +8,7 @@
                 <v-card>
                     <v-card-title class="d-flex align-center">
                         <v-icon start>mdi-routes</v-icon>
-                        Agent Routing Profiles
+                        {{ t('systemInfo.agentRoutingProfiles') }}
                         <v-chip class="ml-2" size="small" color="primary">
                             {{ systemStore.modes.length }}
                         </v-chip>
@@ -23,21 +23,17 @@
                             <v-icon>mdi-refresh</v-icon>
                         </v-btn>
                     </v-card-title>
-                    <v-card-subtitle>
-                        Each profile maps to a specific Ollama model optimised for different
-                        workloads. The model router automatically selects the best profile per agent
-                        step, or you can force one manually in Agent / Swarm views.
-                    </v-card-subtitle>
+                    <v-card-subtitle>{{ t('systemInfo.routingProfilesSubtitle') }}</v-card-subtitle>
                     <v-card-text v-if="systemStore.modes.length === 0" class="text-grey">
-                        No routing profiles loaded. Click refresh to fetch.
+                        {{ t('systemInfo.noRoutingProfiles') }}
                     </v-card-text>
                     <v-table v-else density="compact">
                         <thead>
                             <tr>
-                                <th>Profile</th>
-                                <th>Model</th>
-                                <th>Env Var</th>
-                                <th>Description</th>
+                                <th>{{ t('systemInfo.colProfile') }}</th>
+                                <th>{{ t('systemInfo.colModel') }}</th>
+                                <th>{{ t('systemInfo.colEnvVar') }}</th>
+                                <th>{{ t('systemInfo.colDescription') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -63,7 +59,7 @@
                 <v-card>
                     <v-card-title class="d-flex align-center">
                         <v-icon start>mdi-brain</v-icon>
-                        Ollama Models
+                        {{ t('systemInfo.ollamaModels') }}
                         <v-chip class="ml-2" size="small" color="secondary">
                             {{ systemStore.infoModels.length }}
                         </v-chip>
@@ -78,10 +74,7 @@
                             <v-icon>mdi-refresh</v-icon>
                         </v-btn>
                     </v-card-title>
-                    <v-card-subtitle>
-                        All models currently loaded in the local Ollama instance. These are the
-                        actual LLMs available for inference.
-                    </v-card-subtitle>
+                    <v-card-subtitle>{{ t('systemInfo.ollamaModelsSubtitle') }}</v-card-subtitle>
                     <v-card-text
                         v-if="systemStore.ollamaBaseUrl"
                         class="text-caption text-grey pb-0"
@@ -89,15 +82,15 @@
                         Ollama: {{ systemStore.ollamaBaseUrl }}
                     </v-card-text>
                     <v-card-text v-if="systemStore.infoModels.length === 0" class="text-grey">
-                        No Ollama models loaded. Click refresh to fetch.
+                        {{ t('systemInfo.noOllamaModels') }}
                     </v-card-text>
                     <v-table v-else density="compact">
                         <thead>
                             <tr>
-                                <th>Name</th>
-                                <th>Size</th>
-                                <th>Modified</th>
-                                <th>Digest</th>
+                                <th>{{ t('systemInfo.colName') }}</th>
+                                <th>{{ t('systemInfo.colSize') }}</th>
+                                <th>{{ t('systemInfo.colModified') }}</th>
+                                <th>{{ t('systemInfo.colDigest') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -110,7 +103,11 @@
                                     {{ formatDate(model.modifiedAt ?? null) }}
                                 </td>
                                 <td class="text-caption text-grey">
-                                    {{ model.digest ? model.digest.slice(0, 12) + '…' : '—' }}
+                                    {{
+                                        model.digest
+                                            ? model.digest.slice(0, 12) + '\u2026'
+                                            : '\u2014'
+                                    }}
                                 </td>
                             </tr>
                         </tbody>
@@ -123,9 +120,13 @@
                 <v-card>
                     <v-card-title class="d-flex align-center">
                         <v-icon start>mdi-api</v-icon>
-                        API Reference
+                        {{ t('systemInfo.apiReference') }}
                         <v-chip v-if="systemStore.help" class="ml-2" size="small" color="info">
-                            {{ systemStore.help.endpointCount }} endpoints
+                            {{
+                                t('systemInfo.endpointCount', {
+                                    n: systemStore.help.data?.endpointCount
+                                })
+                            }}
                         </v-chip>
                         <v-spacer />
                         <v-btn
@@ -138,18 +139,15 @@
                             <v-icon>mdi-refresh</v-icon>
                         </v-btn>
                     </v-card-title>
-                    <v-card-subtitle>
-                        Complete list of backend HTTP endpoints. Use this as a reference for direct
-                        API integration.
-                    </v-card-subtitle>
+                    <v-card-subtitle>{{ t('systemInfo.apiReferenceSubtitle') }}</v-card-subtitle>
                     <v-card-text v-if="!systemStore.help" class="text-grey">
-                        API reference not loaded. Click refresh to fetch.
+                        {{ t('systemInfo.apiNotLoaded') }}
                     </v-card-text>
                     <v-card-text v-else>
-                        <p class="text-body-2 mb-4">{{ systemStore.help.description }}</p>
+                        <p class="text-body-2 mb-4">{{ systemStore.help.data?.description }}</p>
                         <v-expansion-panels>
                             <v-expansion-panel
-                                v-for="ep in systemStore.help.endpoints"
+                                v-for="ep in systemStore.help.data?.endpoints"
                                 :key="(ep.method ?? '') + (ep.path ?? '')"
                             >
                                 <v-expansion-panel-title>
@@ -175,10 +173,10 @@
                                     >
                                         <thead>
                                             <tr>
-                                                <th>Name</th>
-                                                <th>Type</th>
-                                                <th>Required</th>
-                                                <th>Description</th>
+                                                <th>{{ t('systemInfo.colName') }}</th>
+                                                <th>{{ t('systemInfo.colModel') }}</th>
+                                                <th>{{ t('systemInfo.colRequired') }}</th>
+                                                <th>{{ t('systemInfo.colDescription') }}</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -203,7 +201,9 @@
                                             </tr>
                                         </tbody>
                                     </v-table>
-                                    <p v-else class="text-caption text-grey">No parameters.</p>
+                                    <p v-else class="text-caption text-grey">
+                                        {{ t('systemInfo.noParameters') }}
+                                    </p>
                                 </v-expansion-panel-text>
                             </v-expansion-panel>
                         </v-expansion-panels>
@@ -216,9 +216,11 @@
 
 <script setup lang="ts">
 import { onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useSystemStore } from '@/stores/system';
 import { formatModelSize } from '@/utils/formatting';
 
+const { t } = useI18n();
 const systemStore = useSystemStore();
 
 onMounted(() => {
@@ -228,7 +230,7 @@ onMounted(() => {
 });
 
 function formatDate(iso: string | null): string {
-    if (!iso) return '—';
+    if (!iso) return '\u2014';
     return new Date(iso).toLocaleDateString();
 }
 

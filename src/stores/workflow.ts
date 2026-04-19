@@ -7,7 +7,7 @@ import type {
     WorkflowRequestProfileEnum as ModelProfile,
     WorkflowResponse,
     StepDefinition
-} from '../../api/models';
+} from '@api';
 import type { WorkflowStreamEvent } from '@/api/sseEvents';
 import { runWorkflow, runWorkflowStream } from '@/api/manna';
 import { useNotificationsStore, TOAST_TYPE } from './notification';

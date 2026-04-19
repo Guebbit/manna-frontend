@@ -3,7 +3,7 @@
         <v-icon start size="x-small">
             {{ isOnline ? 'mdi-check-circle' : 'mdi-alert-circle' }}
         </v-icon>
-        {{ isOnline ? 'Online' : 'Offline' }}
+        {{ isOnline ? t('health.online') : t('health.offline') }}
     </v-chip>
 </template>
 
@@ -16,7 +16,11 @@
  *
  * @prop isOnline - `true` when the backend health-check has succeeded.
  */
+import { useI18n } from 'vue-i18n';
+
 defineProps<{
     isOnline: boolean;
 }>();
+
+const { t } = useI18n();
 </script>

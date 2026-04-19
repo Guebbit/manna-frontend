@@ -13,7 +13,7 @@
         "composite": true,
         "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.vitest.tsbuildinfo",
 
-        "lib": [],
+        "lib": ["ES2023"],
         "types": ["node", "jsdom"]
     }
 }

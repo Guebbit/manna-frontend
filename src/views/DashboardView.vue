@@ -1,14 +1,10 @@
 <template>
     <div>
-        <h1 class="text-h4 mb-4">Dashboard</h1>
+        <h1 class="text-h4 mb-4">{{ t('dashboard.title') }}</h1>
 
-        <!-- Welcome banner — gives first-time users a quick overview of what Manna offers -->
         <v-alert type="info" variant="tonal" class="mb-6" closable>
-            <strong>Welcome to Manna</strong> — a local-first AI agent platform. Use the sidebar to
-            access different tools: <strong>Chat</strong> for conversations,
-            <strong>Agent</strong> for autonomous task execution, <strong>Swarm</strong> for
-            multi-agent complex tasks, <strong>Code Tools</strong> for IDE features, and
-            <strong>Upload</strong> for file analysis.
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <span v-html="t('dashboard.welcomeHtml')" />
         </v-alert>
 
         <v-row>
@@ -17,16 +13,20 @@
                 <v-card>
                     <v-card-title>
                         <v-icon start>mdi-heart-pulse</v-icon>
-                        System Health
+                        {{ t('dashboard.systemHealth') }}
                     </v-card-title>
                     <v-card-text>
                         <div class="d-flex align-center ga-3">
                             <HealthBadge :is-online="!!systemStore.health" />
                             <span v-if="systemStore.health" class="text-caption">
-                                Last check: {{ systemStore.health.timestamp }}
+                                {{
+                                    t('dashboard.lastCheck', {
+                                        timestamp: systemStore.health.timestamp
+                                    })
+                                }}
                             </span>
                             <span v-else class="text-caption text-error">
-                                {{ systemStore.healthError || 'Not connected' }}
+                                {{ systemStore.healthError || t('dashboard.notConnected') }}
                             </span>
                         </div>
                     </v-card-text>
@@ -36,7 +36,7 @@
                             :loading="systemStore.healthLoading"
                             @click="systemStore.fetchHealth()"
                         >
-                            Refresh
+                            {{ t('common.refresh') }}
                         </v-btn>
                     </v-card-actions>
                 </v-card>
@@ -47,7 +47,7 @@
                 <v-card>
                     <v-card-title>
                         <v-icon start>mdi-brain</v-icon>
-                        Models
+                        {{ t('dashboard.models') }}
                         <v-chip class="ml-2" size="small" color="primary">
                             {{ systemStore.models.length }}
                         </v-chip>
@@ -57,8 +57,7 @@
                             size="small"
                             color="secondary"
                         >
-                            {{ systemStore.modes.length }}
-                            {{ systemStore.modes.length === 1 ? 'mode' : 'modes' }}
+                            {{ t('common.mode', systemStore.modes.length) }}
                         </v-chip>
                     </v-card-title>
                     <v-card-text>
@@ -72,7 +71,7 @@
                             {{ model.name }}
                         </v-chip>
                         <p v-if="systemStore.models.length === 0" class="text-grey">
-                            No models loaded
+                            {{ t('dashboard.noModelsLoaded') }}
                         </p>
                     </v-card-text>
                     <v-card-actions>
@@ -81,7 +80,7 @@
                             :loading="systemStore.modelsLoading"
                             @click="systemStore.fetchModels()"
                         >
-                            Refresh
+                            {{ t('common.refresh') }}
                         </v-btn>
                     </v-card-actions>
                 </v-card>
@@ -92,7 +91,7 @@
                 <v-card>
                     <v-card-title>
                         <v-icon start>mdi-lightning-bolt</v-icon>
-                        Quick Actions
+                        {{ t('dashboard.quickActions') }}
                     </v-card-title>
                     <v-card-text>
                         <div v-for="action in quickActions" :key="action.to" class="mb-3">
@@ -102,9 +101,9 @@
                                 variant="tonal"
                                 class="mb-1"
                             >
-                                {{ action.title }}
+                                {{ t(action.title) }}
                             </v-btn>
-                            <p class="text-body-2 text-grey ml-1">{{ action.description }}</p>
+                            <p class="text-body-2 text-grey ml-1">{{ t(action.description) }}</p>
                         </div>
                     </v-card-text>
                 </v-card>
@@ -114,12 +113,13 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
 import { useSystemStore } from '@/stores/system';
 import HealthBadge from '@/components/shared/HealthBadge.vue';
 import { NAV_ITEMS } from '@/utils/navigation';
 
+const { t } = useI18n();
 const systemStore = useSystemStore();
 
-// Quick actions = all navigable pages except Dashboard (first) and Settings (last)
 const quickActions = NAV_ITEMS.filter((item) => item.to !== '/' && item.to !== '/settings');
 </script>

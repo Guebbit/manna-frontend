@@ -18,7 +18,7 @@ import type {
     UploadImageClassify200Response,
     UploadReadPdf200Response,
     UploadSpeechToText200Response
-} from '../../api/models';
+} from '@api';
 import { uploadImageClassify, uploadSpeechToText, uploadReadPdf } from '@/api/manna';
 import { handleApiError } from '@/utils/errorHandling';
 

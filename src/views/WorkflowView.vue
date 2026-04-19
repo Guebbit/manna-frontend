@@ -1,11 +1,11 @@
 <template>
     <div>
-        <h1 class="text-h4 mb-6">Workflow Orchestration</h1>
+        <h1 class="text-h4 mb-6">{{ t('workflow.title') }}</h1>
 
         <v-row>
             <v-col cols="12" md="7">
                 <v-card>
-                    <v-card-title>Build a Workflow</v-card-title>
+                    <v-card-title>{{ t('workflow.buildWorkflow') }}</v-card-title>
                     <v-card-text>
                         <!-- Step list -->
                         <div
@@ -15,7 +15,7 @@
                         >
                             <v-text-field
                                 v-model="steps[index]"
-                                :label="`Step ${index + 1}`"
+                                :label="t('workflow.step', { n: index + 1 })"
                                 variant="outlined"
                                 density="compact"
                                 hide-details
@@ -41,7 +41,7 @@
                             @click="addStep"
                         >
                             <v-icon start>mdi-plus</v-icon>
-                            Add Step
+                            {{ t('workflow.addStep') }}
                         </v-btn>
 
                         <v-row class="mt-2">
@@ -49,7 +49,7 @@
                                 <v-select
                                     v-model="selectedProfile"
                                     :items="profileOptions"
-                                    label="Model profile"
+                                    :label="t('workflow.modelProfile')"
                                     variant="outlined"
                                     density="compact"
                                 />
@@ -58,7 +58,7 @@
                                 <v-select
                                     v-model="selectedCarry"
                                     :items="carryOptions"
-                                    label="Context carry"
+                                    :label="t('workflow.contextCarry')"
                                     variant="outlined"
                                     density="compact"
                                 />
@@ -66,13 +66,13 @@
                             <v-col cols="12" sm="4">
                                 <v-text-field
                                     v-model.number="maxStepsPerStep"
-                                    label="Max steps/step"
+                                    :label="t('workflow.maxStepsPerStep')"
                                     type="number"
                                     variant="outlined"
                                     density="compact"
                                     min="1"
                                     max="100"
-                                    placeholder="Auto"
+                                    :placeholder="t('workflow.maxStepsPlaceholder')"
                                     clearable
                                 />
                             </v-col>
@@ -80,7 +80,7 @@
 
                         <v-switch
                             v-model="allowWrite"
-                            label="Allow write"
+                            :label="t('workflow.allowWrite')"
                             color="warning"
                             density="compact"
                             hide-details
@@ -94,7 +94,7 @@
                             @click="submitJson"
                         >
                             <v-icon start>mdi-list-status</v-icon>
-                            Run Workflow
+                            {{ t('workflow.runWorkflow') }}
                         </v-btn>
                         <v-btn
                             color="secondary"
@@ -106,7 +106,7 @@
                             @click="submitStream"
                         >
                             <v-icon start>mdi-antenna</v-icon>
-                            Run Workflow (Stream)
+                            {{ t('workflow.runWorkflowStream') }}
                         </v-btn>
                     </v-card-actions>
                 </v-card>
@@ -115,7 +115,7 @@
                 <v-card v-if="workflowStore.streaming || streamFinished" class="mt-4">
                     <v-card-title class="d-flex align-center">
                         <v-icon start>mdi-antenna</v-icon>
-                        Live Events
+                        {{ t('common.liveEvents') }}
                         <v-progress-circular
                             v-if="workflowStore.streaming"
                             indeterminate
@@ -151,14 +151,18 @@
                 <!-- JSON Result -->
                 <v-card v-if="latestResult" class="mt-4">
                     <v-card-title class="d-flex align-center">
-                        Result
+                        {{ t('common.result') }}
                         <v-spacer />
                         <v-chip
                             size="small"
                             :color="latestResult.allSucceeded ? 'success' : 'error'"
                             class="mr-2"
                         >
-                            {{ latestResult.allSucceeded ? 'All succeeded' : 'Some failed' }}
+                            {{
+                                latestResult.allSucceeded
+                                    ? t('workflow.allSucceeded')
+                                    : t('workflow.someFailed')
+                            }}
                         </v-chip>
                         <v-chip size="small" color="secondary">
                             {{ formatDuration(latestResult.totalDurationMs) }}
@@ -204,12 +208,12 @@
             <!-- History Sidebar -->
             <v-col cols="12" md="5">
                 <v-card>
-                    <v-card-title>Workflow History</v-card-title>
+                    <v-card-title>{{ t('workflow.workflowHistory') }}</v-card-title>
                     <v-card-text
                         v-if="workflowStore.workflowHistory.length === 0"
                         class="text-grey"
                     >
-                        No workflows yet. Submit your first workflow!
+                        {{ t('workflow.noWorkflowsYet') }}
                     </v-card-text>
                     <v-list v-else density="compact">
                         <v-list-item
@@ -220,9 +224,9 @@
                             @click="latestResult = entry"
                         >
                             <v-list-item-title class="text-truncate">
-                                {{ entry.steps[0] ?? '(empty workflow)' }}
+                                {{ entry.steps[0] ?? t('workflow.emptyWorkflow') }}
                                 <span v-if="entry.steps.length > 1" class="text-grey">
-                                    + {{ entry.steps.length - 1 }} more
+                                    {{ t('workflow.moreSteps', { n: entry.steps.length - 1 }) }}
                                 </span>
                             </v-list-item-title>
                             <v-list-item-subtitle class="text-caption">
@@ -235,9 +239,7 @@
                                     class="ml-1"
                                     :color="entry.allSucceeded ? 'success' : 'error'"
                                 >
-                                    {{ entry.steps.length }} step{{
-                                        entry.steps.length === 1 ? '' : 's'
-                                    }}
+                                    {{ t('workflow.stepCount', entry.steps.length) }}
                                 </v-chip>
                             </v-list-item-subtitle>
                         </v-list-item>
@@ -250,17 +252,20 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useWorkflowStore, type IWorkflowHistoryEntry } from '@/stores/workflow';
 import type {
     WorkflowRequestCarryEnum as WorkflowCarryMode,
     WorkflowRequestProfileEnum as ModelProfile
-} from '../../api/models';
+} from '@api/api';
 import MarkdownRenderer from '@/components/shared/MarkdownRenderer.vue';
-import { PROFILE_OPTIONS } from '@/utils/constants';
+import { useProfileOptions } from '@/utils/constants';
 import { formatTime, formatDuration } from '@/utils/formatting';
 import { workflowEventColor, workflowEventSummary } from '@/utils/eventFormatting';
 
+const { t } = useI18n();
 const workflowStore = useWorkflowStore();
+const profileOptions = useProfileOptions();
 
 const steps = ref<string[]>(['']);
 const selectedProfile = ref<ModelProfile | 'auto'>('auto');
@@ -272,13 +277,11 @@ const streamFinished = ref(false);
 
 const hasValidSteps = computed(() => steps.value.some((s) => s.trim().length > 0));
 
-const profileOptions = PROFILE_OPTIONS;
-
-const carryOptions = [
-    { title: 'Summary (default) — condensed prior output', value: 'summary' },
-    { title: 'Full — complete prior output', value: 'full' },
-    { title: 'None — no context carry', value: 'none' }
-];
+const carryOptions = computed(() => [
+    { title: t('workflow.carryOptions.summary'), value: 'summary' },
+    { title: t('workflow.carryOptions.full'), value: 'full' },
+    { title: t('workflow.carryOptions.none'), value: 'none' }
+]);
 
 watch(
     () => workflowStore.workflowHistory.length,

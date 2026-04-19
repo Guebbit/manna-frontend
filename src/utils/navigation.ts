@@ -5,17 +5,18 @@
  *
  * Both the sidebar and the dashboard quick-actions derive their data from
  * this list so that adding or renaming a page only requires one edit.
+ * The `title` and `description` fields are i18n keys resolved at render time.
  */
 
 /** Describes a single navigable page in the application. */
 export interface INavItem {
-    /** Display label shown in the sidebar. */
+    /** i18n key for the display label shown in the sidebar. */
     title: string;
     /** MDI icon name (e.g. `'mdi-chat'`). */
     icon: string;
     /** Vue Router path (e.g. `'/chat'`). */
     to: string;
-    /** Short description shown in the dashboard quick-actions section. */
+    /** i18n key for the short description shown in the dashboard quick-actions section. */
     description: string;
 }
 
@@ -27,69 +28,43 @@ export interface INavItem {
  */
 export const NAV_ITEMS: readonly INavItem[] = [
     {
-        title: 'Dashboard',
+        title: 'nav.dashboard',
         icon: 'mdi-view-dashboard',
         to: '/',
-        description: 'Overview of system health, models, and quick navigation.'
+        description: 'nav.dashboardDesc'
     },
+    { title: 'nav.chat', icon: 'mdi-chat', to: '/chat', description: 'nav.chatDesc' },
+    { title: 'nav.agentTask', icon: 'mdi-robot', to: '/agent', description: 'nav.agentTaskDesc' },
     {
-        title: 'Chat',
-        icon: 'mdi-chat',
-        to: '/chat',
-        description:
-            "OpenAI-compatible chat. Use the 'manna' model for tool-enabled agentic conversations."
-    },
-    {
-        title: 'Agent Task',
-        icon: 'mdi-robot',
-        to: '/agent',
-        description:
-            'Autonomous task execution. The agent reasons step-by-step and calls tools to complete your request.'
-    },
-    {
-        title: 'Code Tools',
+        title: 'nav.codeTools',
         icon: 'mdi-code-braces',
         to: '/code',
-        description: 'Fast IDE tools: code completion, lint analysis, and AI-powered page review.'
+        description: 'nav.codeToolsDesc'
     },
     {
-        title: 'Upload & Analyze',
+        title: 'nav.uploadAnalyze',
         icon: 'mdi-upload',
         to: '/upload',
-        description:
-            'Classify images, transcribe audio, or extract text from PDFs using specialised AI models.'
+        description: 'nav.uploadAnalyzeDesc'
     },
     {
-        title: 'Graph Builder',
+        title: 'nav.graphBuilder',
         icon: 'mdi-graph',
         to: '/graph',
-        description:
-            'Build visual pipelines with a node graph editor and execute them on the backend.'
+        description: 'nav.graphBuilderDesc'
     },
+    { title: 'nav.swarm', icon: 'mdi-sitemap', to: '/swarm', description: 'nav.swarmDesc' },
     {
-        title: 'Swarm',
-        icon: 'mdi-sitemap',
-        to: '/swarm',
-        description:
-            'Break a complex task into subtasks, run them across multiple agents in parallel, and synthesise the results.'
-    },
-    {
-        title: 'Workflow',
+        title: 'nav.workflow',
         icon: 'mdi-list-status',
         to: '/workflow',
-        description:
-            'Define and execute multi-step pipelines with conditional logic, branching, and sequential or parallel task orchestration.'
+        description: 'nav.workflowDesc'
     },
     {
-        title: 'System Info',
+        title: 'nav.systemInfo',
         icon: 'mdi-information-outline',
         to: '/system',
-        description: 'View routing profiles, loaded Ollama models, and the complete API reference.'
+        description: 'nav.systemInfoDesc'
     },
-    {
-        title: 'Settings',
-        icon: 'mdi-cog',
-        to: '/settings',
-        description: 'Configure backend URL, default model profile, and write-mode defaults.'
-    }
+    { title: 'nav.settings', icon: 'mdi-cog', to: '/settings', description: 'nav.settingsDesc' }
 ] as const;

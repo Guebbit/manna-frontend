@@ -1,24 +1,21 @@
 <template>
     <div>
-        <h1 class="text-h4 mb-2">Swarm Orchestration</h1>
-        <p class="text-body-2 text-grey mb-6">
-            Swarm decomposes a complex task into subtasks, runs them in parallel across multiple
-            agents, then synthesises a final answer. Best for multi-part research or analysis tasks.
-        </p>
+        <h1 class="text-h4 mb-2">{{ t('swarm.title') }}</h1>
+        <p class="text-body-2 text-grey mb-6">{{ t('swarm.subtitle') }}</p>
 
         <v-row>
             <v-col cols="12" md="7">
                 <v-card>
-                    <v-card-title>Submit a Swarm Task</v-card-title>
+                    <v-card-title>{{ t('swarm.submitSwarmTask') }}</v-card-title>
                     <v-card-text>
                         <v-textarea
                             v-model="taskInput"
-                            label="Task description"
-                            placeholder="Describe a complex task to decompose across multiple agents…"
+                            :label="t('swarm.taskDescription')"
+                            :placeholder="t('swarm.taskPlaceholder')"
                             variant="outlined"
                             rows="4"
                             auto-grow
-                            hint="Works best with complex, multi-part tasks: e.g. 'Research Vue 3, React, and Svelte — compare performance, DX, and ecosystem size'."
+                            :hint="t('swarm.taskHint')"
                             persistent-hint
                         />
 
@@ -27,7 +24,7 @@
                                 <v-select
                                     v-model="selectedProfile"
                                     :items="profileOptions"
-                                    label="Model profile"
+                                    :label="t('swarm.modelProfile')"
                                     variant="outlined"
                                     density="compact"
                                 />
@@ -35,21 +32,21 @@
                             <v-col cols="12" sm="4">
                                 <v-text-field
                                     v-model.number="maxSubtasks"
-                                    label="Max subtasks"
+                                    :label="t('swarm.maxSubtasks')"
                                     type="number"
                                     variant="outlined"
                                     density="compact"
                                     min="1"
                                     max="20"
-                                    placeholder="Auto"
+                                    :placeholder="t('swarm.maxSubtasksPlaceholder')"
                                     clearable
-                                    hint="Limits how many subtasks are created. Leave empty to let the system decide. Lower = faster but less thorough."
+                                    :hint="t('swarm.maxSubtasksHint')"
                                     persistent-hint
                                 />
                             </v-col>
                             <v-col cols="12" sm="4" class="d-flex align-center">
                                 <v-tooltip
-                                    text="⚠ When enabled, all subtask agents can create, modify, and delete files on the server's filesystem. Leave off unless needed."
+                                    :text="t('swarm.allowWriteTooltip')"
                                     location="top"
                                     max-width="320"
                                 >
@@ -57,7 +54,7 @@
                                         <v-switch
                                             v-bind="tooltipProps"
                                             v-model="allowWrite"
-                                            label="Allow write"
+                                            :label="t('swarm.allowWrite')"
                                             color="warning"
                                             density="compact"
                                             hide-details
@@ -68,10 +65,7 @@
                         </v-row>
                     </v-card-text>
                     <v-card-actions>
-                        <v-tooltip
-                            text="Waits for all subtasks to complete, then returns the full result with per-subtask breakdowns."
-                            location="top"
-                        >
+                        <v-tooltip :text="t('swarm.runSwarmTooltip')" location="top">
                             <template #activator="{ props: tooltipProps }">
                                 <v-btn
                                     v-bind="tooltipProps"
@@ -81,14 +75,11 @@
                                     @click="submitJson"
                                 >
                                     <v-icon start>mdi-sitemap</v-icon>
-                                    Run Swarm
+                                    {{ t('swarm.runSwarm') }}
                                 </v-btn>
                             </template>
                         </v-tooltip>
-                        <v-tooltip
-                            text="Shows live events as subtasks start, complete, and the final synthesis happens."
-                            location="top"
-                        >
+                        <v-tooltip :text="t('swarm.runSwarmStreamTooltip')" location="top">
                             <template #activator="{ props: tooltipProps }">
                                 <v-btn
                                     v-bind="tooltipProps"
@@ -101,7 +92,7 @@
                                     @click="submitStream"
                                 >
                                     <v-icon start>mdi-antenna</v-icon>
-                                    Run Swarm (Stream)
+                                    {{ t('swarm.runSwarmStream') }}
                                 </v-btn>
                             </template>
                         </v-tooltip>
@@ -112,7 +103,7 @@
                 <v-card v-if="swarmStore.streaming || streamFinished" class="mt-4">
                     <v-card-title class="d-flex align-center">
                         <v-icon start>mdi-antenna</v-icon>
-                        Live Events
+                        {{ t('common.liveEvents') }}
                         <v-progress-circular
                             v-if="swarmStore.streaming"
                             indeterminate
@@ -146,12 +137,10 @@
                 <!-- JSON Result -->
                 <v-card v-if="latestResult" class="mt-4">
                     <v-card-title class="d-flex align-center">
-                        Result
+                        {{ t('common.result') }}
                         <v-spacer />
                         <v-chip size="small" color="primary" class="mr-2">
-                            {{ latestResult.subtaskCount }} subtask{{
-                                latestResult.subtaskCount === 1 ? '' : 's'
-                            }}
+                            {{ t('swarm.subtaskCount', latestResult.subtaskCount) }}
                         </v-chip>
                         <v-chip size="small" color="secondary">
                             {{ formatDuration(latestResult.totalDurationMs) }}
@@ -168,11 +157,8 @@
                     v-if="latestResult && (latestResult.response.subtaskResults?.length ?? 0) > 0"
                     class="mt-4"
                 >
-                    <v-card-title>Subtask Breakdown</v-card-title>
-                    <v-card-subtitle>
-                        Each subtask ran independently with its own agent loop. Expand a row to see
-                        the individual answer.
-                    </v-card-subtitle>
+                    <v-card-title>{{ t('swarm.subtaskBreakdown') }}</v-card-title>
+                    <v-card-subtitle>{{ t('swarm.subtaskBreakdownSubtitle') }}</v-card-subtitle>
                     <v-card-text>
                         <v-expansion-panels>
                             <v-expansion-panel
@@ -213,9 +199,9 @@
             <!-- History Sidebar -->
             <v-col cols="12" md="5">
                 <v-card>
-                    <v-card-title>Swarm History</v-card-title>
+                    <v-card-title>{{ t('swarm.swarmHistory') }}</v-card-title>
                     <v-card-text v-if="swarmStore.swarmHistory.length === 0" class="text-grey">
-                        No swarm tasks yet. Submit your first task!
+                        {{ t('swarm.noSwarmYet') }}
                     </v-card-text>
                     <v-list v-else density="compact">
                         <v-list-item
@@ -234,7 +220,7 @@
                                     {{ entry.profile }}
                                 </v-chip>
                                 <v-chip size="x-small" class="ml-1" color="primary">
-                                    {{ entry.subtaskCount }} tasks
+                                    {{ t('swarm.subtaskCount', entry.subtaskCount) }}
                                 </v-chip>
                             </v-list-item-subtitle>
                         </v-list-item>
@@ -247,27 +233,25 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useSwarmStore, type ISwarmHistoryEntry } from '@/stores/swarm';
-import type { SwarmRequestProfileEnum as ModelProfile } from '../../api/models';
+import type { SwarmRequestProfileEnum as ModelProfile } from '@api/api';
 import MarkdownRenderer from '@/components/shared/MarkdownRenderer.vue';
 import CopyButton from '@/components/shared/CopyButton.vue';
-import { PROFILE_OPTIONS } from '@/utils/constants';
+import { useProfileOptions } from '@/utils/constants';
 import { formatTime, formatDuration } from '@/utils/formatting';
 import { swarmEventColor, swarmEventSummary } from '@/utils/eventFormatting';
 
+const { t } = useI18n();
 const swarmStore = useSwarmStore();
+const profileOptions = useProfileOptions();
 
 const taskInput = ref('');
-// 'auto' maps to undefined in API calls — lets the model router choose per subtask
 const selectedProfile = ref<ModelProfile | 'auto'>('auto');
-// Default false: write access is dangerous — all subtask agents share this flag
 const allowWrite = ref(false);
 const maxSubtasks = ref<number | undefined>(undefined);
 const latestResult = ref<ISwarmHistoryEntry | undefined>(undefined);
-// Tracks whether a stream has completed so the event timeline stays visible afterwards
 const streamFinished = ref(false);
-
-const profileOptions = PROFILE_OPTIONS;
 
 watch(
     () => swarmStore.swarmHistory.length,
@@ -283,7 +267,6 @@ async function submitJson(): Promise<void> {
     if (!task) return;
 
     streamFinished.value = false;
-    // Map 'auto' sentinel to undefined so the model router picks per subtask
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
     const result = await swarmStore.submitSwarm(task, profile, allowWrite.value, maxSubtasks.value);
     if (result) {
@@ -297,7 +280,6 @@ async function submitStream(): Promise<void> {
     if (!task) return;
 
     streamFinished.value = false;
-    // Map 'auto' sentinel to undefined so the model router picks per subtask
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
     const result = await swarmStore.submitSwarmStream(
         task,
@@ -305,7 +287,6 @@ async function submitStream(): Promise<void> {
         allowWrite.value,
         maxSubtasks.value
     );
-    // Mark finished so the event timeline stays visible after streaming ends
     streamFinished.value = true;
     if (result) {
         latestResult.value = result;

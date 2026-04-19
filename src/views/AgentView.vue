@@ -1,24 +1,21 @@
 <template>
     <div>
-        <h1 class="text-h4 mb-2">Agent Task</h1>
-        <p class="text-body-2 text-grey mb-6">
-            Give the agent a natural-language task. It will reason step-by-step, pick tools from its
-            registry, and execute them autonomously (up to 5 iterations).
-        </p>
+        <h1 class="text-h4 mb-2">{{ t('agent.title') }}</h1>
+        <p class="text-body-2 text-grey mb-6">{{ t('agent.subtitle') }}</p>
 
         <v-row>
             <v-col cols="12" md="7">
                 <v-card>
-                    <v-card-title>Submit a Task</v-card-title>
+                    <v-card-title>{{ t('agent.submitTask') }}</v-card-title>
                     <v-card-text>
                         <v-textarea
                             v-model="taskInput"
-                            label="Task description"
-                            placeholder="Describe what you want the agent to do…"
+                            :label="t('agent.taskDescription')"
+                            :placeholder="t('agent.taskPlaceholder')"
                             variant="outlined"
                             rows="4"
                             auto-grow
-                            hint="Be specific: e.g. 'Read package.json and summarise all dependencies' or 'Search the web for Vue 3 best practices'."
+                            :hint="t('agent.taskHint')"
                             persistent-hint
                         />
 
@@ -27,16 +24,16 @@
                                 <v-select
                                     v-model="selectedProfile"
                                     :items="profileOptions"
-                                    label="Model profile"
+                                    :label="t('agent.modelProfile')"
                                     variant="outlined"
                                     density="compact"
-                                    hint="Auto lets Manna's router pick the best model per step. Fast = low latency, Reasoning = complex tasks, Code = programming tasks."
+                                    :hint="t('agent.profileHint')"
                                     persistent-hint
                                 />
                             </v-col>
                             <v-col cols="12" sm="6" class="d-flex align-center">
                                 <v-tooltip
-                                    text="⚠ When enabled, the agent can create, modify, and delete files on the server's filesystem. Leave off unless file modification is required."
+                                    :text="t('agent.allowWriteTooltip')"
                                     location="top"
                                     max-width="320"
                                 >
@@ -44,7 +41,7 @@
                                         <v-switch
                                             v-bind="tooltipProps"
                                             v-model="allowWrite"
-                                            label="Allow write operations"
+                                            :label="t('agent.allowWrite')"
                                             color="warning"
                                             density="compact"
                                             hide-details
@@ -55,10 +52,7 @@
                         </v-row>
                     </v-card-text>
                     <v-card-actions>
-                        <v-tooltip
-                            text="Sends the task and waits for the complete result (no intermediate updates)."
-                            location="top"
-                        >
+                        <v-tooltip :text="t('agent.runTaskTooltip')" location="top">
                             <template #activator="{ props: tooltipProps }">
                                 <v-btn
                                     v-bind="tooltipProps"
@@ -68,14 +62,11 @@
                                     @click="submit"
                                 >
                                     <v-icon start>mdi-play</v-icon>
-                                    Run Task
+                                    {{ t('agent.runTask') }}
                                 </v-btn>
                             </template>
                         </v-tooltip>
-                        <v-tooltip
-                            text="Sends the task and shows real-time events as the agent reasons and uses tools."
-                            location="top"
-                        >
+                        <v-tooltip :text="t('agent.streamTooltip')" location="top">
                             <template #activator="{ props: tooltipProps }">
                                 <v-btn
                                     v-bind="tooltipProps"
@@ -88,7 +79,7 @@
                                     @click="submitStream"
                                 >
                                     <v-icon start>mdi-antenna</v-icon>
-                                    Stream
+                                    {{ t('agent.stream') }}
                                 </v-btn>
                             </template>
                         </v-tooltip>
@@ -99,7 +90,7 @@
                 <v-card v-if="agentStore.streaming || streamFinished" class="mt-4">
                     <v-card-title class="d-flex align-center">
                         <v-icon start>mdi-antenna</v-icon>
-                        Live Events
+                        {{ t('common.liveEvents') }}
                         <v-progress-circular
                             v-if="agentStore.streaming"
                             indeterminate
@@ -107,10 +98,7 @@
                             class="ml-2"
                         />
                     </v-card-title>
-                    <v-card-subtitle>
-                        Each event shows one step in the agent's reasoning chain: tool calls, model
-                        routing decisions, and completion.
-                    </v-card-subtitle>
+                    <v-card-subtitle>{{ t('agent.liveEventsSubtitle') }}</v-card-subtitle>
                     <v-card-text>
                         <v-timeline density="compact" side="end">
                             <v-timeline-item
@@ -137,7 +125,7 @@
                 <!-- Result -->
                 <v-card v-if="latestResult" class="mt-4">
                     <v-card-title class="d-flex align-center">
-                        Result
+                        {{ t('common.result') }}
                         <v-spacer />
                         <CopyButton :text="latestResult.result" />
                     </v-card-title>
@@ -150,9 +138,9 @@
             <!-- Task History -->
             <v-col cols="12" md="5">
                 <v-card>
-                    <v-card-title>Task History</v-card-title>
+                    <v-card-title>{{ t('agent.taskHistory') }}</v-card-title>
                     <v-card-text v-if="agentStore.taskHistory.length === 0" class="text-grey">
-                        No tasks yet. Submit your first task!
+                        {{ t('agent.noTasksYet') }}
                     </v-card-text>
                     <v-list v-else density="compact">
                         <v-list-item
@@ -181,31 +169,25 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useAgentStore, type ITaskHistoryEntry } from '@/stores/agent';
-import type { RunRequestProfileEnum as ModelProfile } from '../../api/models';
+import type { RunRequestProfileEnum as ModelProfile } from '@api/api';
 import MarkdownRenderer from '@/components/shared/MarkdownRenderer.vue';
 import CopyButton from '@/components/shared/CopyButton.vue';
-import { PROFILE_OPTIONS } from '@/utils/constants';
+import { useProfileOptions } from '@/utils/constants';
 import { formatTime } from '@/utils/formatting';
 import { agentEventColor, agentEventSummary } from '@/utils/eventFormatting';
 
+const { t } = useI18n();
 const agentStore = useAgentStore();
+const profileOptions = useProfileOptions();
 
 const taskInput = ref('');
-// 'auto' is a UI-only sentinel value; it maps to `undefined` in API calls
-// so the backend model router can freely choose the best profile per step
 const selectedProfile = ref<ModelProfile | 'auto'>('auto');
-// Default false: write access is dangerous — the agent can modify server files
 const allowWrite = ref(false);
 const latestResult = ref<ITaskHistoryEntry | undefined>(undefined);
-// Separate ref from `agentStore.streaming` so we can distinguish
-// "stream has finished" from "stream was never started" and keep the
-// event timeline visible after streaming ends
 const streamFinished = ref(false);
 
-const profileOptions = PROFILE_OPTIONS;
-
-// Auto-select latest result when history changes
 watch(
     () => agentStore.taskHistory.length,
     () => {
@@ -220,7 +202,6 @@ async function submit(): Promise<void> {
     if (!task) return;
 
     streamFinished.value = false;
-    // Map 'auto' sentinel back to undefined so the router picks the profile
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
     const result = await agentStore.submitTask(task, profile, allowWrite.value);
     if (result) {
@@ -234,10 +215,8 @@ async function submitStream(): Promise<void> {
     if (!task) return;
 
     streamFinished.value = false;
-    // Map 'auto' sentinel back to undefined so the router picks the profile
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
     const result = await agentStore.submitTaskStream(task, profile, allowWrite.value);
-    // Mark stream as finished so the event timeline stays visible after streaming stops
     streamFinished.value = true;
     if (result) {
         latestResult.value = result;

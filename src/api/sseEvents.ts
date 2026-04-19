@@ -8,7 +8,7 @@
  *
  * Import from this module whenever you consume a streaming endpoint.
  */
-import type { ResponseMeta, WorkflowStepResult, WorkflowResponse } from '../../api/models';
+import type { ResponseMeta, WorkflowStepResult, WorkflowResponse } from '@api/api';
 
 /* ─── Agent /run/stream ────────────────────────────────────────── */
 

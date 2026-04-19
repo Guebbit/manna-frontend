@@ -113,10 +113,7 @@
                     </v-btn>
                 </v-card-title>
                 <v-card-text>
-                    <div
-                        v-if="graphStore.executionResult"
-                        class="text-body-2 text-pre-wrap"
-                    >
+                    <div v-if="graphStore.executionResult" class="text-body-2 text-pre-wrap">
                         {{ graphStore.executionResult }}
                     </div>
                     <span v-else class="text-grey">
@@ -161,7 +158,9 @@ const CHROME_HEIGHT_PX = 280;
 const MIN_CANVAS_HEIGHT_PX = 400;
 
 /** Canvas height — leaves room for the toolbar and results. */
-const canvasHeight = computed(() => Math.max(MIN_CANVAS_HEIGHT_PX, window.innerHeight - CHROME_HEIGHT_PX));
+const canvasHeight = computed(() =>
+    Math.max(MIN_CANVAS_HEIGHT_PX, window.innerHeight - CHROME_HEIGHT_PX)
+);
 
 /** Serialises the current graph and shows a success notification. */
 function onSave(): void {

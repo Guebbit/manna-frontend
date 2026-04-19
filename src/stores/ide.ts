@@ -15,7 +15,7 @@
 import { defineStore } from 'pinia';
 import { computed, reactive, ref } from 'vue';
 import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
-import type { AutocompleteResponse, LintResponse, PageReviewResponse } from '../../api/models';
+import type { AutocompleteResponse, LintResponse, PageReviewResponse } from '@api';
 import { autocomplete, lintConventions, pageReview } from '@/api/manna';
 import { handleApiError } from '@/utils/errorHandling';
 

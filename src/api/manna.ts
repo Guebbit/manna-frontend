@@ -14,10 +14,19 @@ import { getMannaBaseUrl } from '@/config';
 import type {
     AutocompleteRequest,
     AutocompleteResponse,
+    ChatMessage,
+    Conversation,
+    ConversationWithMessages,
+    CreateConversation201Response,
+    CreateConversationRequest,
+    CreateMessage201Response,
+    CreateMessageRequest,
+    GetConversation200Response,
     GetHelp200Response,
     GetInfoModels200Response,
     GetInfoModes200Response,
     HealthResponse,
+    ListConversations200Response,
     LintConventionsRequest,
     LintResponse,
     PageReviewRequest,
@@ -26,12 +35,14 @@ import type {
     RunResponse,
     SwarmRequest,
     SwarmResponse,
+    UpdateConversationRequest,
+    UpdateMessageRequest,
     UploadImageClassify200Response,
     UploadReadPdf200Response,
     UploadSpeechToText200Response,
     WorkflowRequest,
     WorkflowResponse
-} from '../../api/models';
+} from '@api';
 import type { AgentStreamEvent, SwarmStreamEvent, WorkflowStreamEvent } from './sseEvents';
 
 /* ─── Error class ────────────────────────────────────────────── */
@@ -411,6 +422,108 @@ export async function fetchHelp(): Promise<GetHelp200Response> {
     return handleResponse<GetHelp200Response>(response);
 }
 
+/* ─── Chat conversations ─────────────────────────────────────── */
+
+export async function listConversations(): Promise<Conversation[]> {
+    const response = await fetch(`${baseUrl()}/chat/conversations`);
+    if (!response.ok) await throwStreamError(response);
+    const body = (await response.json()) as ListConversations200Response;
+    return body.data?.conversations ?? [];
+}
+
+export async function createConversation(
+    request: CreateConversationRequest
+): Promise<Conversation> {
+    const response = await fetch(`${baseUrl()}/chat/conversations`, {
+        method: 'POST',
+        headers: JSON_HEADERS,
+        body: JSON.stringify(request)
+    });
+    if (!response.ok) await throwStreamError(response);
+    const body = (await response.json()) as CreateConversation201Response;
+    if (!body.data?.conversation) throw new ApiError('No conversation in response', 500);
+    return body.data.conversation;
+}
+
+export async function getConversation(id: string): Promise<ConversationWithMessages> {
+    const response = await fetch(`${baseUrl()}/chat/conversations/${encodeURIComponent(id)}`);
+    if (!response.ok) await throwStreamError(response);
+    const body = (await response.json()) as GetConversation200Response;
+    if (!body.data?.conversation) throw new ApiError('No conversation in response', 500);
+    return body.data.conversation;
+}
+
+export async function updateConversation(
+    id: string,
+    request: UpdateConversationRequest
+): Promise<Conversation> {
+    const response = await fetch(`${baseUrl()}/chat/conversations/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        headers: JSON_HEADERS,
+        body: JSON.stringify(request)
+    });
+    if (!response.ok) await throwStreamError(response);
+    const json = await response.json();
+    const conv = json?.data?.conversation;
+    if (!conv) throw new ApiError('No conversation in response', 500);
+    return conv as Conversation;
+}
+
+export async function deleteChatConversation(id: string): Promise<void> {
+    const response = await fetch(`${baseUrl()}/chat/conversations/${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+    });
+    if (!response.ok) await throwStreamError(response);
+}
+
+export async function addChatMessage(
+    conversationId: string,
+    request: CreateMessageRequest
+): Promise<ChatMessage> {
+    const response = await fetch(
+        `${baseUrl()}/chat/conversations/${encodeURIComponent(conversationId)}/messages`,
+        {
+            method: 'POST',
+            headers: JSON_HEADERS,
+            body: JSON.stringify(request)
+        }
+    );
+    if (!response.ok) await throwStreamError(response);
+    const body = (await response.json()) as CreateMessage201Response;
+    if (!body.data?.message) throw new ApiError('No message in response', 500);
+    return body.data.message;
+}
+
+export async function editChatMessage(
+    conversationId: string,
+    messageId: string,
+    request: UpdateMessageRequest
+): Promise<ChatMessage> {
+    const response = await fetch(
+        `${baseUrl()}/chat/conversations/${encodeURIComponent(conversationId)}/messages/${encodeURIComponent(messageId)}`,
+        {
+            method: 'PUT',
+            headers: JSON_HEADERS,
+            body: JSON.stringify(request)
+        }
+    );
+    if (!response.ok) await throwStreamError(response);
+    const json = await response.json();
+    const message = json?.data?.message;
+    if (!message) throw new ApiError('No message in response', 500);
+    return message as ChatMessage;
+}
+
+export async function deleteChatMessage(conversationId: string, messageId: string): Promise<void> {
+    const response = await fetch(
+        `${baseUrl()}/chat/conversations/${encodeURIComponent(conversationId)}/messages/${encodeURIComponent(messageId)}`,
+        {
+            method: 'DELETE'
+        }
+    );
+    if (!response.ok) await throwStreamError(response);
+}
+
 /* ─── Workflow ─────────────────────────────────────────────────── */
 
 /**
@@ -448,3 +561,5 @@ export async function* runWorkflowStream(
 
     yield* parseSseStream<WorkflowStreamEvent>(response);
 }
+
+export { type Conversation, type ChatMessage, type ConversationWithMessages } from '@api';

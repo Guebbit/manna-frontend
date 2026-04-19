@@ -1,20 +1,20 @@
 <template>
     <div>
-        <h1 class="text-h4 mb-6">Settings</h1>
+        <h1 class="text-h4 mb-6">{{ t('settings.title') }}</h1>
 
         <v-row>
             <v-col cols="12" md="8">
                 <v-card>
                     <v-card-title>
                         <v-icon start>mdi-connection</v-icon>
-                        Connection
+                        {{ t('settings.connection') }}
                     </v-card-title>
                     <v-card-text>
                         <v-text-field
                             v-model="apiUrl"
-                            label="Manna API URL"
+                            :label="t('settings.apiUrl')"
                             variant="outlined"
-                            hint="The HTTP address of your Manna backend server. Default: http://localhost:3001. Change this if running Manna on a different host or port."
+                            :hint="t('settings.apiUrlHint')"
                             persistent-hint
                             @blur="saveUrl"
                         />
@@ -22,13 +22,13 @@
                         <div class="mt-4 d-flex align-center ga-3">
                             <v-btn variant="tonal" :loading="testing" @click="testConnection">
                                 <v-icon start>mdi-lan-check</v-icon>
-                                Test Connection
+                                {{ t('settings.testConnection') }}
                             </v-btn>
                             <v-chip v-if="testResult === 'ok'" color="success" size="small">
-                                Connected!
+                                {{ t('settings.connected') }}
                             </v-chip>
                             <v-chip v-else-if="testResult === 'fail'" color="error" size="small">
-                                Connection failed
+                                {{ t('settings.connectionFailed') }}
                             </v-chip>
                         </div>
                     </v-card-text>
@@ -37,25 +37,25 @@
                 <v-card class="mt-4">
                     <v-card-title>
                         <v-icon start>mdi-tune</v-icon>
-                        Defaults
+                        {{ t('settings.defaults') }}
                     </v-card-title>
                     <v-card-text>
                         <v-select
                             v-model="defaultProfile"
                             :items="profileOptions"
-                            label="Default model profile"
+                            :label="t('settings.defaultModelProfile')"
                             variant="outlined"
                             density="compact"
-                            hint="Pre-selects this profile across all views. 'Auto' lets Manna's model router choose the best model per request."
+                            :hint="t('settings.defaultModelProfileHint')"
                             persistent-hint
                             @update:model-value="saveDefaults"
                         />
 
                         <v-switch
                             v-model="defaultWriteMode"
-                            label="Default write mode (⚠ dangerous — allows file modifications)"
+                            :label="t('settings.defaultWriteMode')"
                             color="warning"
-                            hint="This default applies to new sessions. Each view can still override it independently."
+                            :hint="t('settings.defaultWriteModeHint')"
                             persistent-hint
                             @update:model-value="saveDefaults"
                         />
@@ -67,21 +67,20 @@
                 <v-card>
                     <v-card-title>
                         <v-icon start>mdi-information</v-icon>
-                        About
+                        {{ t('settings.about') }}
                     </v-card-title>
                     <v-card-text>
                         <p class="text-body-2 mb-2">
-                            <strong>Manna</strong> is a local-first AI agent platform.
+                            <strong>{{ t('settings.aboutText') }}</strong>
                         </p>
                         <p class="text-caption text-grey mb-2">
-                            No authentication required. All data is stored in-memory on the
-                            frontend (localStorage for settings only). The backend is stateless
-                            between restarts — conversation history lives in this browser tab only.
+                            {{ t('settings.aboutSubtext') }}
                         </p>
                         <v-divider class="my-3" />
-                        <p class="text-caption">API: {{ apiUrl }}</p>
+                        <p class="text-caption">{{ t('settings.apiLabel', { url: apiUrl }) }}</p>
                         <p class="text-caption mt-1">
-                            Backend version: <strong>{{ MANNA_BACKEND_VERSION }}</strong>
+                            {{ t('settings.backendVersion') }}
+                            <strong>{{ MANNA_BACKEND_VERSION }}</strong>
                         </p>
                     </v-card-text>
                 </v-card>
@@ -92,9 +91,12 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { getMannaBaseUrl, setMannaBaseUrl, MANNA_BACKEND_VERSION } from '@/config';
-import { healthCheck } from '@/api/manna';
-import { PROFILE_OPTIONS } from '@/utils/constants';
+import { coreApi } from '@/utils/api';
+import { useProfileOptions } from '@/utils/constants';
+
+const { t } = useI18n();
 
 const apiUrl = ref(getMannaBaseUrl());
 const testing = ref(false);
@@ -103,7 +105,7 @@ const testResult = ref<'ok' | 'fail' | undefined>(undefined);
 const defaultProfile = ref(localStorage.getItem('manna-default-profile') ?? 'auto');
 const defaultWriteMode = ref(localStorage.getItem('manna-default-write') === 'true');
 
-const profileOptions = PROFILE_OPTIONS;
+const profileOptions = useProfileOptions();
 
 function saveUrl(): void {
     setMannaBaseUrl(apiUrl.value);
@@ -118,7 +120,7 @@ async function testConnection(): Promise<void> {
     testing.value = true;
     testResult.value = undefined;
     try {
-        await healthCheck();
+        await coreApi.getHealth();
         testResult.value = 'ok';
     } catch {
         testResult.value = 'fail';

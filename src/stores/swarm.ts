@@ -19,7 +19,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
 import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
-import type { SwarmRequestProfileEnum as ModelProfile, SwarmResponse } from '../../api/models';
+import type { SwarmRequestProfileEnum as ModelProfile, SwarmResponse } from '@api';
 import type { SwarmStreamEvent } from '@/api/sseEvents';
 import { runSwarm, runSwarmStream } from '@/api/manna';
 import { useNotificationsStore, TOAST_TYPE } from './notification';

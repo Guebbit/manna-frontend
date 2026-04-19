@@ -33,7 +33,7 @@ const props = withDefaults(
     }>(),
     {
         width: undefined,
-        height: 600,
+        height: 600
     }
 );
 
@@ -42,7 +42,7 @@ const canvasReference = ref<HTMLCanvasElement>();
 const canvasStyle = computed(() => ({
     width: props.width ? `${props.width}px` : '100%',
     height: `${props.height}px`,
-    display: 'block',
+    display: 'block'
 }));
 
 /** Live LiteGraph instance — held in a shallow ref to preserve reactivity. */

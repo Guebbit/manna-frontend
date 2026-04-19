@@ -17,7 +17,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
 import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
-import type { RunRequestProfileEnum as ModelProfile } from '../../api/models';
+import type { RunRequestProfileEnum as ModelProfile } from '@api';
 import type { AgentStreamEvent } from '@/api/sseEvents';
 import { runTask, runTaskStream } from '@/api/manna';
 import { useNotificationsStore, TOAST_TYPE } from './notification';

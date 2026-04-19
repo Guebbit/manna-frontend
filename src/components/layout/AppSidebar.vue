@@ -12,10 +12,10 @@
                 :key="item.to"
                 :to="item.to"
                 :prepend-icon="item.icon"
-                :title="item.title"
+                :title="t(item.title)"
                 rounded="xl"
             >
-                <v-tooltip v-if="rail" :text="item.title" location="end" activator="parent" />
+                <v-tooltip v-if="rail" :text="t(item.title)" location="end" activator="parent" />
             </v-list-item>
         </v-list>
 
@@ -28,9 +28,7 @@
                 </div>
                 <div v-if="!rail" class="text-caption text-grey">
                     <v-icon size="x-small">mdi-brain</v-icon>
-                    {{ systemStore.models.length }} model{{
-                        systemStore.models.length === 1 ? '' : 's'
-                    }}
+                    {{ t('common.model', systemStore.models.length) }}
                 </div>
                 <v-btn
                     class="mt-2"
@@ -65,9 +63,12 @@
  * @emits update:modelValue - Emitted when the drawer open state changes.
  * @emits update:rail       - Emitted when the rail mode is toggled.
  */
+import { useI18n } from 'vue-i18n';
 import { useSystemStore } from '@/stores/system';
 import HealthBadge from '@/components/shared/HealthBadge.vue';
 import { NAV_ITEMS } from '@/utils/navigation';
+
+const { t } = useI18n();
 
 defineProps<{
     modelValue: boolean;
