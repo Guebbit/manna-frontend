@@ -21,7 +21,8 @@ const AGENT_EVENT_COLORS: Record<AgentStreamEvent['type'], string> = {
     route: 'teal',
     done: 'success',
     error: 'error',
-    max_steps: 'warning'
+    max_steps: 'warning',
+    hard_stop: 'error'
 };
 
 /** Colour map for swarm stream event types. */
@@ -34,7 +35,8 @@ const SWARM_EVENT_COLORS: Record<SwarmStreamEvent['type'], string> = {
     tool: 'orange',
     route: 'teal',
     done: 'success',
-    error: 'error'
+    error: 'error',
+    hard_stop: 'error'
 };
 
 /** Colour map for workflow stream event types. */
@@ -91,6 +93,9 @@ export function agentEventSummary(event: AgentStreamEvent): string {
         case 'max_steps': {
             return `Max steps reached: ${event.data.summary}`;
         }
+        case 'hard_stop': {
+            return `Hard stop (${event.data.code}): ${event.data.reason}`;
+        }
         default: {
             return '';
         }
@@ -128,6 +133,9 @@ export function swarmEventSummary(event: SwarmStreamEvent): string {
         }
         case 'error': {
             return `Error: ${event.data.error}`;
+        }
+        case 'hard_stop': {
+            return `Hard stop (${event.data.code}): ${event.data.reason}`;
         }
         default: {
             return '';

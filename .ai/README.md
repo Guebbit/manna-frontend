@@ -6,7 +6,7 @@ Identity
 
 - Repo: `Guebbit/manna-frontend`
 - Stack: Vue 3 (Composition API + `<script setup lang="ts">`), TypeScript strict, Vite, Pinia, Vuetify 3, Vue Router 4
-- Backend: `Guebbit/manna` REST API — base URL from `VITE_MANNA_BASE_URL` (default `http://localhost:3001`)
+- Backend: `Guebbit/manna` REST API — base URL from `VITE_MANNA_URL` (default `http://localhost:3001`, overridable in Settings via localStorage)
 
 Key invariants
 

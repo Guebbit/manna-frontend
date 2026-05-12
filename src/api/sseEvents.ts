@@ -48,6 +48,14 @@ export interface IAgentErrorEvent {
 export interface IAgentMaxStepsEvent {
     task: string;
     summary: string;
+    diagnosticFile?: string;
+}
+
+/** SSE event emitted when the policy layer hard-stops the run. */
+export interface IAgentHardStopEvent {
+    step: number;
+    code: string;
+    reason: string;
 }
 
 /** Discriminated union of all SSE events from POST /run/stream. */
@@ -57,7 +65,8 @@ export type AgentStreamEvent =
     | { type: 'route'; data: IAgentRouteEvent }
     | { type: 'done'; data: IAgentDoneEvent }
     | { type: 'error'; data: IAgentErrorEvent }
-    | { type: 'max_steps'; data: IAgentMaxStepsEvent };
+    | { type: 'max_steps'; data: IAgentMaxStepsEvent }
+    | { type: 'hard_stop'; data: IAgentHardStopEvent };
 
 /* ─── Swarm /run/swarm/stream ──────────────────────────────────── */
 
@@ -104,7 +113,8 @@ export type SwarmStreamEvent =
     | { type: 'tool'; data: IAgentToolEvent }
     | { type: 'route'; data: IAgentRouteEvent }
     | { type: 'done'; data: ISwarmDoneEvent }
-    | { type: 'error'; data: IAgentErrorEvent };
+    | { type: 'error'; data: IAgentErrorEvent }
+    | { type: 'hard_stop'; data: IAgentHardStopEvent };
 
 /* ─── Workflow /workflow/stream ────────────────────────────────── */
 

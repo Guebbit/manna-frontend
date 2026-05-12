@@ -154,6 +154,15 @@ export const useSwarmStore = defineStore('swarm', () => {
                     notificationStore.addMessage(event.data.error, TOAST_TYPE.DANGER, 8000);
                     return undefined;
                 }
+
+                if (event.type === 'hard_stop') {
+                    notificationStore.addMessage(
+                        `Hard stop (${event.data.code}): ${event.data.reason}`,
+                        TOAST_TYPE.DANGER,
+                        8000
+                    );
+                    return undefined;
+                }
             }
         } catch (error: unknown) {
             handleApiError(error, 'Swarm stream failed');

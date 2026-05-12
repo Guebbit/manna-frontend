@@ -2197,6 +2197,31 @@ export interface SseErrorEvent {
     error?: string;
 }
 /**
+ * Emitted when the agent is hard-stopped by the policy layer (e.g. path-safety violation, permission denied, or consecutive-error budget exceeded). The run is persisted with `status: \"hard_stopped\"`.
+ * @export
+ * @interface SseHardStopEvent
+ */
+export interface SseHardStopEvent {
+    /**
+     * Zero-based step index when the hard stop was triggered.
+     * @type {number}
+     * @memberof SseHardStopEvent
+     */
+    step?: number;
+    /**
+     * Typed error code from the error taxonomy. Well-known values: `E_PATH_OUTSIDE_ROOT`, `E_PERMISSION_DENIED`, `E_CONSECUTIVE_ERRORS`.
+     * @type {string}
+     * @memberof SseHardStopEvent
+     */
+    code?: string;
+    /**
+     * Human-readable explanation of why the run was hard-stopped.
+     * @type {string}
+     * @memberof SseHardStopEvent
+     */
+    reason?: string;
+}
+/**
  *
  * @export
  * @interface SseMaxStepsEvent
@@ -4165,7 +4190,7 @@ export const CoreApiAxiosParamCreator = function (configuration?: Configuration)
             };
         },
         /**
-         * Same as `POST /run` but streams agent lifecycle events in real time as Server-Sent Events (SSE).  The connection stays open until the agent completes (on `done`, `error`, or `max_steps` event). The original `POST /run` endpoint is completely unchanged.  **SSE event types**: - `step` — emitted after each LLM response: `{ step, action, thought }` - `tool` — emitted after each tool execution: `{ tool, result? }` or `{ tool, error }` - `route` — emitted when a model profile is selected: `{ profile, model, reason }` - `done` — final answer ready: `{ result, meta? }` - `error` — agent threw: `{ error }` - `max_steps` — loop exhausted: `{ task, summary }`
+         * Same as `POST /run` but streams agent lifecycle events in real time as Server-Sent Events (SSE).  The connection stays open until the agent completes (on `done`, `error`, or `max_steps` event). The original `POST /run` endpoint is completely unchanged.  **SSE event types**: - `step` — emitted after each LLM response: `{ step, action, thought }` - `tool` — emitted after each tool execution: `{ tool, result? }` or `{ tool, error }` - `route` — emitted when a model profile is selected: `{ profile, model, reason }` - `done` — final answer ready: `{ result, meta? }` - `error` — agent threw: `{ error }` - `max_steps` — loop exhausted: `{ task, summary }` - `hard_stop` — policy hard stop: `{ step, code, reason }`
          * @summary Submit a task and receive Server-Sent Events
          * @param {RunRequest} runRequest
          * @param {*} [options] Override http request option.
@@ -4267,7 +4292,7 @@ export const CoreApiFp = function (configuration?: Configuration) {
                 )(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * Same as `POST /run` but streams agent lifecycle events in real time as Server-Sent Events (SSE).  The connection stays open until the agent completes (on `done`, `error`, or `max_steps` event). The original `POST /run` endpoint is completely unchanged.  **SSE event types**: - `step` — emitted after each LLM response: `{ step, action, thought }` - `tool` — emitted after each tool execution: `{ tool, result? }` or `{ tool, error }` - `route` — emitted when a model profile is selected: `{ profile, model, reason }` - `done` — final answer ready: `{ result, meta? }` - `error` — agent threw: `{ error }` - `max_steps` — loop exhausted: `{ task, summary }`
+         * Same as `POST /run` but streams agent lifecycle events in real time as Server-Sent Events (SSE).  The connection stays open until the agent completes (on `done`, `error`, or `max_steps` event). The original `POST /run` endpoint is completely unchanged.  **SSE event types**: - `step` — emitted after each LLM response: `{ step, action, thought }` - `tool` — emitted after each tool execution: `{ tool, result? }` or `{ tool, error }` - `route` — emitted when a model profile is selected: `{ profile, model, reason }` - `done` — final answer ready: `{ result, meta? }` - `error` — agent threw: `{ error }` - `max_steps` — loop exhausted: `{ task, summary }` - `hard_stop` — policy hard stop: `{ step, code, reason }`
          * @summary Submit a task and receive Server-Sent Events
          * @param {RunRequest} runRequest
          * @param {*} [options] Override http request option.
@@ -4331,7 +4356,7 @@ export const CoreApiFactory = function (
                 .then((request) => request(axios, basePath));
         },
         /**
-         * Same as `POST /run` but streams agent lifecycle events in real time as Server-Sent Events (SSE).  The connection stays open until the agent completes (on `done`, `error`, or `max_steps` event). The original `POST /run` endpoint is completely unchanged.  **SSE event types**: - `step` — emitted after each LLM response: `{ step, action, thought }` - `tool` — emitted after each tool execution: `{ tool, result? }` or `{ tool, error }` - `route` — emitted when a model profile is selected: `{ profile, model, reason }` - `done` — final answer ready: `{ result, meta? }` - `error` — agent threw: `{ error }` - `max_steps` — loop exhausted: `{ task, summary }`
+         * Same as `POST /run` but streams agent lifecycle events in real time as Server-Sent Events (SSE).  The connection stays open until the agent completes (on `done`, `error`, or `max_steps` event). The original `POST /run` endpoint is completely unchanged.  **SSE event types**: - `step` — emitted after each LLM response: `{ step, action, thought }` - `tool` — emitted after each tool execution: `{ tool, result? }` or `{ tool, error }` - `route` — emitted when a model profile is selected: `{ profile, model, reason }` - `done` — final answer ready: `{ result, meta? }` - `error` — agent threw: `{ error }` - `max_steps` — loop exhausted: `{ task, summary }` - `hard_stop` — policy hard stop: `{ step, code, reason }`
          * @summary Submit a task and receive Server-Sent Events
          * @param {CoreApiPostRunStreamRequest} requestParameters Request parameters.
          * @param {*} [options] Override http request option.
@@ -4377,7 +4402,7 @@ export interface CoreApiInterface {
     ): AxiosPromise<PostRun200Response>;
 
     /**
-     * Same as `POST /run` but streams agent lifecycle events in real time as Server-Sent Events (SSE).  The connection stays open until the agent completes (on `done`, `error`, or `max_steps` event). The original `POST /run` endpoint is completely unchanged.  **SSE event types**: - `step` — emitted after each LLM response: `{ step, action, thought }` - `tool` — emitted after each tool execution: `{ tool, result? }` or `{ tool, error }` - `route` — emitted when a model profile is selected: `{ profile, model, reason }` - `done` — final answer ready: `{ result, meta? }` - `error` — agent threw: `{ error }` - `max_steps` — loop exhausted: `{ task, summary }`
+     * Same as `POST /run` but streams agent lifecycle events in real time as Server-Sent Events (SSE).  The connection stays open until the agent completes (on `done`, `error`, or `max_steps` event). The original `POST /run` endpoint is completely unchanged.  **SSE event types**: - `step` — emitted after each LLM response: `{ step, action, thought }` - `tool` — emitted after each tool execution: `{ tool, result? }` or `{ tool, error }` - `route` — emitted when a model profile is selected: `{ profile, model, reason }` - `done` — final answer ready: `{ result, meta? }` - `error` — agent threw: `{ error }` - `max_steps` — loop exhausted: `{ task, summary }` - `hard_stop` — policy hard stop: `{ step, code, reason }`
      * @summary Submit a task and receive Server-Sent Events
      * @param {CoreApiPostRunStreamRequest} requestParameters Request parameters.
      * @param {*} [options] Override http request option.
@@ -4453,7 +4478,7 @@ export class CoreApi extends BaseAPI implements CoreApiInterface {
     }
 
     /**
-     * Same as `POST /run` but streams agent lifecycle events in real time as Server-Sent Events (SSE).  The connection stays open until the agent completes (on `done`, `error`, or `max_steps` event). The original `POST /run` endpoint is completely unchanged.  **SSE event types**: - `step` — emitted after each LLM response: `{ step, action, thought }` - `tool` — emitted after each tool execution: `{ tool, result? }` or `{ tool, error }` - `route` — emitted when a model profile is selected: `{ profile, model, reason }` - `done` — final answer ready: `{ result, meta? }` - `error` — agent threw: `{ error }` - `max_steps` — loop exhausted: `{ task, summary }`
+     * Same as `POST /run` but streams agent lifecycle events in real time as Server-Sent Events (SSE).  The connection stays open until the agent completes (on `done`, `error`, or `max_steps` event). The original `POST /run` endpoint is completely unchanged.  **SSE event types**: - `step` — emitted after each LLM response: `{ step, action, thought }` - `tool` — emitted after each tool execution: `{ tool, result? }` or `{ tool, error }` - `route` — emitted when a model profile is selected: `{ profile, model, reason }` - `done` — final answer ready: `{ result, meta? }` - `error` — agent threw: `{ error }` - `max_steps` — loop exhausted: `{ task, summary }` - `hard_stop` — policy hard stop: `{ step, code, reason }`
      * @summary Submit a task and receive Server-Sent Events
      * @param {CoreApiPostRunStreamRequest} requestParameters Request parameters.
      * @param {*} [options] Override http request option.

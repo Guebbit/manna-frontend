@@ -25,7 +25,7 @@ Common change patterns
 | Add store | `src/stores/<name>.ts` |
 | Add view/route | `src/views/<Name>View.vue` + `src/router/index.ts` |
 | Add reusable component | `src/components/shared/<Name>.vue` |
-| Change backend URL | `VITE_MANNA_BASE_URL` in `.env` |
+| Change backend URL | `VITE_MANNA_URL` in `.env` (or runtime Settings/localStorage) |
 | Change request/response shape | Re-generate `api/` via `npm run genapi` |
 
 Test layout
