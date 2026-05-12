@@ -13,7 +13,7 @@ src/
 ├─ views/        route-level pages
 ├─ config.ts     getMannaBaseUrl() + runtime config helpers
 └─ main.ts       app bootstrap
-api/             openapi-generator output — DO NOT edit manually
+api/             openapi-typescript-codegen output — DO NOT edit manually
 openapi.yaml     copied from Guebbit/manna — source of truth for all API types
 ```
 
