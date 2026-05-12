@@ -1,110 +1,65 @@
-# boilerplate-vue-frontend
+# Manna Frontend
 
-Vue 3 + TypeScript frontend boilerplate with:
-
-- Vite
-- Pinia
-- Vue Router
-- Vue I18n
-- OpenAPI-generated axios client
-- Vitest + Cypress
+Vue 3 frontend for using Manna features from the browser.
 
 ## Requirements
 
 - Node.js 22+
 - npm
+- A running `Guebbit/manna` backend (default: `http://localhost:3001`)
 
 ## Setup
 
-1. Install dependencies:
-    ```bash
-    npm ci
-    ```
-2. Create your environment file:
-    ```bash
-    cp .env-example .env
-    ```
-3. Start dev server:
-    ```bash
-    npm run dev
-    ```
-
-## Environment variables
-
-Use `.env-example` as reference.
-
-- `VITE_APP_DEFAULT_LOCALE`: initial locale (example: `en`)
-- `VITE_APP_SUPPORTED_LOCALES`: comma-separated supported locales (example: `en,it,es`)
-- `VITE_APP_PUBLIC_PATH`: public path
-- `VITE_APP_BASE_URL`: router history base URL (optional)
-- `VITE_API_URL`: backend API base URL
-- `VITE_API_WEBSOCKET`: websocket URL used by demo page
-- `VITE_API_MOCK_ENABLED`: enable API mocking (`true`/`false`)
-- `VITE_AXIOS_TIMEOUT`: axios timeout in ms
-- `VITE_APP_DEBUG_ROUTER`: enable router debug logs in dev (`true`/`false`)
-- `VITE_APP_DEBUG_HOME`: enable Home view demo logs in dev (`true`/`false`)
-
-## Scripts
-
-- `npm run dev`: start Vite dev server
-- `npm run build`: type-check + build
-- `npm run preview`: preview built app
-- `npm run lint`: run ESLint
-- `npm run lint:fix`: run ESLint autofix
-- `npm run lint:openapi`: lint `openapi.yaml` with Spectral
-- `npm run prettier`: run Prettier check
-- `npm run prettier:fix`: run Prettier write
-- `npm run test:unit`: run Vitest unit tests
-- `npm run test:e2e`: run Cypress e2e tests
-- `npm run genapi`: regenerate API client from `openapi.yaml`
-
-## Architecture overview
-
-- `/src/router`: route definitions and navigation guards
-- `/src/stores`: Pinia stores for domain/state logic
-- `/src/views`: page-level components
-- `/src/components`: reusable UI components
-- `/src/middlewares`: route middleware functions
-- `/src/utils/http.ts`: shared axios instance and interceptors
-- `/src/utils/api.ts`: generated API class wiring
-- `/api`: OpenAPI-generated TypeScript axios client
-- `/openapi.yaml`: API contract source
-
-## API generation flow
-
-1. Update `openapi.yaml`
-2. Regenerate client:
-    ```bash
-    npm run genapi
-    ```
-3. Validate and update usages in stores/views if needed.
-
-## Validation commands
-
-Run these before opening or updating a PR:
-
 ```bash
-npm run lint
-npm run build
-npm run test:unit
+npm ci
+cp .env-example .env
+npm run dev
 ```
 
-# TODO
+Open `http://localhost:8080`.
 
-- Always call useXYZStore() inside functions, not at the top level — avoids circular dependency issues (unless it is specifically dependent)
-- Create a NUXT variant
-- Create a Vuetify Variant
-- Create a Quasar Variant
-- Do Vitest tests
-- Do Cypress tests
-- Create skeleton version
-- From skeleton: css-ui version
-    - remember to take old \_root.scss and old \_cards.scss (for simple-card) from older commits
-- From skeleton: vuetify version
-- From skeleton: quasar version
+## Environment
 
-# MAYBE?
+The frontend reads the backend URL in this order:
 
-- Extend use18n (or create a new use18n) to add some custom functions now present in the utils/i18n.ts
-- From skeleton: bootstrap version
-- Do lighthouse metrics tests
+1. `localStorage` key `manna-base-url` (set from **Settings** page)
+2. `VITE_MANNA_URL` at build time
+3. Fallback: `http://localhost:3001`
+
+`VITE_MANNA_URL` is the only backend URL env var used by current code.
+
+## Main frontend features
+
+- **Dashboard**: health + quick system overview
+- **Chat**: persistent conversations/messages
+- **Agent Task**: single-agent execution (`/run`, `/run/stream`)
+- **Swarm**: multi-agent decomposition (`/run/swarm`, `/run/swarm/stream`)
+- **Workflow**: sequential step pipelines (`/workflow`, `/workflow/stream`)
+- **Code Tools**: autocomplete/lint/review endpoints
+- **Upload & Analyze**: image classify, speech-to-text, PDF text extraction
+- **System Info**: profiles, models, API help
+- **Settings**: backend URL + local defaults
+
+For streaming pages (Agent/Swarm/Workflow), the live timeline shows backend SSE events.  
+Agent/Swarm streams include `hard_stop` handling and render it as a terminal error event.
+
+## API contract sync
+
+`openapi.yaml` in this repo is copied from `Guebbit/manna` and treated as source of truth.
+
+After syncing `openapi.yaml`, regenerate the client:
+
+```bash
+npm run genapi
+```
+
+Do not edit files in `api/` manually.
+
+## Useful scripts
+
+- `npm run dev`
+- `npm run build`
+- `npm run test:unit`
+- `npm run lint`
+- `npm run complete:check`
+- `npm run genapi`

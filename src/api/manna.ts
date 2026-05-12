@@ -339,7 +339,7 @@ async function* parseSseStream<T extends { type: string; data: unknown }>(
  * Submits an agent task and streams lifecycle events as they arrive via SSE.
  *
  * @param parameters - The task description, profile, and write-access flag.
- * @yields Typed `AgentStreamEvent` objects (step, tool, route, done, error, max_steps).
+ * @yields Typed `AgentStreamEvent` objects (step, tool, route, done, error, max_steps, hard_stop).
  * @throws {ApiError} When the initial HTTP response is not OK.
  */
 export async function* runTaskStream(parameters: RunRequest): AsyncGenerator<AgentStreamEvent> {

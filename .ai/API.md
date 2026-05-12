@@ -1,11 +1,11 @@
 # API layer
 
-Generated types (`api/models/`)
+Generated types (`api/`)
 
 - Source: `openapi.yaml` (copied from `Guebbit/manna`) → `npm run genapi`
-- Generator: `openapi-generator-cli typescript-fetch`
+- Generator: `openapi-generator-cli typescript-axios`
 - Types have NO `I` prefix (e.g. `RunRequest`, `WorkflowResponse`)
-- Import via: `import type { RunRequest } from '../../api/models'`
+- Import via aliases: `import type { RunRequest } from '@api'` or `from '@api/api'`
 - Never edit files under `api/` manually — re-run `genapi` instead
 
 SSE event types (`src/api/sseEvents.ts`)
