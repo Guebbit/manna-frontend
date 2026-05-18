@@ -2,13 +2,27 @@
 
 Vue 3 frontend for using Manna features from the browser.
 
-## Requirements
+> [!IMPORTANT]
+> This README and the files in [`docs/`](./docs/index.md) are the **human-facing documentation**.
+> The files in [`.ai/`](./.ai/README.md) are **agent-facing instructions for AI coding tools** during agentic programming sessions. They are useful for automation, but they are **not** the primary contributor docs for humans.
+
+## Jump in fast
+
+- [Quick start](#quick-start)
+- [What the app includes](#what-the-app-includes)
+- [Architecture at a glance](#architecture-at-a-glance)
+- [Documentation map](#documentation-map)
+- [Developer workflow](#developer-workflow)
+
+## Quick start
+
+### Requirements
 
 - Node.js 22+
 - npm
-- A running `Guebbit/manna` backend (default: `http://localhost:3001`)
+- A running [`Guebbit/manna`](https://github.com/Guebbit/manna) backend (default: `http://localhost:3001`)
 
-## Setup
+### Local setup
 
 ```bash
 npm ci
@@ -18,34 +32,88 @@ npm run dev
 
 Open `http://localhost:8080`.
 
-## Environment
+## What the app includes
 
-The frontend reads the backend URL in this order:
+| Area             | Route       | What it does                                        |
+| ---------------- | ----------- | --------------------------------------------------- |
+| Dashboard        | `/`         | Health checks, model overview, quick navigation     |
+| Chat             | `/chat`     | Conversations and message history                   |
+| Agent Task       | `/agent`    | Single-agent task execution                         |
+| Code Tools       | `/code`     | Autocomplete, linting, and page review              |
+| Upload & Analyze | `/upload`   | Image classify, speech-to-text, PDF text extraction |
+| Graph Builder    | `/graph`    | Visual LiteGraph pipelines executed through Manna   |
+| Swarm            | `/swarm`    | Multi-agent task decomposition                      |
+| Workflow         | `/workflow` | Sequential multi-step pipelines                     |
+| System Info      | `/system`   | Modes, models, health, backend help                 |
+| Settings         | `/settings` | Backend URL and default runtime preferences         |
 
-1. `localStorage` key `manna-base-url` (set from **Settings** page)
-2. `VITE_MANNA_URL` at build time
-3. Fallback: `http://localhost:3001`
+For the route-by-route breakdown, see [`docs/features.md`](./docs/features.md).
 
-`VITE_MANNA_URL` is the only backend URL env var used by current code.
+## Architecture at a glance
 
-## Main frontend features
+```mermaid
+flowchart LR
+    UI[Vue views + shared components]
+    STATE[Pinia stores]
+    API[Typed API layer]
+    CONFIG[Runtime config<br/>localStorage → env → fallback]
+    BACKEND[Manna backend]
+    CONTRACT[openapi.yaml + generated api/]
+    STREAM[SSE event typing]
 
-- **Dashboard**: health + quick system overview
-- **Chat**: persistent conversations/messages
-- **Agent Task**: single-agent execution (`/run`, `/run/stream`)
-- **Swarm**: multi-agent decomposition (`/run/swarm`, `/run/swarm/stream`)
-- **Workflow**: sequential step pipelines (`/workflow`, `/workflow/stream`)
-- **Code Tools**: autocomplete/lint/review endpoints
-- **Upload & Analyze**: image classify, speech-to-text, PDF text extraction
-- **System Info**: profiles, models, API help
-- **Settings**: backend URL + local defaults
+    UI --> STATE
+    STATE --> API
+    API --> CONFIG
+    API --> BACKEND
+    CONTRACT --> API
+    STREAM --> STATE
+```
 
-For streaming pages (Agent/Swarm/Workflow), the live timeline shows backend SSE events.  
-Agent/Swarm streams include `hard_stop` handling and render it as a terminal error event.
+### Backend URL resolution
+
+The frontend resolves the backend base URL in this order:
+
+1. `localStorage` key `manna-base-url`
+2. `VITE_MANNA_URL`
+3. `http://localhost:3001`
+
+## Documentation map
+
+Start here if you want the polished version instead of scanning source files:
+
+- [`docs/index.md`](./docs/index.md) — overview, reading order, and repo mental model
+- [`docs/architecture.md`](./docs/architecture.md) — app layers, data flow, streaming, graph builder, i18n
+- [`docs/features.md`](./docs/features.md) — every page, route, and the backend concepts behind it
+- [`docs/tooling.md`](./docs/tooling.md) — frameworks, libraries, checks, generators, and official docs links
+
+## Developer workflow
+
+### Most useful scripts
+
+- `npm run dev`
+- `npm run build`
+- `npm run test:unit`
+- `npm run lint`
+- `npm run lint:openapi`
+- `npm run complete:check`
+- `npm run genapi`
+
+### Recommended validation
+
+```bash
+npm run complete:check
+```
+
+That runs:
+
+- build
+- unit tests
+- eslint
+- prettier check
 
 ## API contract sync
 
-`openapi.yaml` in this repo is copied from `Guebbit/manna` and treated as source of truth.
+`openapi.yaml` in this repo is copied from [`Guebbit/manna`](https://github.com/Guebbit/manna) and treated as the source of truth.
 
 After syncing `openapi.yaml`, regenerate the client:
 
@@ -54,12 +122,3 @@ npm run genapi
 ```
 
 Do not edit files in `api/` manually.
-
-## Useful scripts
-
-- `npm run dev`
-- `npm run build`
-- `npm run test:unit`
-- `npm run lint`
-- `npm run complete:check`
-- `npm run genapi`
