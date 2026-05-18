@@ -1,34 +1,88 @@
 # API layer
 
-Generated types (`api/`)
+This file defines API boundaries for HTTP, SSE, generated models, and errors.
 
-- Source: `openapi.yaml` (copied from `Guebbit/manna`) → `npm run genapi`
-- Generator: `openapi-typescript-codegen` (`npm run genapi`)
-- Types have NO `I` prefix (e.g. `RunRequest`, `WorkflowResponse`)
-- Import via aliases: `import type { RunRequest } from '@api'` or `from '@api/api'`
-- Never edit files under `api/` manually — re-run `genapi` instead
+## Official references
 
-SSE event types (`src/api/sseEvents.ts`)
+- OpenAPI codegen: https://github.com/ferdikoomen/openapi-typescript-codegen
+- OpenAPI Zod client: https://github.com/astahmer/openapi-zod-client
+- Spectral: https://meta.stoplight.io/docs/spectral
+- Fetch API: https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API
+- Streams API: https://developer.mozilla.org/en-US/docs/Web/API/Streams_API
+- Server-Sent Events (SSE): https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events
 
-- Hand-written; cannot be generated from OpenAPI
-- Covers: `AgentStreamEvent`, `SwarmStreamEvent`, `WorkflowStreamEvent`
-- Import via: `import type { AgentStreamEvent } from '@/api/sseEvents'`
+## Generated types (`api/`)
 
-HTTP client (`src/api/manna.ts`)
+- Source: `openapi.yaml` (copied from `Guebbit/manna`) → `npm run genapi`.
+- Generator: `openapi-typescript-codegen` (`npm run genapi`).
+- Types have **no `I` prefix** (example: `RunRequest`, `WorkflowResponse`).
+- Import via aliases: `import type { RunRequest } from '@api'` or `from '@api/api'`.
+- Never edit files under `api/` manually — re-run `genapi` instead.
 
-- Uses native `fetch` — no Axios
-- All request/response types imported from `api/models/` or `sseEvents.ts`
-- Streaming endpoints are `AsyncGenerator` functions using shared `parseSseStream()`
-- Errors thrown as `ApiError(message, status, retryAfterSeconds?)`
-- Base URL always via `getMannaBaseUrl()` from `@/config` — never hardcoded
+## Axios vs fetch (important)
 
-Stores → API boundary
+- **Generated `api/` client** is configured with `--client axios` in `npm run genapi`.
+- **Handwritten API module** (`src/api/manna.ts`) uses **native `fetch`** directly.
+- Repo currently keeps both available; runtime flows in stores go through `src/api/manna.ts`.
 
-- Stores import functions from `@/api/manna` only
-- Stores never import from `api/models/` directly for runtime logic — only for typing
-- `WorkflowRequest.steps` is `StepDefinition[]`; stores mapping `string[]` → `StepDefinition[]` internally
+## SSE event types (`src/api/sseEvents.ts`)
 
-Deprecated / removed
+- Hand-written (cannot be fully generated from OpenAPI).
+- Covers: `AgentStreamEvent`, `SwarmStreamEvent`, `WorkflowStreamEvent`.
+- Import via: `import type { AgentStreamEvent } from '@/api/sseEvents'`.
+- `hard_stop` is a terminal policy event surfaced by agent/swarm streams.
 
-- `/v1/models`, `/v1/chat/completions` — removed; do not re-add
-- `src/api/types.ts` — deleted; do not recreate
+## SSE sequence
+
+```mermaid
+sequenceDiagram
+    participant C as Component/View
+    participant S as Store
+    participant M as src/api/manna.ts
+    participant B as Backend SSE endpoint
+
+    C->>S: start stream action
+    S->>M: runTaskStream/runSwarmStream/runWorkflowStream
+    M->>B: POST .../stream
+    B-->>M: event + data frames
+    M-->>S: parseSseStream yields typed union events
+    S-->>C: append timeline / update state
+
+    Note over M,S: `hard_stop` is treated as terminal error event
+```
+
+## HTTP client (`src/api/manna.ts`)
+
+- Uses native `fetch`.
+- All request/response types imported from generated `api/models/` or `sseEvents.ts`.
+- Streaming endpoints are `AsyncGenerator` functions using shared `parseSseStream()`.
+- Base URL always via `getMannaBaseUrl()` from `@/config`.
+
+## Error model: `ApiError`
+
+Defined in `src/api/manna.ts`:
+
+- `name: 'ApiError'`
+- `status: number`
+- `retryAfterSeconds?: number`
+
+Thrown by:
+
+- `handleResponse()` for non-OK JSON responses
+- `throwStreamError()` for non-OK streaming responses
+- Explicit guards when expected payload data is missing
+
+Handled by:
+
+- Stores (e.g., `src/stores/*`) and surfaced to users via `useNotificationStore` where relevant.
+
+## Stores → API boundary
+
+- Stores import API functions from `@/api/manna`.
+- Stores should not implement raw `fetch` calls.
+- Stores may import model types for compile-time typing only.
+
+## Deprecated / removed
+
+- `/v1/models`, `/v1/chat/completions` — removed; do not re-add.
+- `src/api/types.ts` — deleted; do not recreate.

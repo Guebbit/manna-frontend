@@ -1,34 +1,59 @@
 # Manna Frontend — AI index
 
-MANDATORY: read this file first every session.
+Read this file first, then jump to the focused docs below.
 
-Identity
+## Quick identity
 
-- Repo: `Guebbit/manna-frontend`
-- Stack: Vue 3 (Composition API + `<script setup lang="ts">`), TypeScript strict, Vite, Pinia, Vuetify 3, Vue Router 4
-- Backend: `Guebbit/manna` REST API — base URL from `VITE_MANNA_URL` (default `http://localhost:3001`, overridable in Settings via localStorage)
+- **Repo:** `Guebbit/manna-frontend`
+- **Stack:** Vue 3 (`<script setup lang="ts">`), TypeScript strict, Vite, Pinia, Vuetify 3, Vue Router 5
+- **Backend:** `Guebbit/manna` REST API — URL from `VITE_MANNA_URL` (default `http://localhost:3001`, overridable at runtime via localStorage key `manna-base-url`)
+- **User-facing entry docs:** [`../README.md`](../README.md)
 
-Key invariants
+## Key invariants
 
-- API types come ONLY from generated `api/models/` — never hand-write request/response shapes
-- SSE event shapes live ONLY in `src/api/sseEvents.ts`
-- HTTP calls live ONLY in `src/api/manna.ts` — stores never call `fetch` directly
-- Stores handle state, API modules handle HTTP, components handle presentation — never mix
-- `npm run genapi` regenerates `api/` from `openapi.yaml`; commit the result
-- Every exported symbol needs JSDoc; booleans named `isX`/`hasX`/`shouldX`
+- API types come **only** from generated `api/models/` (no handwritten request/response shapes).
+- SSE event shapes live **only** in [`../src/api/sseEvents.ts`](../src/api/sseEvents.ts).
+- HTTP calls live **only** in [`../src/api/manna.ts`](../src/api/manna.ts); stores never call `fetch` directly.
+- Stores handle state, API modules handle HTTP, components handle presentation.
+- `npm run genapi` regenerates `api/` from `openapi.yaml`; commit the result.
+- Every exported symbol needs JSDoc; booleans are named `isX`/`hasX`/`shouldX`.
 
-Update protocol
+## Update protocol
 
-- Backend API changes → copy new `openapi.yaml` from `Guebbit/manna`, run `npm run genapi`, update `src/api/manna.ts` + `src/api/sseEvents.ts`, update affected stores/views
-- New store → one file per store, setup-style `defineStore`
-- New view → lazy-loaded in `src/router/`
-- Env var changes → update `.ai/ENV.md`
-- Directory moves → update `.ai/STRUCTURE.md`
-- Always run `npm run complete:check` before finishing
+- Backend API changes → copy new `openapi.yaml` from `Guebbit/manna`, run `npm run genapi`, update `src/api/manna.ts` + `src/api/sseEvents.ts`, then update affected stores/views.
+- New store → one file per store, setup-style `defineStore`.
+- New view → lazy-loaded in `src/router/`.
+- Env var changes → update [`./ENV.md`](./ENV.md).
+- Directory moves → update [`./STRUCTURE.md`](./STRUCTURE.md).
+- Before finishing → run `npm run complete:check`.
 
-Load-on-demand map
+## Doc map
 
-- Directory map / change patterns / test layout → `.ai/STRUCTURE.md`
-- Style / naming / JSDoc / formatting rules → `.ai/STYLE.md`
-- API layer conventions (generated types, manna.ts, SSE) → `.ai/API.md`
-- Environment variables → `.ai/ENV.md`
+```mermaid
+flowchart TD
+    AI[.ai/README.md\nThis index]
+    ROOT[README.md\nUser + contributor entrypoint]
+    STRUCT[.ai/STRUCTURE.md\nFolders + change map]
+    API[.ai/API.md\nHTTP + SSE + ApiError]
+    STYLE[.ai/STYLE.md\nNaming + JSDoc + lint/format]
+    ENV[.ai/ENV.md\nRuntime config + URL precedence]
+    TOOLS[.ai/TOOLS.md\nTool inventory + links]
+    TESTING[.ai/TESTING.md\nUnit/E2E strategy]
+
+    AI --> ROOT
+    AI --> STRUCT
+    AI --> API
+    AI --> STYLE
+    AI --> ENV
+    AI --> TOOLS
+    AI --> TESTING
+```
+
+## Load-on-demand map
+
+- Directory map / change patterns / test layout → [`./STRUCTURE.md`](./STRUCTURE.md)
+- Style / naming / JSDoc / formatting rules → [`./STYLE.md`](./STYLE.md)
+- API layer conventions (generated types, `manna.ts`, SSE) → [`./API.md`](./API.md)
+- Environment variables + backend URL resolution → [`./ENV.md`](./ENV.md)
+- Tools and external references → [`./TOOLS.md`](./TOOLS.md)
+- Testing strategy and commands → [`./TESTING.md`](./TESTING.md)
