@@ -34,18 +34,18 @@ Open `http://localhost:8080`.
 
 ## What the app includes
 
-| Area | Route | What it does |
-| --- | --- | --- |
-| Dashboard | `/` | Health checks, model overview, quick navigation |
-| Chat | `/chat` | Conversations and message history |
-| Agent Task | `/agent` | Single-agent task execution |
-| Code Tools | `/code` | Autocomplete, linting, and page review |
-| Upload & Analyze | `/upload` | Image classify, speech-to-text, PDF text extraction |
-| Graph Builder | `/graph` | Visual LiteGraph pipelines executed through Manna |
-| Swarm | `/swarm` | Multi-agent task decomposition |
-| Workflow | `/workflow` | Sequential multi-step pipelines |
-| System Info | `/system` | Modes, models, health, backend help |
-| Settings | `/settings` | Backend URL and default runtime preferences |
+| Area             | Route       | What it does                                        |
+| ---------------- | ----------- | --------------------------------------------------- |
+| Dashboard        | `/`         | Health checks, model overview, quick navigation     |
+| Chat             | `/chat`     | Conversations and message history                   |
+| Agent Task       | `/agent`    | Single-agent task execution                         |
+| Code Tools       | `/code`     | Autocomplete, linting, and page review              |
+| Upload & Analyze | `/upload`   | Image classify, speech-to-text, PDF text extraction |
+| Graph Builder    | `/graph`    | Visual LiteGraph pipelines executed through Manna   |
+| Swarm            | `/swarm`    | Multi-agent task decomposition                      |
+| Workflow         | `/workflow` | Sequential multi-step pipelines                     |
+| System Info      | `/system`   | Modes, models, health, backend help                 |
+| Settings         | `/settings` | Backend URL and default runtime preferences         |
 
 For the route-by-route breakdown, see [`docs/features.md`](./docs/features.md).
 
