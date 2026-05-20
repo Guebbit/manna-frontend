@@ -10,28 +10,40 @@ const mocks = vi.hoisted(() => ({
     uploadReadPdf: vi.fn()
 }));
 
-vi.mock('@/api/manna', () => ({
-    uploadImageClassify: mocks.uploadImageClassify,
-    uploadImageSketch: mocks.uploadImageSketch,
-    uploadImageColorize: mocks.uploadImageColorize,
-    uploadSpeechToText: mocks.uploadSpeechToText,
-    uploadReadPdf: mocks.uploadReadPdf
+vi.mock('@/utils/api', () => ({
+    uploadApi: {
+        uploadImageClassify: mocks.uploadImageClassify,
+        uploadImageSketch: mocks.uploadImageSketch,
+        uploadImageColorize: mocks.uploadImageColorize,
+        uploadSpeechToText: mocks.uploadSpeechToText,
+        uploadReadPdf: mocks.uploadReadPdf
+    }
 }));
 
 describe('useUploadStore', () => {
     beforeEach(() => {
         setActivePinia(createPinia());
         vi.clearAllMocks();
-        mocks.uploadImageClassify.mockResolvedValue({ success: true, status: 200, message: 'ok' });
-        mocks.uploadImageSketch.mockResolvedValue(new Blob(['png'], { type: 'image/png' }));
-        mocks.uploadImageColorize.mockResolvedValue({
-            success: true,
-            status: 200,
-            message: 'ok',
-            data: { image: 'abc', duration_ms: 12, model: 'm' }
+        mocks.uploadImageClassify.mockResolvedValue({
+            data: { success: true, status: 200, message: 'ok' }
         });
-        mocks.uploadSpeechToText.mockResolvedValue({ success: true, status: 200, message: 'ok' });
-        mocks.uploadReadPdf.mockResolvedValue({ success: true, status: 200, message: 'ok' });
+        mocks.uploadImageSketch.mockResolvedValue({
+            data: new Blob(['png'], { type: 'image/png' })
+        });
+        mocks.uploadImageColorize.mockResolvedValue({
+            data: {
+                success: true,
+                status: 200,
+                message: 'ok',
+                data: { image: 'abc', duration_ms: 12, model: 'm' }
+            }
+        });
+        mocks.uploadSpeechToText.mockResolvedValue({
+            data: { success: true, status: 200, message: 'ok' }
+        });
+        mocks.uploadReadPdf.mockResolvedValue({
+            data: { success: true, status: 200, message: 'ok' }
+        });
     });
 
     it('stores sketch and colorize results', async () => {

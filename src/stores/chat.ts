@@ -2,19 +2,12 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
 import { handleApiError } from '@/utils/errorHandling';
-import {
-    listConversations,
-    createConversation,
-    getConversation,
-    updateConversation,
-    deleteChatConversation,
-    addChatMessage,
-    editChatMessage,
-    deleteChatMessage,
-    runTaskStream
-} from '@/api/manna';
-import type { Conversation, ChatMessage, ConversationWithMessages } from '@/api/manna';
+import { chatApi } from '@/utils/api';
+import { runTaskStream } from '@/utils/sse';
 import type {
+    Conversation,
+    ChatMessage,
+    ConversationWithMessages,
     CreateConversationRequest,
     UpdateConversationRequest,
     CreateMessageRequest,
@@ -32,7 +25,8 @@ export const useChatStore = defineStore('chat', () => {
 
     const loadConversations = () =>
         fetchAny(async () => {
-            conversations.value = await listConversations();
+            const { data } = await chatApi.listConversations();
+            conversations.value = data.data?.conversations ?? [];
         }).catch((error: unknown) => {
             handleApiError(error, 'Failed to load conversations');
         });
@@ -40,7 +34,9 @@ export const useChatStore = defineStore('chat', () => {
     const loadConversation = (id: string) => {
         if (messageCache.value[id]) return Promise.resolve();
         return fetchAny(async () => {
-            const conv: ConversationWithMessages = await getConversation(id);
+            const { data } = await chatApi.getConversation({ conversationId: id });
+            const conv: ConversationWithMessages | undefined = data.data?.conversation;
+            if (!conv) throw new Error('No conversation in response');
             const { messages, ...meta } = conv;
             const index = conversations.value.findIndex((c) => c.id === id);
             if (index !== -1) conversations.value[index] = meta;
@@ -55,7 +51,11 @@ export const useChatStore = defineStore('chat', () => {
         request: CreateConversationRequest = {}
     ): Promise<Conversation | undefined> =>
         fetchAny(async () => {
-            const conv = await createConversation(request);
+            const { data } = await chatApi.createConversation({
+                createConversationRequest: request
+            });
+            const conv = data.data?.conversation;
+            if (!conv) throw new Error('No conversation in response');
             conversations.value.unshift(conv);
             messageCache.value = { ...messageCache.value, [conv.id]: [] };
             return conv;
@@ -69,7 +69,12 @@ export const useChatStore = defineStore('chat', () => {
         if (conv && request.title !== undefined) conv.title = request.title;
 
         return fetchAny(async () => {
-            const updated = await updateConversation(id, request);
+            const { data } = await chatApi.updateConversation({
+                conversationId: id,
+                updateConversationRequest: request
+            });
+            const updated = data.data?.conversation;
+            if (!updated) throw new Error('No conversation in response');
             const index = conversations.value.findIndex((c) => c.id === id);
             if (index !== -1) conversations.value[index] = updated;
         }).catch((error: unknown) => {
@@ -83,7 +88,7 @@ export const useChatStore = defineStore('chat', () => {
         const removed = index === -1 ? undefined : conversations.value.splice(index, 1)[0];
 
         return fetchAny(async () => {
-            await deleteChatConversation(id);
+            await chatApi.deleteConversation({ conversationId: id });
             const cache = { ...messageCache.value };
             delete cache[id];
             messageCache.value = cache;
@@ -98,7 +103,12 @@ export const useChatStore = defineStore('chat', () => {
         request: CreateMessageRequest
     ): Promise<ChatMessage | undefined> =>
         fetchAny(async () => {
-            const message = await addChatMessage(conversationId, request);
+            const { data } = await chatApi.createMessage({
+                conversationId,
+                createMessageRequest: request
+            });
+            const message = data.data?.message;
+            if (!message) throw new Error('No message in response');
             messageCache.value = {
                 ...messageCache.value,
                 [conversationId]: [...(messageCache.value[conversationId] ?? []), message]
@@ -114,7 +124,13 @@ export const useChatStore = defineStore('chat', () => {
         request: UpdateMessageRequest
     ): Promise<ChatMessage | undefined> =>
         fetchAny(async () => {
-            const updated = await editChatMessage(conversationId, messageId, request);
+            const { data } = await chatApi.updateMessage({
+                conversationId,
+                messageId,
+                updateMessageRequest: request
+            });
+            const updated = data.data?.message;
+            if (!updated) throw new Error('No message in response');
             const msgs = messageCache.value[conversationId];
             if (msgs) {
                 const i = msgs.findIndex((m) => m.id === messageId);
@@ -131,7 +147,7 @@ export const useChatStore = defineStore('chat', () => {
         const removed = messageIndex === -1 ? undefined : msgs!.splice(messageIndex, 1)[0];
 
         return fetchAny(async () => {
-            await deleteChatMessage(conversationId, messageId);
+            await chatApi.deleteMessage({ conversationId, messageId });
         }).catch((error: unknown) => {
             if (removed !== undefined && msgs) msgs.splice(messageIndex, 0, removed);
             handleApiError(error, 'Failed to delete message');
@@ -156,10 +172,15 @@ export const useChatStore = defineStore('chat', () => {
                     if (event.type === 'done') result = event.data.result;
                 }
                 if (result) {
-                    const message = await addChatMessage(conversationId, {
-                        role: 'assistant',
-                        content: result
+                    const { data } = await chatApi.createMessage({
+                        conversationId,
+                        createMessageRequest: {
+                            role: 'assistant',
+                            content: result
+                        }
                     });
+                    const message = data.data?.message;
+                    if (!message) return;
                     messageCache.value = {
                         ...messageCache.value,
                         [conversationId]: [...(messageCache.value[conversationId] ?? []), message]
@@ -191,4 +212,4 @@ export const useChatStore = defineStore('chat', () => {
     };
 });
 
-export { type Conversation as IConversation, type ChatMessage as IChatMessage } from '@/api/manna';
+export { type Conversation as IConversation, type ChatMessage as IChatMessage } from '@api';

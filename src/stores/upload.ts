@@ -24,15 +24,10 @@ import type {
     UploadReadPdf200Response,
     UploadSpeechToText200Response
 } from '@api';
-import {
-    uploadImageClassify,
-    uploadImageColorize,
-    uploadImageSketch,
-    uploadReadPdf,
-    uploadSpeechToText,
-    type UploadImageProcessorResponseType
-} from '@/api/manna';
+import { uploadApi } from '@/utils/api';
 import { handleApiError } from '@/utils/errorHandling';
+
+export type UploadImageProcessorResponseType = 'json' | 'png';
 
 /**
  * Pinia store managing file upload operations
@@ -70,7 +65,7 @@ export const useUploadStore = defineStore('upload', () => {
     const classifyImage = (file: File, prompt?: string, model?: string) => {
         return fetchAny(
             () =>
-                uploadImageClassify({ file, prompt, model }).then((data) => {
+                uploadApi.uploadImageClassify({ file, prompt, model }).then(({ data }) => {
                     imageClassifyResult.value = data;
                 }),
             {
@@ -98,9 +93,16 @@ export const useUploadStore = defineStore('upload', () => {
     ) => {
         return fetchAny(
             () =>
-                uploadImageSketch({ file, prompt, negativePrompt }, responseType).then((data) => {
-                    imageSketchResult.value = data;
-                }),
+                uploadApi
+                    .uploadImageSketch(
+                        { file, prompt, negativePrompt },
+                        responseType === 'png'
+                            ? { headers: { Accept: 'image/png' }, responseType: 'blob' }
+                            : undefined
+                    )
+                    .then(({ data }) => {
+                        imageSketchResult.value = data;
+                    }),
             {
                 loadingKey: '-imageSketch'
             }
@@ -126,9 +128,16 @@ export const useUploadStore = defineStore('upload', () => {
     ) => {
         return fetchAny(
             () =>
-                uploadImageColorize({ file, prompt, negativePrompt }, responseType).then((data) => {
-                    imageColorizeResult.value = data;
-                }),
+                uploadApi
+                    .uploadImageColorize(
+                        { file, prompt, negativePrompt },
+                        responseType === 'png'
+                            ? { headers: { Accept: 'image/png' }, responseType: 'blob' }
+                            : undefined
+                    )
+                    .then(({ data }) => {
+                        imageColorizeResult.value = data;
+                    }),
             {
                 loadingKey: '-imageColorize'
             }
@@ -149,14 +158,16 @@ export const useUploadStore = defineStore('upload', () => {
     const transcribeAudio = (file: File, model?: string, language?: string, prompt?: string) => {
         return fetchAny(
             () =>
-                uploadSpeechToText({
-                    file,
-                    model,
-                    language,
-                    prompt
-                }).then((data) => {
-                    speechToTextResult.value = data;
-                }),
+                uploadApi
+                    .uploadSpeechToText({
+                        file,
+                        model,
+                        language,
+                        prompt
+                    })
+                    .then(({ data }) => {
+                        speechToTextResult.value = data;
+                    }),
             {
                 loadingKey: '-speechToText'
             }
@@ -174,7 +185,7 @@ export const useUploadStore = defineStore('upload', () => {
     const readPdf = (file: File) => {
         return fetchAny(
             () =>
-                uploadReadPdf({ file }).then((data) => {
+                uploadApi.uploadReadPdf({ file }).then(({ data }) => {
                     readPdfResult.value = data;
                 }),
             {

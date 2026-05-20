@@ -4,13 +4,13 @@ Directory map
 
 ```text
 src/
-├─ api/          manna.ts (HTTP), sseEvents.ts (SSE unions)
+├─ api/          sseEvents.ts (SSE unions)
 ├─ components/   layout/ + shared/ reusable Vue components
 ├─ layouts/      page-level shells
 ├─ router/       route definitions (lazy-loaded views)
 ├─ stores/       one Pinia store per file
 ├─ types/        shared TS types + re-exports (barrel: types/index.ts only)
-├─ utils/        shared utilities + generated Axios transport bridge (`api.ts`, `http.ts`)
+├─ utils/        shared utilities + generated Axios transport bridge (`api.ts`, `http.ts`) + SSE helper (`sse.ts`)
 ├─ views/        route-level pages
 ├─ config.ts     getMannaBaseUrl() + runtime config helpers
 └─ main.ts       app bootstrap
@@ -21,7 +21,7 @@ openapi.yaml     copied from Guebbit/manna — source of truth for all API types
 Common change patterns
 | Goal | Primary files |
 |---|---|
-| Add API endpoint | `openapi.yaml` (backend), run `npm run genapi`, update `src/api/manna.ts` |
+| Add API endpoint | `openapi.yaml` (backend), run `npm run genapi`, then use generated client in `src/utils/api.ts` from stores |
 | Add SSE event type | `src/api/sseEvents.ts` |
 | Add store | `src/stores/<name>.ts` |
 | Add view/route | `src/views/<Name>View.vue` + `src/router/index.ts` |

@@ -8,9 +8,10 @@ This page explains the main ideas behind the frontend without making you reverse
 - **Pinia** stores coordinate state and async actions
 - **Vue Router** maps features to routes
 - **Vuetify** provides the UI shell and components
-- **`src/api/manna.ts`** contains the handwritten frontend-facing API helpers
+- **`src/utils/api.ts`** is the canonical generated axios API surface
 - **`api/`** contains generated types and clients from `openapi.yaml`
 - **`src/api/sseEvents.ts`** models streaming events that OpenAPI cannot generate for us
+- **`src/utils/sse.ts`** handles SSE streaming requests
 - **`src/config.ts`** resolves the backend URL from settings, env, or fallback
 
 Related reading:
@@ -33,9 +34,10 @@ flowchart TD
     end
 
     subgraph Data
-        Handwritten[Handwritten API helpers<br/>src/api/manna.ts]
+        Runtime[Generated Axios clients<br/>src/utils/api.ts]
         Generated[Generated OpenAPI client<br/>api/]
         Events[SSE types<br/>src/api/sseEvents.ts]
+        Streaming[SSE runtime helper<br/>src/utils/sse.ts]
         Config[src/config.ts]
     end
 
@@ -44,12 +46,14 @@ flowchart TD
     Views --> Stores
     Shared --> Stores
     Layout --> Stores
-    Stores --> Handwritten
+    Stores --> Runtime
     Stores --> Generated
-    Handwritten --> Config
+    Runtime --> Config
     Generated --> Config
-    Handwritten --> Events
-    Handwritten --> Backend
+    Streaming --> Events
+    Streaming --> Config
+    Streaming --> Backend
+    Runtime --> Backend
     Generated --> Backend
 ```
 
@@ -122,11 +126,11 @@ Priority order:
 
 That logic lives in [`src/config.ts`](../src/config.ts).
 
-### 5. The app mixes generated and handwritten API access on purpose
+### 5. Runtime HTTP is generated-client-first
 
 - `api/` is generated from OpenAPI and should not be edited manually
-- `src/api/manna.ts` provides the app-friendly surface, especially for streaming flows and custom error handling
-- `src/utils/api.ts` wires generated clients to the current runtime base URL through an Axios client
+- `src/utils/api.ts` is the only allowed non-streaming HTTP integration surface
+- `src/utils/sse.ts` is the only allowed custom fetch surface, scoped to SSE streaming endpoints
 
 ## Streaming model
 
@@ -182,8 +186,9 @@ That means:
 | --- | --- |
 | `src/views/` | Route-level pages |
 | `src/stores/` | State + async orchestration |
-| `src/api/manna.ts` | Handwritten typed API helpers |
+| `src/utils/api.ts` | Generated client wiring used by stores |
 | `src/api/sseEvents.ts` | Streaming event shapes |
+| `src/utils/sse.ts` | SSE request + stream parsing helper |
 | `src/utils/api.ts` | Generated client wiring |
 | `src/litegraph/` | Graph Builder node system |
 | `api/` | Generated OpenAPI output |

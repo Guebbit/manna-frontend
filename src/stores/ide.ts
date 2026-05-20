@@ -16,7 +16,7 @@ import { defineStore } from 'pinia';
 import { computed, reactive, ref } from 'vue';
 import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
 import type { AutocompleteResponse, LintResponse, PageReviewResponse } from '@api';
-import { autocomplete, lintConventions, pageReview } from '@/api/manna';
+import { ideApi } from '@/utils/api';
 import { handleApiError } from '@/utils/errorHandling';
 
 /**
@@ -51,9 +51,11 @@ export const useIdeStore = defineStore('ide', () => {
     const submitAutocomplete = (prefix: string, suffix?: string, language?: string) => {
         return fetchAny(
             () =>
-                autocomplete({ prefix, suffix, language }).then((data) => {
-                    autocompleteResult.value = data;
-                }),
+                ideApi
+                    .postAutocomplete({ autocompleteRequest: { prefix, suffix, language } })
+                    .then(({ data }) => {
+                        autocompleteResult.value = data.data;
+                    }),
             {
                 lastUpdateKey: 'autocomplete',
                 loadingKey: '-autocomplete'
@@ -79,9 +81,11 @@ export const useIdeStore = defineStore('ide', () => {
     }) => {
         return fetchAny(
             () =>
-                lintConventions(parameters).then((data) => {
-                    lintResult.value = data;
-                }),
+                ideApi
+                    .postLintConventions({ lintConventionsRequest: parameters })
+                    .then(({ data }) => {
+                        lintResult.value = data.data;
+                    }),
             {
                 lastUpdateKey: 'lint',
                 loadingKey: '-lint'
@@ -106,8 +110,8 @@ export const useIdeStore = defineStore('ide', () => {
     }) => {
         return fetchAny(
             () =>
-                pageReview(parameters).then((data) => {
-                    reviewResult.value = data;
+                ideApi.postPageReview({ pageReviewRequest: parameters }).then(({ data }) => {
+                    reviewResult.value = data.data;
                 }),
             {
                 lastUpdateKey: 'review',

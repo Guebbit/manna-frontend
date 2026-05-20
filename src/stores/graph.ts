@@ -15,7 +15,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import type { LGraph, serializedLGraph } from 'litegraph.js';
-import { runTask } from '@/api/manna';
+import { coreApi } from '@/utils/api';
 import { useNotificationsStore, TOAST_TYPE } from './notification';
 
 /** Serialised LiteGraph graph payload. */
@@ -80,9 +80,10 @@ export const useGraphStore = defineStore('graph', () => {
 
         try {
             const task = `Execute the following LiteGraph pipeline:\n${JSON.stringify(graphJson)}`;
-            const response = await runTask({ task, allowWrite });
-            executionResult.value = response.result;
-            return response.result;
+            const { data } = await coreApi.postRun({ runRequest: { task, allowWrite } });
+            const result = data.data?.result;
+            executionResult.value = result;
+            return result;
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : 'Graph execution failed';
             notificationStore.addMessage(message, TOAST_TYPE.DANGER);

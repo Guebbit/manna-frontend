@@ -12,7 +12,7 @@ import type {
     GetInfoModes200ResponseAllOfDataModesInner,
     HealthResponse
 } from '@api';
-import { healthCheck, fetchInfoModes, fetchInfoModels, fetchHelp } from '@/api/manna';
+import { coreApi, infoApi } from '@/utils/api';
 
 /**
  * Pinia store managing backend health status, available model list,
@@ -51,8 +51,8 @@ export const useSystemStore = defineStore('system', () => {
         healthError.value = undefined;
         return fetchAny(
             () =>
-                healthCheck().then((data) => {
-                    health.value = data;
+                coreApi.getHealth().then(({ data }) => {
+                    health.value = data.data;
                 }),
             {
                 lastUpdateKey: 'health',
@@ -71,8 +71,8 @@ export const useSystemStore = defineStore('system', () => {
     const fetchModels = () =>
         fetchAny(
             () =>
-                fetchInfoModels().then((response) => {
-                    models.value = response.data?.models ?? [];
+                infoApi.getInfoModels().then(({ data }) => {
+                    models.value = data.data?.models ?? [];
                 }),
             {
                 lastUpdateKey: 'models',
@@ -89,8 +89,8 @@ export const useSystemStore = defineStore('system', () => {
     const fetchModes = () =>
         fetchAny(
             () =>
-                fetchInfoModes().then((response) => {
-                    modes.value = response.data?.modes ?? [];
+                infoApi.getInfoModes().then(({ data }) => {
+                    modes.value = data.data?.modes ?? [];
                 }),
             {
                 lastUpdateKey: 'modes',
@@ -107,9 +107,9 @@ export const useSystemStore = defineStore('system', () => {
     const fetchInfoModelsAction = () =>
         fetchAny(
             () =>
-                fetchInfoModels().then((response) => {
-                    infoModels.value = response.data?.models ?? [];
-                    ollamaBaseUrl.value = response.data?.ollamaBaseUrl ?? '';
+                infoApi.getInfoModels().then(({ data }) => {
+                    infoModels.value = data.data?.models ?? [];
+                    ollamaBaseUrl.value = data.data?.ollamaBaseUrl ?? '';
                 }),
             {
                 lastUpdateKey: 'info-models',
@@ -127,8 +127,8 @@ export const useSystemStore = defineStore('system', () => {
     const fetchHelpAction = () =>
         fetchAny(
             () =>
-                fetchHelp().then((response) => {
-                    help.value = response;
+                infoApi.getHelp().then(({ data }) => {
+                    help.value = data;
                 }),
             {
                 lastUpdateKey: 'help',
