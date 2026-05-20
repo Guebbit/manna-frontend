@@ -48,6 +48,12 @@ export const NAV_ITEMS: readonly INavItem[] = [
         description: 'nav.uploadAnalyzeDesc'
     },
     {
+        title: 'nav.library',
+        icon: 'mdi-bookshelf',
+        to: '/library',
+        description: 'nav.libraryDesc'
+    },
+    {
         title: 'nav.graphBuilder',
         icon: 'mdi-graph',
         to: '/graph',

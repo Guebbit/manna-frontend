@@ -10,10 +10,11 @@ src/
 ├─ router/       route definitions (lazy-loaded views)
 ├─ stores/       one Pinia store per file
 ├─ types/        shared TS types + re-exports (barrel: types/index.ts only)
+├─ utils/        shared utilities + generated Axios transport bridge (`api.ts`, `http.ts`)
 ├─ views/        route-level pages
 ├─ config.ts     getMannaBaseUrl() + runtime config helpers
 └─ main.ts       app bootstrap
-api/             openapi-typescript-codegen output — DO NOT edit manually
+api/             OpenAPI Generator output (`openapi --client axios`) — DO NOT edit manually
 openapi.yaml     copied from Guebbit/manna — source of truth for all API types
 ```
 
@@ -31,5 +32,5 @@ Common change patterns
 Test layout
 
 - Unit: `tests/unit/**/*.spec.ts` — Vitest, no real backend
-- E2E: `tests/e2e/**/*.spec.ts` — Cypress, requires running frontend + backend
+- E2E: Cypress tooling configured in `package.json`, but no committed `tests/e2e` specs currently
 - Run all: `npm run complete:check`

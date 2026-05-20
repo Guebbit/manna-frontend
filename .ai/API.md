@@ -3,9 +3,9 @@
 Generated types (`api/`)
 
 - Source: `openapi.yaml` (copied from `Guebbit/manna`) → `npm run genapi`
-- Generator: `openapi-typescript-codegen` (`npm run genapi`)
+- Generator: OpenAPI Generator CLI via `openapi-typescript-codegen` binary (`openapi --client axios`)
 - Types have NO `I` prefix (e.g. `RunRequest`, `WorkflowResponse`)
-- Import via aliases: `import type { RunRequest } from '@api'` or `from '@api/api'`
+- Import via aliases: `import type { RunRequest } from '@api'`
 - Never edit files under `api/` manually — re-run `genapi` instead
 
 SSE event types (`src/api/sseEvents.ts`)
@@ -16,11 +16,16 @@ SSE event types (`src/api/sseEvents.ts`)
 
 HTTP client (`src/api/manna.ts`)
 
-- Uses native `fetch` — no Axios
-- All request/response types imported from `api/models/` or `sseEvents.ts`
+- App-facing wrappers use native `fetch`
+- All request/response types imported from `@api` or `sseEvents.ts`
 - Streaming endpoints are `AsyncGenerator` functions using shared `parseSseStream()`
 - Errors thrown as `ApiError(message, status, retryAfterSeconds?)`
 - Base URL always via `getMannaBaseUrl()` from `@/config` — never hardcoded
+
+Generated Axios client (`src/utils/api.ts`)
+
+- Built from the same `api/` OpenAPI output and wired through `src/utils/http.ts`
+- Not currently used by Pinia stores for runtime flows; retained while transport unification is deferred
 
 Stores → API boundary
 
