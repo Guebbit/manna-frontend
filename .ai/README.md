@@ -10,9 +10,10 @@ Identity
 
 Key invariants
 
-- API types come ONLY from generated `api/models/` — never hand-write request/response shapes
+- API types come from generated `api/` (OpenAPI Generator output) — never hand-write request/response shapes
 - SSE event shapes live ONLY in `src/api/sseEvents.ts`
 - HTTP calls live ONLY in `src/api/manna.ts` — stores never call `fetch` directly
+- A secondary generated Axios client exists in `src/utils/api.ts` + `src/utils/http.ts`; current runtime stores still use `src/api/manna.ts` as the app-facing API layer
 - Stores handle state, API modules handle HTTP, components handle presentation — never mix
 - `npm run genapi` regenerates `api/` from `openapi.yaml`; commit the result
 - Every exported symbol needs JSDoc; booleans named `isX`/`hasX`/`shouldX`

@@ -47,6 +47,11 @@ const router = createRouter({
                     name: 'upload',
                     component: () => import('@/views/UploadAnalyzeView.vue')
                 },
+                {
+                    path: 'library',
+                    name: 'library',
+                    component: () => import('@/views/LibraryView.vue')
+                },
 
                 {
                     path: 'graph',

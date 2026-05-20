@@ -6,6 +6,10 @@
  * Each upload type targets a different backend tool:
  * - **Image classify** (`/upload/image-classify`) — Sends the image to a multimodal
  *   vision model (e.g. LLaVA) which describes or classifies the visual content.
+ * - **Image sketch** (`/upload/image-sketch`) — Generates a sketch/line-art version
+ *   of the uploaded image using the image processor service.
+ * - **Image colorize** (`/upload/image-colorize`) — Colorizes an uploaded image via
+ *   the image processor service.
  * - **Speech to text** (`/upload/speech-to-text`) — Transcribes audio using the
  *   Whisper model.  A language hint and context prompt improve accuracy.
  * - **Read PDF** (`/upload/read-pdf`) — Extracts raw text from the PDF using
@@ -16,15 +20,23 @@ import { computed, reactive, ref } from 'vue';
 import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
 import type {
     UploadImageClassify200Response,
+    UploadImageSketch200Response,
     UploadReadPdf200Response,
     UploadSpeechToText200Response
 } from '@api';
-import { uploadImageClassify, uploadSpeechToText, uploadReadPdf } from '@/api/manna';
+import {
+    uploadImageClassify,
+    uploadImageColorize,
+    uploadImageSketch,
+    uploadReadPdf,
+    uploadSpeechToText,
+    type UploadImageProcessorResponseType
+} from '@/api/manna';
 import { handleApiError } from '@/utils/errorHandling';
 
 /**
  * Pinia store managing file upload operations
- * (image classification, speech-to-text, and PDF reading).
+ * (classification, sketch/colorize transforms, speech-to-text, and PDF reading).
  */
 export const useUploadStore = defineStore('upload', () => {
     const { getLoading, setLoading } = useCoreStore();
@@ -35,11 +47,15 @@ export const useUploadStore = defineStore('upload', () => {
     });
 
     const imageClassifyResult = ref<UploadImageClassify200Response | undefined>(undefined);
+    const imageSketchResult = ref<UploadImageSketch200Response | Blob | undefined>(undefined);
+    const imageColorizeResult = ref<UploadImageSketch200Response | Blob | undefined>(undefined);
     const speechToTextResult = ref<UploadSpeechToText200Response | undefined>(undefined);
     const readPdfResult = ref<UploadReadPdf200Response | undefined>(undefined);
 
     const loading = reactive({
         imageClassify: computed(() => getLoading('upload-imageClassify')),
+        imageSketch: computed(() => getLoading('upload-imageSketch')),
+        imageColorize: computed(() => getLoading('upload-imageColorize')),
         speechToText: computed(() => getLoading('upload-speechToText')),
         readPdf: computed(() => getLoading('upload-readPdf'))
     });
@@ -63,6 +79,62 @@ export const useUploadStore = defineStore('upload', () => {
         ).catch((error: unknown) => {
             handleApiError(error, 'Image classification failed');
             imageClassifyResult.value = undefined;
+        });
+    };
+
+    /**
+     * Uploads an image for sketch generation.
+     *
+     * @param file         - The source image.
+     * @param prompt       - Optional positive prompt.
+     * @param negativePrompt - Optional negative prompt.
+     * @param responseType - `'json'` for envelope or `'png'` for binary image output.
+     */
+    const sketchImage = (
+        file: File,
+        prompt?: string,
+        negativePrompt?: string,
+        responseType: UploadImageProcessorResponseType = 'json'
+    ) => {
+        return fetchAny(
+            () =>
+                uploadImageSketch({ file, prompt, negativePrompt }, responseType).then((data) => {
+                    imageSketchResult.value = data;
+                }),
+            {
+                loadingKey: '-imageSketch'
+            }
+        ).catch((error: unknown) => {
+            handleApiError(error, 'Image sketch failed');
+            imageSketchResult.value = undefined;
+        });
+    };
+
+    /**
+     * Uploads an image for colorization.
+     *
+     * @param file         - The source image.
+     * @param prompt       - Optional positive prompt.
+     * @param negativePrompt - Optional negative prompt.
+     * @param responseType - `'json'` for envelope or `'png'` for binary image output.
+     */
+    const colorizeImage = (
+        file: File,
+        prompt?: string,
+        negativePrompt?: string,
+        responseType: UploadImageProcessorResponseType = 'json'
+    ) => {
+        return fetchAny(
+            () =>
+                uploadImageColorize({ file, prompt, negativePrompt }, responseType).then((data) => {
+                    imageColorizeResult.value = data;
+                }),
+            {
+                loadingKey: '-imageColorize'
+            }
+        ).catch((error: unknown) => {
+            handleApiError(error, 'Image colorize failed');
+            imageColorizeResult.value = undefined;
         });
     };
 
@@ -116,10 +188,14 @@ export const useUploadStore = defineStore('upload', () => {
 
     return {
         imageClassifyResult,
+        imageSketchResult,
+        imageColorizeResult,
         speechToTextResult,
         readPdfResult,
         loading,
         classifyImage,
+        sketchImage,
+        colorizeImage,
         transcribeAudio,
         readPdf
     };

@@ -21,11 +21,15 @@ import type {
     CreateConversationRequest,
     CreateMessage201Response,
     CreateMessageRequest,
+    ExportLibrary200Response,
     GetConversation200Response,
     GetHelp200Response,
     GetInfoModels200Response,
     GetInfoModes200Response,
     HealthResponse,
+    ImportLibrary200Response,
+    ImportRequest,
+    ListLibraries200Response,
     ListConversations200Response,
     LintConventionsRequest,
     LintResponse,
@@ -33,11 +37,14 @@ import type {
     PageReviewResponse,
     RunRequest,
     RunResponse,
+    SearchLibrary200Response,
+    SearchRequest,
     SwarmRequest,
     SwarmResponse,
     UpdateConversationRequest,
     UpdateMessageRequest,
     UploadImageClassify200Response,
+    UploadImageSketch200Response,
     UploadReadPdf200Response,
     UploadSpeechToText200Response,
     WorkflowRequest,
@@ -282,6 +289,145 @@ export async function uploadReadPdf(parameters: { file: File }): Promise<UploadR
     return uploadFile<UploadReadPdf200Response>('/upload/read-pdf', parameters.file);
 }
 
+/**
+ * Upload request parameters for image sketch/colorize endpoints.
+ */
+export interface IUploadImageProcessorRequest {
+    file: File;
+    prompt?: string;
+    negativePrompt?: string;
+}
+
+/**
+ * Desired response type for image sketch/colorize endpoints.
+ *
+ * - `'json'`: success envelope with base64 image payload.
+ * - `'png'`: raw PNG bytes as a Blob.
+ */
+export type UploadImageProcessorResponseType = 'json' | 'png';
+
+/**
+ * Uploads an image to a processor endpoint that supports JSON and PNG responses.
+ *
+ * @param endpoint     - Processor endpoint path.
+ * @param parameters   - Multipart fields for upload and prompt hints.
+ * @param responseType - Response format (`'json'` or `'png'`).
+ * @returns JSON envelope when `responseType === 'json'`, raw PNG Blob otherwise.
+ */
+async function uploadImageProcessor(
+    endpoint: '/upload/image-sketch' | '/upload/image-colorize',
+    parameters: IUploadImageProcessorRequest,
+    responseType: UploadImageProcessorResponseType
+): Promise<UploadImageSketch200Response | Blob> {
+    const form = new FormData();
+    form.append('file', parameters.file);
+    if (parameters.prompt) form.append('prompt', parameters.prompt);
+    if (parameters.negativePrompt) form.append('negative_prompt', parameters.negativePrompt);
+
+    const response = await fetch(`${baseUrl()}${endpoint}`, {
+        method: 'POST',
+        headers: responseType === 'png' ? { Accept: 'image/png' } : undefined,
+        body: form
+    });
+
+    if (!response.ok) await throwStreamError(response);
+
+    if (responseType === 'png') {
+        return response.blob();
+    }
+
+    return response.json() as Promise<UploadImageSketch200Response>;
+}
+
+/**
+ * Uploads an image and requests a sketch/line-art transformation.
+ *
+ * @param parameters   - Source image and optional positive/negative prompts.
+ * @param responseType - Desired response format (`'json'` default, or `'png'` for binary image output).
+ * @returns JSON processor envelope or PNG blob based on `responseType`.
+ */
+export function uploadImageSketch(
+    parameters: IUploadImageProcessorRequest,
+    responseType: UploadImageProcessorResponseType = 'json'
+): Promise<UploadImageSketch200Response | Blob> {
+    return uploadImageProcessor('/upload/image-sketch', parameters, responseType);
+}
+
+/**
+ * Uploads an image and requests a colorization transformation.
+ *
+ * @param parameters   - Source image and optional positive/negative prompts.
+ * @param responseType - Desired response format (`'json'` default, or `'png'` for binary image output).
+ * @returns JSON processor envelope or PNG blob based on `responseType`.
+ */
+export function uploadImageColorize(
+    parameters: IUploadImageProcessorRequest,
+    responseType: UploadImageProcessorResponseType = 'json'
+): Promise<UploadImageSketch200Response | Blob> {
+    return uploadImageProcessor('/upload/image-colorize', parameters, responseType);
+}
+
+/* ─── Library ─────────────────────────────────────────────────── */
+
+/**
+ * Lists all configured libraries and their ingestion metadata.
+ *
+ * @returns Success envelope containing the available library entries.
+ */
+export async function listLibraries(): Promise<ListLibraries200Response> {
+    const response = await fetch(`${baseUrl()}/library`);
+    return handleResponse<ListLibraries200Response>(response);
+}
+
+/**
+ * Imports PDFs or a folder into a specific library.
+ *
+ * @param libraryId - Library identifier.
+ * @param request   - Import payload with either `pdfs` or `folder`.
+ * @returns Success envelope with import counters and failures.
+ */
+export async function importLibrary(
+    libraryId: string,
+    request: ImportRequest
+): Promise<ImportLibrary200Response> {
+    const response = await fetch(`${baseUrl()}/library/${encodeURIComponent(libraryId)}/import`, {
+        method: 'POST',
+        headers: JSON_HEADERS,
+        body: JSON.stringify(request)
+    });
+    return handleResponse<ImportLibrary200Response>(response);
+}
+
+/**
+ * Performs semantic search within a specific library.
+ *
+ * @param libraryId - Library identifier.
+ * @param request   - Query text and optional filters.
+ * @returns Success envelope containing ranked article matches.
+ */
+export async function searchLibrary(
+    libraryId: string,
+    request: SearchRequest
+): Promise<SearchLibrary200Response> {
+    const response = await fetch(`${baseUrl()}/library/${encodeURIComponent(libraryId)}/search`, {
+        method: 'POST',
+        headers: JSON_HEADERS,
+        body: JSON.stringify(request)
+    });
+    return handleResponse<SearchLibrary200Response>(response);
+}
+
+/**
+ * Exports all indexed article metadata for a specific library.
+ *
+ * @param libraryId - Library identifier.
+ * @returns Success envelope containing exportable article metadata.
+ */
+export async function exportLibrary(libraryId: string): Promise<ExportLibrary200Response> {
+    const response = await fetch(`${baseUrl()}/library/${encodeURIComponent(libraryId)}/export`);
+    return handleResponse<ExportLibrary200Response>(response);
+}
+
 /* ─── SSE helper ─────────────────────────────────────────────── */
 
 /**
@@ -424,6 +570,11 @@ export async function fetchHelp(): Promise<GetHelp200Response> {
 
 /* ─── Chat conversations ─────────────────────────────────────── */
 
+/**
+ * Lists all persisted chat conversations.
+ *
+ * @returns Array of conversation metadata entries.
+ */
 export async function listConversations(): Promise<Conversation[]> {
     const response = await fetch(`${baseUrl()}/chat/conversations`);
     if (!response.ok) await throwStreamError(response);
@@ -431,6 +582,13 @@ export async function listConversations(): Promise<Conversation[]> {
     return body.data?.conversations ?? [];
 }
 
+/**
+ * Creates a new chat conversation.
+ *
+ * @param request - Optional initial title/profile payload.
+ * @returns Newly created conversation metadata.
+ * @throws {ApiError} When response does not include a conversation payload.
+ */
 export async function createConversation(
     request: CreateConversationRequest
 ): Promise<Conversation> {
@@ -445,6 +603,13 @@ export async function createConversation(
     return body.data.conversation;
 }
 
+/**
+ * Fetches a conversation and all its messages.
+ *
+ * @param id - Conversation identifier.
+ * @returns Full conversation object including message history.
+ * @throws {ApiError} When response does not include a conversation payload.
+ */
 export async function getConversation(id: string): Promise<ConversationWithMessages> {
     const response = await fetch(`${baseUrl()}/chat/conversations/${encodeURIComponent(id)}`);
     if (!response.ok) await throwStreamError(response);
@@ -453,6 +618,14 @@ export async function getConversation(id: string): Promise<ConversationWithMessa
     return body.data.conversation;
 }
 
+/**
+ * Updates conversation metadata (e.g. title/profile).
+ *
+ * @param id      - Conversation identifier.
+ * @param request - Update payload.
+ * @returns Updated conversation metadata.
+ * @throws {ApiError} When response does not include a conversation payload.
+ */
 export async function updateConversation(
     id: string,
     request: UpdateConversationRequest
@@ -469,6 +642,11 @@ export async function updateConversation(
     return conv as Conversation;
 }
 
+/**
+ * Deletes a chat conversation and all associated messages.
+ *
+ * @param id - Conversation identifier.
+ */
 export async function deleteChatConversation(id: string): Promise<void> {
     const response = await fetch(`${baseUrl()}/chat/conversations/${encodeURIComponent(id)}`, {
         method: 'DELETE'
@@ -476,6 +654,14 @@ export async function deleteChatConversation(id: string): Promise<void> {
     if (!response.ok) await throwStreamError(response);
 }
 
+/**
+ * Appends a new message to an existing conversation.
+ *
+ * @param conversationId - Conversation identifier.
+ * @param request        - Message payload (`role` + `content`).
+ * @returns Newly created message.
+ * @throws {ApiError} When response does not include a message payload.
+ */
 export async function addChatMessage(
     conversationId: string,
     request: CreateMessageRequest
@@ -494,6 +680,15 @@ export async function addChatMessage(
     return body.data.message;
 }
 
+/**
+ * Updates an existing message in a conversation.
+ *
+ * @param conversationId - Conversation identifier.
+ * @param messageId      - Message identifier.
+ * @param request        - Partial update payload.
+ * @returns Updated message.
+ * @throws {ApiError} When response does not include a message payload.
+ */
 export async function editChatMessage(
     conversationId: string,
     messageId: string,
@@ -514,6 +709,12 @@ export async function editChatMessage(
     return message as ChatMessage;
 }
 
+/**
+ * Deletes a message from a conversation.
+ *
+ * @param conversationId - Conversation identifier.
+ * @param messageId      - Message identifier.
+ */
 export async function deleteChatMessage(conversationId: string, messageId: string): Promise<void> {
     const response = await fetch(
         `${baseUrl()}/chat/conversations/${encodeURIComponent(conversationId)}/messages/${encodeURIComponent(messageId)}`,
