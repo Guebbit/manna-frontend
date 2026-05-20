@@ -363,7 +363,7 @@ import { useUploadStore } from '@/stores/upload';
 import FileDropZone from '@/components/shared/FileDropZone.vue';
 import CopyButton from '@/components/shared/CopyButton.vue';
 import MarkdownRenderer from '@/components/shared/MarkdownRenderer.vue';
-import type { UploadImageProcessorResponseType } from '@/api/manna';
+import type { UploadImageProcessorResponseType } from '@/stores/upload';
 import { formatFileSize } from '@/utils/formatting';
 
 const { t } = useI18n();

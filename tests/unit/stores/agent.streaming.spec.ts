@@ -7,13 +7,9 @@ const { runTaskStreamMock } = vi.hoisted(() => ({
     runTaskStreamMock: vi.fn<() => AsyncGenerator<AgentStreamEvent>>()
 }));
 
-vi.mock('@/api/manna', async () => {
-    const actual = await vi.importActual<typeof import('@/api/manna')>('@/api/manna');
-    return {
-        ...actual,
-        runTaskStream: runTaskStreamMock
-    };
-});
+vi.mock('@/utils/sse', () => ({
+    runTaskStream: runTaskStreamMock
+}));
 
 describe('useAgentStore streaming', () => {
     beforeEach(() => {

@@ -9,7 +9,8 @@ import type {
     StepDefinition
 } from '@api';
 import type { WorkflowStreamEvent } from '@/api/sseEvents';
-import { runWorkflow, runWorkflowStream } from '@/api/manna';
+import { workflowApi } from '@/utils/api';
+import { runWorkflowStream } from '@/utils/sse';
 import { useNotificationsStore, TOAST_TYPE } from './notification';
 import { handleApiError } from '@/utils/errorHandling';
 
@@ -61,34 +62,39 @@ export const useWorkflowStore = defineStore('workflow', () => {
         const stepDefinitions: StepDefinition[] = steps.map((task) => ({ task }));
 
         return fetchAny(() =>
-            runWorkflow({
-                steps: stepDefinitions,
-                carry,
-                profile,
-                allowWrite,
-                maxStepsPerStep
-            }).then((response) => {
-                const normalizedResponse: WorkflowResponse = {
-                    steps: response.steps ?? [],
-                    allSucceeded: response.allSucceeded ?? false,
-                    totalDurationMs: response.totalDurationMs ?? 0,
-                    meta: response.meta
-                };
-                const entry: IWorkflowHistoryEntry = {
-                    id: uuidv4(),
-                    steps,
-                    carry,
-                    profile,
-                    allowWrite,
-                    maxStepsPerStep,
-                    allSucceeded: normalizedResponse.allSucceeded ?? false,
-                    totalDurationMs: normalizedResponse.totalDurationMs ?? 0,
-                    timestamp: new Date().toISOString(),
-                    response: normalizedResponse
-                };
-                workflowHistory.value.unshift(entry);
-                return entry;
-            })
+            workflowApi
+                .postWorkflow({
+                    workflowRequest: {
+                        steps: stepDefinitions,
+                        carry,
+                        profile,
+                        allowWrite,
+                        maxStepsPerStep
+                    }
+                })
+                .then(({ data }) => {
+                    const response = data.data;
+                    const normalizedResponse: WorkflowResponse = {
+                        steps: response?.steps ?? [],
+                        allSucceeded: response?.allSucceeded ?? false,
+                        totalDurationMs: response?.totalDurationMs ?? 0,
+                        meta: response?.meta
+                    };
+                    const entry: IWorkflowHistoryEntry = {
+                        id: uuidv4(),
+                        steps,
+                        carry,
+                        profile,
+                        allowWrite,
+                        maxStepsPerStep,
+                        allSucceeded: normalizedResponse.allSucceeded ?? false,
+                        totalDurationMs: normalizedResponse.totalDurationMs ?? 0,
+                        timestamp: new Date().toISOString(),
+                        response: normalizedResponse
+                    };
+                    workflowHistory.value.unshift(entry);
+                    return entry;
+                })
         ).catch((error: unknown) => {
             handleApiError(error, 'Workflow task failed');
             // eslint-disable-next-line unicorn/no-useless-undefined

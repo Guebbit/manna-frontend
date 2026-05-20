@@ -19,7 +19,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
 import type { RunRequestProfileEnum as ModelProfile } from '@api';
 import type { AgentStreamEvent } from '@/api/sseEvents';
-import { runTask, runTaskStream } from '@/api/manna';
+import { coreApi } from '@/utils/api';
+import { runTaskStream } from '@/utils/sse';
 import { useNotificationsStore, TOAST_TYPE } from './notification';
 import { handleApiError } from '@/utils/errorHandling';
 
@@ -61,11 +62,12 @@ export const useAgentStore = defineStore('agent', () => {
         allowWrite = false
     ): Promise<ITaskHistoryEntry | undefined> => {
         return fetchAny(() =>
-            runTask({ task, profile, allowWrite }).then((response) => {
+            coreApi.postRun({ runRequest: { task, profile, allowWrite } }).then(({ data }) => {
+                const result = data.data?.result ?? '';
                 const entry: ITaskHistoryEntry = {
                     id: uuidv4(),
                     task,
-                    result: response.result ?? '',
+                    result,
                     profile,
                     allowWrite,
                     timestamp: new Date().toISOString()

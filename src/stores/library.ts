@@ -9,12 +9,7 @@ import type {
     SearchLibrary200Response,
     SearchRequest
 } from '@api';
-import {
-    exportLibrary,
-    importLibrary,
-    listLibraries as listLibrariesRequest,
-    searchLibrary
-} from '@/api/manna';
+import { libraryApi } from '@/utils/api';
 import { handleApiError } from '@/utils/errorHandling';
 
 /**
@@ -45,7 +40,7 @@ export const useLibraryStore = defineStore('library', () => {
     const listLibraries = () => {
         return fetchAny(
             () =>
-                listLibrariesRequest().then((response) => {
+                libraryApi.listLibraries().then(({ data: response }) => {
                     libraries.value = response.data ?? [];
                     const current = selectedLibraryId.value;
                     if (!current || !libraries.value.some((entry) => entry.id === current)) {
@@ -67,10 +62,12 @@ export const useLibraryStore = defineStore('library', () => {
     const importIntoLibrary = (libraryId: string, request: ImportRequest) => {
         return fetchAny(
             () =>
-                importLibrary(libraryId, request).then((response) => {
-                    importResponse.value = response;
-                    error.value = undefined;
-                }),
+                libraryApi
+                    .importLibrary({ libraryId, importRequest: request })
+                    .then(({ data: response }) => {
+                        importResponse.value = response;
+                        error.value = undefined;
+                    }),
             {
                 loadingKey: '-import'
             }
@@ -85,10 +82,12 @@ export const useLibraryStore = defineStore('library', () => {
     const searchInLibrary = (libraryId: string, request: SearchRequest) => {
         return fetchAny(
             () =>
-                searchLibrary(libraryId, request).then((response) => {
-                    searchResponse.value = response;
-                    error.value = undefined;
-                }),
+                libraryApi
+                    .searchLibrary({ libraryId, searchRequest: request })
+                    .then(({ data: response }) => {
+                        searchResponse.value = response;
+                        error.value = undefined;
+                    }),
             {
                 loadingKey: '-search'
             }
@@ -103,7 +102,7 @@ export const useLibraryStore = defineStore('library', () => {
     const exportFromLibrary = (libraryId: string) => {
         return fetchAny(
             () =>
-                exportLibrary(libraryId).then((response) => {
+                libraryApi.exportLibrary({ libraryId }).then(({ data: response }) => {
                     exportResponse.value = response;
                     error.value = undefined;
                 }),

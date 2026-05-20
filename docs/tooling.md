@@ -23,14 +23,14 @@ If you only want one rule: start from the [README](../README.md), then use this 
 | --- | --- | --- | --- |
 | OpenAPI | Backend contract source | `openapi.yaml` | https://spec.openapis.org/oas/latest.html |
 | openapi-typescript-codegen | Generates the typed client in `api/` | `npm run genapi`, `api/` | https://github.com/ferdikoomen/openapi-typescript-codegen |
-| Axios | HTTP client used by generated code and shared runtime config | `api/`, `src/utils/http.ts` | https://axios-http.com/docs/intro |
+| Axios | HTTP client used by generated code and runtime API access | `api/`, `src/utils/api.ts`, `src/utils/http.ts` | https://axios-http.com/docs/intro |
 | Spectral | Lints the OpenAPI spec | `spectral.yaml`, `npm run lint:openapi` | https://meta.stoplight.io/docs/spectral |
 
 ## Streaming and content tooling
 
 | Tool | Why it is here | Where it shows up | Official docs |
 | --- | --- | --- | --- |
-| Server-Sent Events (concept) | Live timelines for Agent, Swarm, and Workflow | `src/api/manna.ts`, `src/api/sseEvents.ts`, streaming stores | https://developer.mozilla.org/docs/Web/API/Server-sent_events |
+| Server-Sent Events (concept) | Live timelines for Agent, Swarm, and Workflow | `src/utils/sse.ts`, `src/api/sseEvents.ts`, streaming stores | https://developer.mozilla.org/docs/Web/API/Server-sent_events |
 | marked | Markdown rendering | `src/components/shared/MarkdownRenderer.vue` | https://marked.js.org/ |
 | marked-highlight | Bridges marked and code highlighting | `src/components/shared/MarkdownRenderer.vue` | https://github.com/markedjs/marked-highlight |
 | highlight.js | Syntax highlighting for rendered Markdown | `src/components/shared/MarkdownRenderer.vue` | https://highlightjs.org/ |
@@ -82,7 +82,8 @@ If you only want one rule: start from the [README](../README.md), then use this 
 ### Generated vs handwritten API code
 
 - **Generated:** `api/`
-- **Handwritten app-facing helpers:** `src/api/manna.ts`
+- **Generated runtime client entrypoint:** `src/utils/api.ts`
+- **Handwritten streaming runtime helper:** `src/utils/sse.ts`
 - **Handwritten streaming event types:** `src/api/sseEvents.ts`
 
 ### Human docs vs AI docs

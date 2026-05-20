@@ -9,13 +9,13 @@
  * delegate to a single function instead of duplicating the catch block.
  */
 
-import { ApiError } from '@/api/manna';
+import axios from 'axios';
 import { useNotificationsStore, TOAST_TYPE } from '@/stores/notification';
 
 /**
  * Handles an API error by showing an appropriate toast notification.
  *
- * - If the error is an {@link ApiError} with a `retryAfterSeconds` field,
+ * - If the error is an AxiosError with a `retry-after` response header,
  *   a rate-limit message is shown.
  * - Otherwise, the error's message (or a provided fallback) is displayed.
  *
@@ -29,17 +29,25 @@ export function handleApiError(
     timeout = 8000
 ): void {
     const notificationStore = useNotificationsStore();
-    if (error instanceof ApiError && error.retryAfterSeconds) {
-        notificationStore.addMessage(
-            `Rate limited. Retry in ${String(error.retryAfterSeconds)}s`,
-            TOAST_TYPE.DANGER,
-            timeout
-        );
-    } else {
-        notificationStore.addMessage(
-            error instanceof Error ? error.message : fallback,
-            TOAST_TYPE.DANGER,
-            timeout
-        );
+    if (axios.isAxiosError(error)) {
+        const retryAfterHeader = error.response?.headers?.['retry-after'];
+        const retryAfter = Number.parseInt(String(retryAfterHeader ?? ''), 10);
+        if (Number.isFinite(retryAfter) && retryAfter > 0) {
+            notificationStore.addMessage(
+                `Rate limited. Retry in ${String(retryAfter)}s`,
+                TOAST_TYPE.DANGER,
+                timeout
+            );
+            return;
+        }
+
+        notificationStore.addMessage(error.message || fallback, TOAST_TYPE.DANGER, timeout);
+        return;
     }
+
+    notificationStore.addMessage(
+        error instanceof Error ? error.message : fallback,
+        TOAST_TYPE.DANGER,
+        timeout
+    );
 }

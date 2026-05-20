@@ -9,11 +9,13 @@ const mocks = vi.hoisted(() => ({
     exportLibrary: vi.fn()
 }));
 
-vi.mock('@/api/manna', () => ({
-    listLibraries: mocks.listLibraries,
-    importLibrary: mocks.importLibrary,
-    searchLibrary: mocks.searchLibrary,
-    exportLibrary: mocks.exportLibrary
+vi.mock('@/utils/api', () => ({
+    libraryApi: {
+        listLibraries: mocks.listLibraries,
+        importLibrary: mocks.importLibrary,
+        searchLibrary: mocks.searchLibrary,
+        exportLibrary: mocks.exportLibrary
+    }
 }));
 
 describe('useLibraryStore', () => {
@@ -21,28 +23,36 @@ describe('useLibraryStore', () => {
         setActivePinia(createPinia());
         vi.clearAllMocks();
         mocks.listLibraries.mockResolvedValue({
-            success: true,
-            status: 200,
-            message: 'ok',
-            data: [{ id: 'default', name: 'Default', articleCount: 10 }]
+            data: {
+                success: true,
+                status: 200,
+                message: 'ok',
+                data: [{ id: 'default', name: 'Default', articleCount: 10 }]
+            }
         });
         mocks.importLibrary.mockResolvedValue({
-            success: true,
-            status: 200,
-            message: 'imported',
-            data: { imported: 2, skipped: 0, errors: [] }
+            data: {
+                success: true,
+                status: 200,
+                message: 'imported',
+                data: { imported: 2, skipped: 0, errors: [] }
+            }
         });
         mocks.searchLibrary.mockResolvedValue({
-            success: true,
-            status: 200,
-            message: 'done',
-            data: [{ id: 'a1', title: 'Article 1', score: 0.9 }]
+            data: {
+                success: true,
+                status: 200,
+                message: 'done',
+                data: [{ id: 'a1', title: 'Article 1', score: 0.9 }]
+            }
         });
         mocks.exportLibrary.mockResolvedValue({
-            success: true,
-            status: 200,
-            message: 'done',
-            data: [{ id: 'a1', title: 'Article 1' }]
+            data: {
+                success: true,
+                status: 200,
+                message: 'done',
+                data: [{ id: 'a1', title: 'Article 1' }]
+            }
         });
     });
 

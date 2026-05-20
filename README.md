@@ -122,3 +122,9 @@ npm run genapi
 ```
 
 Do not edit files in `api/` manually.
+
+## API runtime rule
+
+- All non-streaming HTTP calls must use generated axios clients from `src/utils/api.ts`.
+- SSE streaming endpoints (`/run/stream`, `/run/swarm/stream`, `/workflow/stream`) use `src/utils/sse.ts`.
+- Do not add new fetch-based API wrappers for non-SSE endpoints.

@@ -35,5 +35,5 @@ Files
 Error handling
 
 - Never swallow silently — always log or notify
-- HTTP failures → `ApiError` class
+- HTTP failures → `AxiosError` conventions (through generated client)
 - User-facing errors → `useNotificationStore`

@@ -21,7 +21,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
 import type { SwarmRequestProfileEnum as ModelProfile, SwarmResponse } from '@api';
 import type { SwarmStreamEvent } from '@/api/sseEvents';
-import { runSwarm, runSwarmStream } from '@/api/manna';
+import { swarmApi } from '@/utils/api';
+import { runSwarmStream } from '@/utils/sse';
 import { useNotificationsStore, TOAST_TYPE } from './notification';
 import { handleApiError } from '@/utils/errorHandling';
 
@@ -69,29 +70,35 @@ export const useSwarmStore = defineStore('swarm', () => {
         maxSubtasks?: number
     ): Promise<ISwarmHistoryEntry | undefined> => {
         return fetchAny(() =>
-            runSwarm({ task, profile, allowWrite, maxSubtasks }).then((response) => {
-                const normalizedResponse: SwarmResponse = {
-                    answer: response.answer ?? '',
-                    subtaskResults: response.subtaskResults ?? [],
-                    decomposition: response.decomposition ?? { reasoning: '', subtaskCount: 0 },
-                    totalDurationMs: response.totalDurationMs ?? 0,
-                    meta: response.meta
-                };
-                const entry: ISwarmHistoryEntry = {
-                    id: uuidv4(),
-                    task,
-                    result: normalizedResponse.answer ?? '',
-                    profile,
-                    allowWrite,
-                    maxSubtasks,
-                    subtaskCount: normalizedResponse.subtaskResults?.length ?? 0,
-                    totalDurationMs: normalizedResponse.totalDurationMs ?? 0,
-                    timestamp: new Date().toISOString(),
-                    response: normalizedResponse
-                };
-                swarmHistory.value.unshift(entry);
-                return entry;
-            })
+            swarmApi
+                .postRunSwarm({ swarmRequest: { task, profile, allowWrite, maxSubtasks } })
+                .then(({ data }) => {
+                    const response = data.data;
+                    const normalizedResponse: SwarmResponse = {
+                        answer: response?.answer ?? '',
+                        subtaskResults: response?.subtaskResults ?? [],
+                        decomposition: response?.decomposition ?? {
+                            reasoning: '',
+                            subtaskCount: 0
+                        },
+                        totalDurationMs: response?.totalDurationMs ?? 0,
+                        meta: response?.meta
+                    };
+                    const entry: ISwarmHistoryEntry = {
+                        id: uuidv4(),
+                        task,
+                        result: normalizedResponse.answer ?? '',
+                        profile,
+                        allowWrite,
+                        maxSubtasks,
+                        subtaskCount: normalizedResponse.subtaskResults?.length ?? 0,
+                        totalDurationMs: normalizedResponse.totalDurationMs ?? 0,
+                        timestamp: new Date().toISOString(),
+                        response: normalizedResponse
+                    };
+                    swarmHistory.value.unshift(entry);
+                    return entry;
+                })
         ).catch((error: unknown) => {
             handleApiError(error, 'Swarm task failed');
             // eslint-disable-next-line unicorn/no-useless-undefined
