@@ -94,7 +94,7 @@
                         {{ t('dashboard.quickActions') }}
                     </v-card-title>
                     <v-card-text>
-                        <div v-for="action in quickActions" :key="action.to" class="mb-3">
+                        <div v-for="action in quickActions" :key="action.title" class="mb-3">
                             <v-btn
                                 :to="action.to"
                                 :prepend-icon="action.icon"
@@ -121,5 +121,6 @@ import { NAV_ITEMS } from '@/utils/navigation';
 const { t } = useI18n();
 const systemStore = useSystemStore();
 
-const quickActions = NAV_ITEMS.filter((item) => item.to !== '/' && item.to !== '/settings');
+// Dashboard shows all pages except the first (Dashboard itself) and last (Settings)
+const quickActions = NAV_ITEMS.slice(1, -1);
 </script>
