@@ -8,14 +8,16 @@
  * The `title` and `description` fields are i18n keys resolved at render time.
  */
 
+import type { RouteLocationRaw } from 'vue-router';
+
 /** Describes a single navigable page in the application. */
 export interface INavItem {
     /** i18n key for the display label shown in the sidebar. */
     title: string;
     /** MDI icon name (e.g. `'mdi-chat'`). */
     icon: string;
-    /** Vue Router path (e.g. `'/chat'`). */
-    to: string;
+    /** Vue Router named-route location — ensures correct hash-mode URL generation. */
+    to: RouteLocationRaw;
     /** i18n key for the short description shown in the dashboard quick-actions section. */
     description: string;
 }
@@ -30,47 +32,67 @@ export const NAV_ITEMS: readonly INavItem[] = [
     {
         title: 'nav.dashboard',
         icon: 'mdi-view-dashboard',
-        to: '/',
+        to: { name: 'dashboard' },
         description: 'nav.dashboardDesc'
     },
-    { title: 'nav.chat', icon: 'mdi-chat', to: '/chat', description: 'nav.chatDesc' },
-    { title: 'nav.agentTask', icon: 'mdi-robot', to: '/agent', description: 'nav.agentTaskDesc' },
+    {
+        title: 'nav.chat',
+        icon: 'mdi-chat',
+        to: { name: 'chat-conversations' },
+        description: 'nav.chatDesc'
+    },
+    {
+        title: 'nav.agentTask',
+        icon: 'mdi-robot',
+        to: { name: 'agent' },
+        description: 'nav.agentTaskDesc'
+    },
     {
         title: 'nav.codeTools',
         icon: 'mdi-code-braces',
-        to: '/code',
+        to: { name: 'code' },
         description: 'nav.codeToolsDesc'
     },
     {
         title: 'nav.uploadAnalyze',
         icon: 'mdi-upload',
-        to: '/upload',
+        to: { name: 'upload' },
         description: 'nav.uploadAnalyzeDesc'
     },
     {
         title: 'nav.library',
         icon: 'mdi-bookshelf',
-        to: '/library',
+        to: { name: 'library' },
         description: 'nav.libraryDesc'
     },
     {
         title: 'nav.graphBuilder',
         icon: 'mdi-graph',
-        to: '/graph',
+        to: { name: 'graph-builder' },
         description: 'nav.graphBuilderDesc'
     },
-    { title: 'nav.swarm', icon: 'mdi-sitemap', to: '/swarm', description: 'nav.swarmDesc' },
+    {
+        title: 'nav.swarm',
+        icon: 'mdi-sitemap',
+        to: { name: 'swarm' },
+        description: 'nav.swarmDesc'
+    },
     {
         title: 'nav.workflow',
         icon: 'mdi-list-status',
-        to: '/workflow',
+        to: { name: 'workflow' },
         description: 'nav.workflowDesc'
     },
     {
         title: 'nav.systemInfo',
         icon: 'mdi-information-outline',
-        to: '/system',
+        to: { name: 'system-info' },
         description: 'nav.systemInfoDesc'
     },
-    { title: 'nav.settings', icon: 'mdi-cog', to: '/settings', description: 'nav.settingsDesc' }
-] as const;
+    {
+        title: 'nav.settings',
+        icon: 'mdi-cog',
+        to: { name: 'settings' },
+        description: 'nav.settingsDesc'
+    }
+];

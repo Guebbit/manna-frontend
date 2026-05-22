@@ -4,7 +4,7 @@
             <v-icon size="80" color="grey">mdi-alert-circle-outline</v-icon>
             <h1 class="text-h4 mt-4 mb-2">{{ title }}</h1>
             <p class="text-body-1 text-grey mb-6">{{ description }}</p>
-            <v-btn to="/" variant="tonal" prepend-icon="mdi-home">
+            <v-btn :to="{ name: 'dashboard' }" variant="tonal" prepend-icon="mdi-home">
                 {{ t('error.goToDashboard') }}
             </v-btn>
         </div>

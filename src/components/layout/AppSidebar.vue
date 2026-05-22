@@ -9,7 +9,7 @@
         <v-list density="compact" nav>
             <v-list-item
                 v-for="item in navItems"
-                :key="item.to"
+                :key="item.title"
                 :to="item.to"
                 :prepend-icon="item.icon"
                 :title="t(item.title)"
