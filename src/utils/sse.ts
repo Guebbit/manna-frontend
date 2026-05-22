@@ -1,6 +1,11 @@
-import type { RunRequest, SwarmRequest, WorkflowRequest } from '@api';
+import type { RunRequest, SwarmRequest, WorkflowRequest, CreateMessageRequest } from '@api';
 import { getMannaBaseUrl } from '@/config';
-import type { AgentStreamEvent, SwarmStreamEvent, WorkflowStreamEvent } from '@/api/sseEvents';
+import type {
+    AgentStreamEvent,
+    ChatStreamEvent,
+    SwarmStreamEvent,
+    WorkflowStreamEvent
+} from '@/api/sseEvents';
 
 const JSON_HEADERS = {
     // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -84,4 +89,23 @@ export async function* runWorkflowStream(
 ): AsyncGenerator<WorkflowStreamEvent> {
     const response = await openSse(`${getMannaBaseUrl()}/workflow/stream`, parameters);
     yield* parseSseStream<WorkflowStreamEvent>(response);
+}
+
+/**
+ * Sends a user message to a conversation and streams the backend's reply as
+ * Server-Sent Events. Calls the dedicated streaming endpoint
+ * `POST /chat/conversations/:id/messages/stream` (Option A contract split).
+ *
+ * Expected SSE events:
+ * - `message` — the persisted user ChatMessage, emitted immediately on save.
+ * - `reply`   — the assistant ChatMessage plus inference metadata.
+ * - `error`   — unrecoverable inference failure with an error string.
+ */
+export async function* sendChatMessageStream(
+    conversationId: string,
+    request: CreateMessageRequest
+): AsyncGenerator<ChatStreamEvent> {
+    const url = `${getMannaBaseUrl()}/chat/conversations/${encodeURIComponent(conversationId)}/messages/stream`;
+    const response = await openSse(url, request);
+    yield* parseSseStream<ChatStreamEvent>(response);
 }
