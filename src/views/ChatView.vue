@@ -344,15 +344,10 @@ const profileOptions: ModelProfileOption[] = [
         title: t('profiles.reasoning'),
         description: t('profiles.descriptions.reasoning')
     },
-    { value: 'code', title: t('profiles.code'), description: t('profiles.descriptions.code') },
-    {
-        value: 'default',
-        title: t('profiles.default'),
-        description: t('profiles.descriptions.default')
-    }
+    { value: 'code', title: t('profiles.code'), description: t('profiles.descriptions.code') }
 ];
 
-const selectedProfile = ref<ModelProfile>('default');
+const selectedProfile = ref<ModelProfile>('fast');
 
 const activeId = computed(() => route.params.id as string | undefined);
 
@@ -374,10 +369,7 @@ function navigateTo(id: string): void {
 }
 
 async function onNewConversation(): Promise<void> {
-    const profile =
-        selectedProfile.value === 'default'
-            ? undefined
-            : (selectedProfile.value as ConversationProfileEnum);
+    const profile = selectedProfile.value as ConversationProfileEnum;
     const conv = await newConversation({ profile });
     if (conv) navigateTo(conv.id);
 }

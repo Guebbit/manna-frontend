@@ -1,7 +1,7 @@
 import { LGraphNode } from 'litegraph.js';
 
 /** Available LLM profile options. */
-const PROFILE_OPTIONS = ['default', 'fast', 'reasoning', 'code'] as const;
+const PROFILE_OPTIONS = ['fast', 'reasoning', 'code'] as const;
 
 /**
  * Node that calls the Manna LLM with a prompt and a profile selector widget.
@@ -16,7 +16,7 @@ export class LlmGenerateNode extends LGraphNode {
         this.addInput('prompt', 'string');
         this.addOutput('response', 'string');
         this.addWidget('text', 'prompt', '', 'prompt');
-        this.addWidget('combo', 'profile', 'default', 'profile', {
+        this.addWidget('combo', 'profile', 'fast', 'profile', {
             values: [...PROFILE_OPTIONS]
         });
         this.title = 'LLM Generate';
