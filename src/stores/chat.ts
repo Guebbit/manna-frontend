@@ -3,7 +3,8 @@ import { ref } from 'vue';
 import { useCoreStore, useStructureRestApi } from '@guebbit/vue-toolkit';
 import { handleApiError } from '@/utils/errorHandling';
 import { chatApi } from '@/utils/api';
-import { runTaskStream } from '@/utils/sse';
+import { runTaskStream, sendChatMessageStream } from '@/utils/sse';
+import { useNotificationsStore, TOAST_TYPE } from './notification';
 import type {
     Conversation,
     ChatMessage,
@@ -101,22 +102,74 @@ export const useChatStore = defineStore('chat', () => {
     const sendMessage = (
         conversationId: string,
         request: CreateMessageRequest
-    ): Promise<ChatMessage | undefined> =>
-        fetchAny(async () => {
-            const { data } = await chatApi.createMessage({
-                conversationId,
-                createMessageRequest: request
-            });
-            const message = data.data?.message;
-            if (!message) throw new Error('No message in response');
-            messageCache.value = {
-                ...messageCache.value,
-                [conversationId]: [...(messageCache.value[conversationId] ?? []), message]
-            };
-            return message;
+    ): Promise<ChatMessage | undefined> => {
+        // User messages trigger the SSE streaming endpoint so the assistant reply
+        // is streamed back in real time. Non-user roles (assistant / system) use
+        // the standard JSON endpoint instead.
+        if (request.role !== 'user') {
+            return fetchAny(async () => {
+                const { data } = await chatApi.createMessage({
+                    conversationId,
+                    createMessageRequest: request
+                });
+                const message = data.data?.message;
+                if (!message) throw new Error('No message in response');
+                messageCache.value = {
+                    ...messageCache.value,
+                    [conversationId]: [...(messageCache.value[conversationId] ?? []), message]
+                };
+                return message;
+            }).catch((error: unknown) => {
+                handleApiError(error, 'Failed to send message');
+            }) as Promise<ChatMessage | undefined>;
+        }
+
+        // SSE path for user messages — streams `message` then `reply` events.
+        return fetchAny(async () => {
+            streaming.value = true;
+            let userMessage: ChatMessage | undefined;
+            try {
+                const generator = sendChatMessageStream(conversationId, request);
+                for await (const event of generator) {
+                    switch (event.type) {
+                        case 'message': {
+                            // Immediately append the saved user message to the cache.
+                            userMessage = event.data;
+                            messageCache.value = {
+                                ...messageCache.value,
+                                [conversationId]: [
+                                    ...(messageCache.value[conversationId] ?? []),
+                                    event.data
+                                ]
+                            };
+                            break;
+                        }
+                        case 'reply': {
+                            // Append the assistant reply once the model finishes.
+                            messageCache.value = {
+                                ...messageCache.value,
+                                [conversationId]: [
+                                    ...(messageCache.value[conversationId] ?? []),
+                                    event.data.message
+                                ]
+                            };
+                            break;
+                        }
+                        case 'error': {
+                            useNotificationsStore().addMessage(event.data.error, TOAST_TYPE.DANGER);
+                            break;
+                        }
+                    }
+                }
+            } finally {
+                streaming.value = false;
+            }
+            return userMessage;
         }).catch((error: unknown) => {
+            streaming.value = false;
             handleApiError(error, 'Failed to send message');
         }) as Promise<ChatMessage | undefined>;
+    };
 
     const editMessage = (
         conversationId: string,

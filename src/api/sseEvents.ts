@@ -8,7 +8,7 @@
  *
  * Import from this module whenever you consume a streaming endpoint.
  */
-import type { ResponseMeta, WorkflowStepResult, WorkflowResponse } from '@api/api';
+import type { ChatMessage, ResponseMeta, WorkflowStepResult, WorkflowResponse } from '@api/api';
 
 /* ─── Agent /run/stream ────────────────────────────────────────── */
 
@@ -168,3 +168,34 @@ export type WorkflowStreamEvent =
     | { type: 'step_done'; data: WorkflowStepResult }
     | { type: 'done'; data: IWorkflowDoneEvent }
     | { type: 'error'; data: IAgentErrorEvent };
+
+/* ─── Chat /chat/conversations/:id/messages/stream ──────────────── */
+
+/**
+ * SSE event: the assistant reply with inference metadata, emitted once
+ * the model finishes generating.
+ */
+export interface IChatReplyEvent {
+    /** The persisted assistant ChatMessage. */
+    message: ChatMessage;
+    /** Inference metadata: model, profile, token counts, duration. */
+    meta?: ResponseMeta;
+}
+
+/** SSE event: unrecoverable error during model inference. */
+export interface IChatStreamErrorEvent {
+    error: string;
+}
+
+/**
+ * Discriminated union of all SSE events from
+ * POST /chat/conversations/:id/messages/stream.
+ *
+ * - `message` — the persisted user ChatMessage, emitted as soon as it is saved.
+ * - `reply`   — the assistant's reply plus inference metadata.
+ * - `error`   — unrecoverable inference failure.
+ */
+export type ChatStreamEvent =
+    | { type: 'message'; data: ChatMessage }
+    | { type: 'reply'; data: IChatReplyEvent }
+    | { type: 'error'; data: IChatStreamErrorEvent };

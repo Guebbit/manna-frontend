@@ -1298,6 +1298,66 @@ paths:
                 '503':
                     $ref: '#/components/responses/ServiceUnavailable'
 
+    /chat/conversations/{conversationId}/messages/stream:
+        parameters:
+            - $ref: '#/components/parameters/conversationId'
+        post:
+            tags: [chat]
+            summary: Send a user message and stream the assistant reply via SSE
+            description: |
+                Dedicated streaming endpoint for user chat turns. Accepts the same
+                `CreateMessageRequest` body as `POST /chat/conversations/:id/messages`
+                but responds with a Server-Sent Events stream instead of JSON.
+
+                The plain JSON endpoint remains unchanged and is still the correct
+                path for non-user roles (system / assistant).
+
+                **SSE event types**:
+                - `message` — the persisted user message: `{ id, conversationId, role, content, createdAt, updatedAt }`
+                - `reply` — the assistant's reply: `{ message: ChatMessage, meta: ResponseMeta }`
+                - `error` — unrecoverable error during model inference: `{ error }`
+            operationId: streamMessage
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CreateMessageRequest'
+                        examples:
+                            userMessage:
+                                summary: User message (only role:user is meaningful here)
+                                value:
+                                    role: user
+                                    content: 'Can you explain how the model router works?'
+            responses:
+                '200':
+                    description: |
+                        SSE stream — connection kept open until the assistant reply is
+                        written and the stream is closed.
+
+                        SSE event payload schemas:
+                        - `message` event: the saved user `ChatMessage`
+                        - `reply` event: `{ message: ChatMessage, meta: ResponseMeta }`
+                        - `error` event: `{ error: string }`
+                    content:
+                        text/event-stream:
+                            schema:
+                                type: string
+                                description: Newline-delimited SSE frames
+                            example: |
+                                event: message
+                                data: {"id":"abc","conversationId":"xyz","role":"user","content":"Hello","createdAt":"...","updatedAt":"..."}
+
+                                event: reply
+                                data: {"message":{"id":"def","conversationId":"xyz","role":"assistant","content":"Hi!","createdAt":"...","updatedAt":"..."},"meta":{"durationMs":1200}}
+
+                '400':
+                    $ref: '#/components/responses/BadRequest'
+                '404':
+                    $ref: '#/components/responses/NotFound'
+                '503':
+                    $ref: '#/components/responses/ServiceUnavailable'
+
     /chat/conversations/{conversationId}/messages/{messageId}:
         parameters:
             - $ref: '#/components/parameters/conversationId'
