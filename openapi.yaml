@@ -2,14 +2,14 @@ openapi: '3.1.0'
 
 info:
     title: Manna AI Agent API
-    version: '1.0.0'
+    version: '0.15.0-alpha'
     contact:
         name: Manna API
         url: https://github.com/Guebbit/manna
     description: |
-        Local-first agentic AI platform. Exposes the agent reasoning loop, IDE-specific
-        direct-LLM endpoints, file-upload helpers,
-        and a multi-library PDF ingestion and semantic search system.
+        Local-first agentic AI platform. Exposes the agent reasoning loop,
+        multi-agent swarm orchestration, sequential workflows, chat persistence,
+        IDE-specific direct-LLM endpoints, and file-upload helpers.
 
         **Base URL (default):** `http://localhost:3001`
 
@@ -1257,8 +1257,11 @@ paths:
             - $ref: '#/components/parameters/conversationId'
         post:
             tags: [chat]
-            summary: Add a message to a conversation
+            summary: Add a message to a conversation (JSON)
             operationId: createMessage
+            description: |
+                Creates and persists a chat message and returns a normal JSON envelope.
+                For live assistant streaming, use `POST /chat/conversations/{conversationId}/messages/stream`.
             requestBody:
                 required: true
                 content:
@@ -1303,20 +1306,18 @@ paths:
             - $ref: '#/components/parameters/conversationId'
         post:
             tags: [chat]
-            summary: Send a user message and stream the assistant reply via SSE
+            summary: Add a user message and stream the assistant reply
             description: |
-                Dedicated streaming endpoint for user chat turns. Accepts the same
-                `CreateMessageRequest` body as `POST /chat/conversations/:id/messages`
-                but responds with a Server-Sent Events stream instead of JSON.
+                Creates a `user` message, then streams SSE events for the saved user message
+                and the generated assistant reply.
 
-                The plain JSON endpoint remains unchanged and is still the correct
-                path for non-user roles (system / assistant).
+                This endpoint requires `role: user` in the request body.
 
                 **SSE event types**:
-                - `message` — the persisted user message: `{ id, conversationId, role, content, createdAt, updatedAt }`
-                - `reply` — the assistant's reply: `{ message: ChatMessage, meta: ResponseMeta }`
-                - `error` — unrecoverable error during model inference: `{ error }`
-            operationId: streamMessage
+                - `message` — the persisted user message (`ChatMessage`)
+                - `reply` — the persisted assistant message plus generation metadata
+                - `error` — stream failure payload `{ error }`
+            operationId: createMessageStream
             requestBody:
                 required: true
                 content:
@@ -1325,20 +1326,19 @@ paths:
                             $ref: '#/components/schemas/CreateMessageRequest'
                         examples:
                             userMessage:
-                                summary: User message (only role:user is meaningful here)
+                                summary: User message
                                 value:
                                     role: user
                                     content: 'Can you explain how the model router works?'
             responses:
                 '200':
                     description: |
-                        SSE stream — connection kept open until the assistant reply is
-                        written and the stream is closed.
+                        SSE stream — connection kept open until the assistant generation finishes.
 
                         SSE event payload schemas:
-                        - `message` event: the saved user `ChatMessage`
-                        - `reply` event: `{ message: ChatMessage, meta: ResponseMeta }`
-                        - `error` event: `{ error: string }`
+                        - `message` event: `ChatMessage`
+                        - `reply` event: `{ message: ChatMessage, meta: ResponseMeta & token/model metadata }`
+                        - `error` event: `SseErrorEvent`
                     content:
                         text/event-stream:
                             schema:
@@ -1346,11 +1346,10 @@ paths:
                                 description: Newline-delimited SSE frames
                             example: |
                                 event: message
-                                data: {"id":"abc","conversationId":"xyz","role":"user","content":"Hello","createdAt":"...","updatedAt":"..."}
+                                data: {"id":"7c9e6679-7425-40de-944b-e07fc1f90ae7","conversationId":"3fa85f64-5717-4562-b3fc-2c963f66afa6","role":"user","content":"Hello","createdAt":"2026-01-01T00:00:01.000Z","updatedAt":"2026-01-01T00:00:01.000Z"}
 
                                 event: reply
-                                data: {"message":{"id":"def","conversationId":"xyz","role":"assistant","content":"Hi!","createdAt":"...","updatedAt":"..."},"meta":{"durationMs":1200}}
-
+                                data: {"message":{"id":"7c9e6679-7425-40de-944b-e07fc1f90ae8","conversationId":"3fa85f64-5717-4562-b3fc-2c963f66afa6","role":"assistant","content":"Hi!","createdAt":"2026-01-01T00:00:02.000Z","updatedAt":"2026-01-01T00:00:02.000Z"},"meta":{"model":"fast-model","profile":"fast","promptTokens":12,"completionTokens":5,"totalTokens":17}}
                 '400':
                     $ref: '#/components/responses/BadRequest'
                 '404':
@@ -1469,7 +1468,7 @@ components:
                     schema:
                         $ref: '#/components/schemas/ErrorResponse'
         NotFound:
-            description: The requested library or resource was not found
+            description: The requested resource was not found
             content:
                 application/json:
                     schema:
@@ -1870,7 +1869,7 @@ components:
                         Default `false`.
                 profile:
                     type: string
-                    enum: [fast, reasoning, code, default]
+                    enum: [fast, reasoning, code]
                     description: |
                         Force a specific model profile, bypassing automatic routing.
                         If omitted, the router selects a profile based on the task text.
@@ -1904,7 +1903,7 @@ components:
                     description: When `true`, unlocks write tools for all subtask agents.
                 profile:
                     type: string
-                    enum: [fast, reasoning, code, default]
+                    enum: [fast, reasoning, code]
                     description: |
                         Force a specific model profile for all subtask agents,
                         overriding the decomposer's per-subtask suggestions.
@@ -1991,7 +1990,7 @@ components:
                         tools for all steps.
                 profile:
                     type: string
-                    enum: [fast, reasoning, code, default]
+                    enum: [fast, reasoning, code]
                     description: |
                         Force a specific model profile for all steps, bypassing automatic routing.
                 carry:
