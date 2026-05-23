@@ -2045,8 +2045,7 @@ export interface RunRequest {
 export const RunRequestProfileEnum = {
     Fast: 'fast',
     Reasoning: 'reasoning',
-    Code: 'code',
-    Default: 'default'
+    Code: 'code'
 } as const;
 
 export type RunRequestProfileEnum =
@@ -2406,8 +2405,7 @@ export interface SwarmRequest {
 export const SwarmRequestProfileEnum = {
     Fast: 'fast',
     Reasoning: 'reasoning',
-    Code: 'code',
-    Default: 'default'
+    Code: 'code'
 } as const;
 
 export type SwarmRequestProfileEnum =
@@ -2831,8 +2829,7 @@ export interface WorkflowRequest {
 export const WorkflowRequestProfileEnum = {
     Fast: 'fast',
     Reasoning: 'reasoning',
-    Code: 'code',
-    Default: 'default'
+    Code: 'code'
 } as const;
 
 export type WorkflowRequestProfileEnum =

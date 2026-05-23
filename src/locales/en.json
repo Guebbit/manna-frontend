@@ -43,12 +43,10 @@
         "fast": "Fast",
         "reasoning": "Reasoning",
         "code": "Code",
-        "default": "Default",
         "descriptions": {
             "fast": "Lowest latency, good for simple queries",
             "reasoning": "Better for complex logic and multi-step thinking",
-            "code": "Optimized for programming tasks and debugging",
-            "default": "(BETA) Mini LLM will decide the best profile for the task"
+            "code": "Optimized for programming tasks and debugging"
         }
     },
     "dashboard": {

@@ -11,8 +11,7 @@ export const PROFILE_OPTIONS = [
     { title: 'profiles.auto', value: 'auto' },
     { title: 'profiles.fast', value: 'fast' },
     { title: 'profiles.reasoning', value: 'reasoning' },
-    { title: 'profiles.code', value: 'code' },
-    { title: 'profiles.default', value: 'default' }
+    { title: 'profiles.code', value: 'code' }
 ] as const;
 
 /** Returns translated profile options for use in v-select. Must be called inside a component setup. */
