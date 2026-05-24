@@ -154,16 +154,19 @@ function saveDefaults(): void {
     localStorage.setItem('manna-default-write', String(defaultWriteMode.value));
 }
 
-async function testConnection(): Promise<void> {
+function testConnection(): void {
     testing.value = true;
     testResult.value = undefined;
-    try {
-        await coreApi.getHealth();
-        testResult.value = 'ok';
-    } catch {
-        testResult.value = 'fail';
-    } finally {
-        testing.value = false;
-    }
+    coreApi
+        .getHealth()
+        .then(() => {
+            testResult.value = 'ok';
+        })
+        .catch(() => {
+            testResult.value = 'fail';
+        })
+        .finally(() => {
+            testing.value = false;
+        });
 }
 </script>

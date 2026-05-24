@@ -309,23 +309,19 @@ function applyQuickPrompt(template: string): void {
     taskInput.value = template.replace('{workspace}', workspaceRoot ?? '<workspace-path>');
 }
 
-async function submitStream(): Promise<void> {
+function submitStream(): void {
     const task = taskInput.value.trim();
     if (!task) return;
 
     streamFinished.value = false;
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
-    const result = await agentStore.submitTaskStream(
-        task,
-        profile,
-        allowWrite.value,
-        workspaceRoot
-    );
-    streamFinished.value = true;
-    if (result) {
-        latestResult.value = result;
-        taskInput.value = '';
-    }
+    agentStore.submitTaskStream(task, profile, allowWrite.value, workspaceRoot).then((result) => {
+        streamFinished.value = true;
+        if (result) {
+            latestResult.value = result;
+            taskInput.value = '';
+        }
+    });
 }
 </script>
 

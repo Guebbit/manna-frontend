@@ -31,15 +31,17 @@ const props = defineProps<{
 
 const copied = ref(false);
 
-async function copyToClipboard(): Promise<void> {
-    try {
-        await navigator.clipboard.writeText(props.text);
-        copied.value = true;
-        setTimeout(() => {
-            copied.value = false;
-        }, 2000);
-    } catch {
-        /* clipboard API may not be available */
-    }
+function copyToClipboard(): void {
+    navigator.clipboard
+        .writeText(props.text)
+        .then(() => {
+            copied.value = true;
+            setTimeout(() => {
+                copied.value = false;
+            }, 2000);
+        })
+        .catch(() => {
+            /* clipboard API may not be available */
+        });
 }
 </script>

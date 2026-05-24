@@ -244,35 +244,32 @@ watch(
     }
 );
 
-async function submit(): Promise<void> {
+function submit(): void {
     const task = taskInput.value.trim();
     if (!task) return;
 
     streamFinished.value = false;
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
-    const result = await agentStore.submitTask(task, profile, allowWrite.value, workspaceRoot);
-    if (result) {
-        latestResult.value = result;
-        taskInput.value = '';
-    }
+    agentStore.submitTask(task, profile, allowWrite.value, workspaceRoot).then((result) => {
+        if (result) {
+            latestResult.value = result;
+            taskInput.value = '';
+        }
+    });
 }
 
-async function submitStream(): Promise<void> {
+function submitStream(): void {
     const task = taskInput.value.trim();
     if (!task) return;
 
     streamFinished.value = false;
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
-    const result = await agentStore.submitTaskStream(
-        task,
-        profile,
-        allowWrite.value,
-        workspaceRoot
-    );
-    streamFinished.value = true;
-    if (result) {
-        latestResult.value = result;
-        taskInput.value = '';
-    }
+    agentStore.submitTaskStream(task, profile, allowWrite.value, workspaceRoot).then((result) => {
+        streamFinished.value = true;
+        if (result) {
+            latestResult.value = result;
+            taskInput.value = '';
+        }
+    });
 }
 </script>

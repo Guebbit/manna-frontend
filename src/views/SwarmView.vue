@@ -262,35 +262,34 @@ watch(
     }
 );
 
-async function submitJson(): Promise<void> {
+function submitJson(): void {
     const task = taskInput.value.trim();
     if (!task) return;
 
     streamFinished.value = false;
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
-    const result = await swarmStore.submitSwarm(task, profile, allowWrite.value, maxSubtasks.value);
-    if (result) {
-        latestResult.value = result;
-        taskInput.value = '';
-    }
+    swarmStore.submitSwarm(task, profile, allowWrite.value, maxSubtasks.value).then((result) => {
+        if (result) {
+            latestResult.value = result;
+            taskInput.value = '';
+        }
+    });
 }
 
-async function submitStream(): Promise<void> {
+function submitStream(): void {
     const task = taskInput.value.trim();
     if (!task) return;
 
     streamFinished.value = false;
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
-    const result = await swarmStore.submitSwarmStream(
-        task,
-        profile,
-        allowWrite.value,
-        maxSubtasks.value
-    );
-    streamFinished.value = true;
-    if (result) {
-        latestResult.value = result;
-        taskInput.value = '';
-    }
+    swarmStore
+        .submitSwarmStream(task, profile, allowWrite.value, maxSubtasks.value)
+        .then((result) => {
+            streamFinished.value = true;
+            if (result) {
+                latestResult.value = result;
+                taskInput.value = '';
+            }
+        });
 }
 </script>

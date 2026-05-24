@@ -304,42 +304,48 @@ function removeStep(index: number): void {
     }
 }
 
-async function submitJson(): Promise<void> {
+function submitJson(): void {
     const validSteps = steps.value.map((s) => s.trim()).filter((s) => s.length > 0);
     if (validSteps.length === 0) return;
 
     streamFinished.value = false;
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
-    const result = await workflowStore.submitWorkflow(
-        validSteps,
-        selectedCarry.value,
-        profile,
-        allowWrite.value,
-        maxStepsPerStep.value
-    );
-    if (result) {
-        latestResult.value = result;
-        steps.value = [''];
-    }
+    workflowStore
+        .submitWorkflow(
+            validSteps,
+            selectedCarry.value,
+            profile,
+            allowWrite.value,
+            maxStepsPerStep.value
+        )
+        .then((result) => {
+            if (result) {
+                latestResult.value = result;
+                steps.value = [''];
+            }
+        });
 }
 
-async function submitStream(): Promise<void> {
+function submitStream(): void {
     const validSteps = steps.value.map((s) => s.trim()).filter((s) => s.length > 0);
     if (validSteps.length === 0) return;
 
     streamFinished.value = false;
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
-    const result = await workflowStore.submitWorkflowStream(
-        validSteps,
-        selectedCarry.value,
-        profile,
-        allowWrite.value,
-        maxStepsPerStep.value
-    );
-    streamFinished.value = true;
-    if (result) {
-        latestResult.value = result;
-        steps.value = [''];
-    }
+    workflowStore
+        .submitWorkflowStream(
+            validSteps,
+            selectedCarry.value,
+            profile,
+            allowWrite.value,
+            maxStepsPerStep.value
+        )
+        .then((result) => {
+            streamFinished.value = true;
+            if (result) {
+                latestResult.value = result;
+                steps.value = [''];
+            }
+        });
 }
 </script>

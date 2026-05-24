@@ -70,27 +70,27 @@ export const useGraphStore = defineStore('graph', () => {
      * @param allowWrite - Whether to permit write operations (default `false`).
      * @returns The execution result string, or `undefined` on failure.
      */
-    async function executeGraph(
-        graphJson: IGraphData,
-        allowWrite = false
-    ): Promise<string | undefined> {
+    function executeGraph(graphJson: IGraphData, allowWrite = false): Promise<string | undefined> {
         const notificationStore = useNotificationsStore();
         isExecuting.value = true;
         executionResult.value = undefined;
-
-        try {
-            const task = `Execute the following LiteGraph pipeline:\n${JSON.stringify(graphJson)}`;
-            const { data } = await coreApi.postRun({ runRequest: { task, allowWrite } });
-            const result = data.data?.result;
-            executionResult.value = result;
-            return result;
-        } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : 'Graph execution failed';
-            notificationStore.addMessage(message, TOAST_TYPE.DANGER);
-            return undefined;
-        } finally {
-            isExecuting.value = false;
-        }
+        const task = `Execute the following LiteGraph pipeline:\n${JSON.stringify(graphJson)}`;
+        return coreApi
+            .postRun({ runRequest: { task, allowWrite } })
+            .then(({ data }) => {
+                const result = data.data?.result;
+                executionResult.value = result;
+                return result;
+            })
+            .catch((error: unknown) => {
+                const message = error instanceof Error ? error.message : 'Graph execution failed';
+                notificationStore.addMessage(message, TOAST_TYPE.DANGER);
+                // eslint-disable-next-line unicorn/no-useless-undefined
+                return undefined;
+            })
+            .finally(() => {
+                isExecuting.value = false;
+            });
     }
 
     return { graphData, isExecuting, executionResult, saveGraph, loadGraph, executeGraph };
