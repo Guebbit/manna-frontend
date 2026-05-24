@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h1 class="text-h4 mb-4">{{ t('dashboard.title') }}</h1>
+        <PageHeader :title="t('dashboard.title')" />
 
         <v-alert type="info" variant="tonal" class="mb-6" closable>
             <!-- eslint-disable-next-line vue/no-v-html -->
@@ -116,6 +116,7 @@
 import { useI18n } from 'vue-i18n';
 import { useSystemStore } from '@/stores/system';
 import HealthBadge from '@/components/shared/HealthBadge.vue';
+import PageHeader from '@/components/shared/PageHeader.vue';
 import { NAV_ITEMS } from '@/utils/navigation';
 
 const { t } = useI18n();
