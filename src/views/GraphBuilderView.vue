@@ -186,25 +186,24 @@ function onLoad(): void {
 }
 
 /** Reads the selected file and loads it into the canvas graph. */
-async function onFileSelected(event: Event): Promise<void> {
+function onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
-    if (!file) {
-        return;
-    }
-    try {
-        const text = await file.text();
-        const data = JSON.parse(text) as IGraphData;
-        const graph = canvasReference.value?.graph;
-        if (!graph) {
-            return;
-        }
-        graphStore.loadGraph(graph, data);
-        notificationStore.addMessage('Graph loaded', TOAST_TYPE.SUCCESS);
-    } catch {
-        notificationStore.addMessage('Failed to parse graph JSON', TOAST_TYPE.DANGER);
-    }
-    input.value = '';
+    if (!file) return;
+    file.text()
+        .then((text) => {
+            const data = JSON.parse(text) as IGraphData;
+            const graph = canvasReference.value?.graph;
+            if (!graph) return;
+            graphStore.loadGraph(graph, data);
+            notificationStore.addMessage('Graph loaded', TOAST_TYPE.SUCCESS);
+        })
+        .catch(() => {
+            notificationStore.addMessage('Failed to parse graph JSON', TOAST_TYPE.DANGER);
+        })
+        .finally(() => {
+            input.value = '';
+        });
 }
 
 /** Clears all nodes from the canvas. */
@@ -215,26 +214,21 @@ function onClear(): void {
 }
 
 /** Serialises the graph and sends it to the backend for execution. */
-async function onExecute(): Promise<void> {
+function onExecute(): void {
     const graph = canvasReference.value?.graph;
-    if (!graph) {
-        return;
-    }
+    if (!graph) return;
     graphStore.saveGraph(graph);
-    if (!graphStore.graphData) {
-        return;
-    }
+    if (!graphStore.graphData) return;
     showResults.value = true;
-    await graphStore.executeGraph(graphStore.graphData, allowWrite.value);
+    graphStore.executeGraph(graphStore.graphData, allowWrite.value);
 }
 
 /** Copies the execution result to the clipboard. */
-async function copyResult(): Promise<void> {
-    if (!graphStore.executionResult) {
-        return;
-    }
-    await navigator.clipboard.writeText(graphStore.executionResult);
-    notificationStore.addMessage('Copied to clipboard', TOAST_TYPE.SUCCESS);
+function copyResult(): void {
+    if (!graphStore.executionResult) return;
+    navigator.clipboard.writeText(graphStore.executionResult).then(() => {
+        notificationStore.addMessage('Copied to clipboard', TOAST_TYPE.SUCCESS);
+    });
 }
 </script>
 

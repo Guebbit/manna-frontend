@@ -229,7 +229,7 @@ const ANALYSIS_PROMPTS: Record<string, string> = {
         '(4) key modules/components, (5) test coverage overview.'
 };
 
-async function runAnalysis(): Promise<void> {
+function runAnalysis(): void {
     if (!workspaceRoot) return;
 
     const prompt = (ANALYSIS_PROMPTS[analysisMode.value] ?? ANALYSIS_PROMPTS.structure).replace(
@@ -240,11 +240,12 @@ async function runAnalysis(): Promise<void> {
     streamFinished.value = false;
     analysisResult.value = '';
 
-    const entry = await agentStore.submitTaskStream(prompt, 'code', false, workspaceRoot);
-    streamFinished.value = true;
-    if (entry) {
-        analysisResult.value = entry.result;
-    }
+    agentStore.submitTaskStream(prompt, 'code', false, workspaceRoot).then((entry) => {
+        streamFinished.value = true;
+        if (entry) {
+            analysisResult.value = entry.result;
+        }
+    });
 }
 </script>
 

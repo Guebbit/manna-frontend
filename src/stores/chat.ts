@@ -25,24 +25,26 @@ export const useChatStore = defineStore('chat', () => {
     const streaming = ref(false);
 
     const loadConversations = () =>
-        fetchAny(async () => {
-            const { data } = await chatApi.listConversations();
-            conversations.value = data.data?.conversations ?? [];
-        }).catch((error: unknown) => {
+        fetchAny(() =>
+            chatApi.listConversations().then(({ data }) => {
+                conversations.value = data.data?.conversations ?? [];
+            })
+        ).catch((error: unknown) => {
             handleApiError(error, 'Failed to load conversations');
         });
 
     const loadConversation = (id: string) => {
         if (messageCache.value[id]) return Promise.resolve();
-        return fetchAny(async () => {
-            const { data } = await chatApi.getConversation({ conversationId: id });
-            const conv: ConversationWithMessages | undefined = data.data?.conversation;
-            if (!conv) throw new Error('No conversation in response');
-            const { messages, ...meta } = conv;
-            const index = conversations.value.findIndex((c) => c.id === id);
-            if (index !== -1) conversations.value[index] = meta;
-            messageCache.value = { ...messageCache.value, [id]: messages };
-        }).catch((error: unknown) => {
+        return fetchAny(() =>
+            chatApi.getConversation({ conversationId: id }).then(({ data }) => {
+                const conv: ConversationWithMessages | undefined = data.data?.conversation;
+                if (!conv) throw new Error('No conversation in response');
+                const { messages, ...meta } = conv;
+                const index = conversations.value.findIndex((c) => c.id === id);
+                if (index !== -1) conversations.value[index] = meta;
+                messageCache.value = { ...messageCache.value, [id]: messages };
+            })
+        ).catch((error: unknown) => {
             handleApiError(error, 'Failed to load conversation');
             throw error;
         });
@@ -51,16 +53,15 @@ export const useChatStore = defineStore('chat', () => {
     const newConversation = (
         request: CreateConversationRequest = {}
     ): Promise<Conversation | undefined> =>
-        fetchAny(async () => {
-            const { data } = await chatApi.createConversation({
-                createConversationRequest: request
-            });
-            const conv = data.data?.conversation;
-            if (!conv) throw new Error('No conversation in response');
-            conversations.value.unshift(conv);
-            messageCache.value = { ...messageCache.value, [conv.id]: [] };
-            return conv;
-        }).catch((error: unknown) => {
+        fetchAny(() =>
+            chatApi.createConversation({ createConversationRequest: request }).then(({ data }) => {
+                const conv = data.data?.conversation;
+                if (!conv) throw new Error('No conversation in response');
+                conversations.value.unshift(conv);
+                messageCache.value = { ...messageCache.value, [conv.id]: [] };
+                return conv;
+            })
+        ).catch((error: unknown) => {
             handleApiError(error, 'Failed to create conversation');
         }) as Promise<Conversation | undefined>;
 
@@ -69,16 +70,16 @@ export const useChatStore = defineStore('chat', () => {
         const prevTitle = conv?.title;
         if (conv && request.title !== undefined) conv.title = request.title;
 
-        return fetchAny(async () => {
-            const { data } = await chatApi.updateConversation({
-                conversationId: id,
-                updateConversationRequest: request
-            });
-            const updated = data.data?.conversation;
-            if (!updated) throw new Error('No conversation in response');
-            const index = conversations.value.findIndex((c) => c.id === id);
-            if (index !== -1) conversations.value[index] = updated;
-        }).catch((error: unknown) => {
+        return fetchAny(() =>
+            chatApi
+                .updateConversation({ conversationId: id, updateConversationRequest: request })
+                .then(({ data }) => {
+                    const updated = data.data?.conversation;
+                    if (!updated) throw new Error('No conversation in response');
+                    const index = conversations.value.findIndex((c) => c.id === id);
+                    if (index !== -1) conversations.value[index] = updated;
+                })
+        ).catch((error: unknown) => {
             if (conv && prevTitle !== undefined) conv.title = prevTitle;
             handleApiError(error, 'Failed to rename conversation');
         });
@@ -88,12 +89,13 @@ export const useChatStore = defineStore('chat', () => {
         const index = conversations.value.findIndex((c) => c.id === id);
         const removed = index === -1 ? undefined : conversations.value.splice(index, 1)[0];
 
-        return fetchAny(async () => {
-            await chatApi.deleteConversation({ conversationId: id });
-            const cache = { ...messageCache.value };
-            delete cache[id];
-            messageCache.value = cache;
-        }).catch((error: unknown) => {
+        return fetchAny(() =>
+            chatApi.deleteConversation({ conversationId: id }).then(() => {
+                const cache = { ...messageCache.value };
+                delete cache[id];
+                messageCache.value = cache;
+            })
+        ).catch((error: unknown) => {
             if (removed !== undefined) conversations.value.splice(index, 0, removed);
             handleApiError(error, 'Failed to delete conversation');
         });
@@ -107,19 +109,22 @@ export const useChatStore = defineStore('chat', () => {
         // is streamed back in real time. Non-user roles (assistant / system) use
         // the standard JSON endpoint instead.
         if (request.role !== 'user') {
-            return fetchAny(async () => {
-                const { data } = await chatApi.createMessage({
-                    conversationId,
-                    createMessageRequest: request
-                });
-                const message = data.data?.message;
-                if (!message) throw new Error('No message in response');
-                messageCache.value = {
-                    ...messageCache.value,
-                    [conversationId]: [...(messageCache.value[conversationId] ?? []), message]
-                };
-                return message;
-            }).catch((error: unknown) => {
+            return fetchAny(() =>
+                chatApi
+                    .createMessage({ conversationId, createMessageRequest: request })
+                    .then(({ data }) => {
+                        const message = data.data?.message;
+                        if (!message) throw new Error('No message in response');
+                        messageCache.value = {
+                            ...messageCache.value,
+                            [conversationId]: [
+                                ...(messageCache.value[conversationId] ?? []),
+                                message
+                            ]
+                        };
+                        return message;
+                    })
+            ).catch((error: unknown) => {
                 handleApiError(error, 'Failed to send message');
             }) as Promise<ChatMessage | undefined>;
         }
@@ -176,21 +181,20 @@ export const useChatStore = defineStore('chat', () => {
         messageId: string,
         request: UpdateMessageRequest
     ): Promise<ChatMessage | undefined> =>
-        fetchAny(async () => {
-            const { data } = await chatApi.updateMessage({
-                conversationId,
-                messageId,
-                updateMessageRequest: request
-            });
-            const updated = data.data?.message;
-            if (!updated) throw new Error('No message in response');
-            const msgs = messageCache.value[conversationId];
-            if (msgs) {
-                const i = msgs.findIndex((m) => m.id === messageId);
-                if (i !== -1) msgs[i] = updated;
-            }
-            return updated;
-        }).catch((error: unknown) => {
+        fetchAny(() =>
+            chatApi
+                .updateMessage({ conversationId, messageId, updateMessageRequest: request })
+                .then(({ data }) => {
+                    const updated = data.data?.message;
+                    if (!updated) throw new Error('No message in response');
+                    const msgs = messageCache.value[conversationId];
+                    if (msgs) {
+                        const i = msgs.findIndex((m) => m.id === messageId);
+                        if (i !== -1) msgs[i] = updated;
+                    }
+                    return updated;
+                })
+        ).catch((error: unknown) => {
             handleApiError(error, 'Failed to edit message');
         }) as Promise<ChatMessage | undefined>;
 
@@ -199,12 +203,12 @@ export const useChatStore = defineStore('chat', () => {
         const messageIndex = msgs?.findIndex((m) => m.id === messageId) ?? -1;
         const removed = messageIndex === -1 ? undefined : msgs!.splice(messageIndex, 1)[0];
 
-        return fetchAny(async () => {
-            await chatApi.deleteMessage({ conversationId, messageId });
-        }).catch((error: unknown) => {
-            if (removed !== undefined && msgs) msgs.splice(messageIndex, 0, removed);
-            handleApiError(error, 'Failed to delete message');
-        });
+        return fetchAny(() => chatApi.deleteMessage({ conversationId, messageId })).catch(
+            (error: unknown) => {
+                if (removed !== undefined && msgs) msgs.splice(messageIndex, 0, removed);
+                handleApiError(error, 'Failed to delete message');
+            }
+        );
     };
 
     const runWithAgent = (conversationId: string, profile: ModelProfile, allowWrite = false) => {

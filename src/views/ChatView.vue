@@ -368,10 +368,11 @@ function navigateTo(id: string): void {
     void router.push({ name: 'chat-conversation', params: { id } });
 }
 
-async function onNewConversation(): Promise<void> {
+function onNewConversation(): void {
     const profile = selectedProfile.value as ConversationProfileEnum;
-    const conv = await newConversation({ profile });
-    if (conv) navigateTo(conv.id);
+    newConversation({ profile }).then((conv) => {
+        if (conv) navigateTo(conv.id);
+    });
 }
 
 // Sidebar rename
@@ -380,23 +381,24 @@ function startRename(conv: Conversation): void {
     editingConvTitle.value = conv.title;
 }
 
-async function saveRename(id: string): Promise<void> {
+function saveRename(id: string): void {
     if (!editingConvId.value) return;
     const title = editingConvTitle.value.trim();
     editingConvId.value = undefined;
-    if (title) await renameConversation(id, { title });
+    if (title) renameConversation(id, { title });
 }
 
 function cancelRename(): void {
     editingConvId.value = undefined;
 }
 
-async function onDeleteConversation(id: string): Promise<void> {
+function onDeleteConversation(id: string): void {
     if (!confirm(t('chat.deleteConversationConfirm'))) return;
-    await deleteConversation(id);
-    if (activeId.value === id) {
-        void router.push({ name: 'chat-conversations' });
-    }
+    deleteConversation(id).then(() => {
+        if (activeId.value === id) {
+            void router.push({ name: 'chat-conversations' });
+        }
+    });
 }
 
 // Message edit
@@ -409,21 +411,24 @@ function cancelEditMessage(): void {
     editingMessageId.value = undefined;
 }
 
-async function saveEditMessage(messageId: string): Promise<void> {
+function saveEditMessage(messageId: string): void {
     if (!activeId.value || !editingMessageContent.value.trim()) return;
-    await editMessage(activeId.value, messageId, { content: editingMessageContent.value.trim() });
-    editingMessageId.value = undefined;
+    editMessage(activeId.value, messageId, { content: editingMessageContent.value.trim() }).then(
+        () => {
+            editingMessageId.value = undefined;
+        }
+    );
 }
 
-async function onDeleteMessage(messageId: string): Promise<void> {
+function onDeleteMessage(messageId: string): void {
     if (!activeId.value || !confirm(t('chat.deleteMessageConfirm'))) return;
-    await deleteMessage(activeId.value, messageId);
+    deleteMessage(activeId.value, messageId);
 }
 
-async function onRunWithAgent(): Promise<void> {
+function onRunWithAgent(): void {
     if (!activeId.value) return;
     const convProfile = activeConversation.value?.profile as ModelProfile | undefined;
-    await runWithAgent(activeId.value, convProfile ?? selectedProfile.value, allowWrite.value);
+    runWithAgent(activeId.value, convProfile ?? selectedProfile.value, allowWrite.value);
 }
 
 function scrollToBottom(): void {
@@ -434,36 +439,35 @@ function scrollToBottom(): void {
 
 watch(
     () => activeMessages.value.at(-1)?.content,
-    async () => {
-        await nextTick();
-        scrollToBottom();
+    () => {
+        nextTick().then(scrollToBottom);
     }
 );
 
 function onKeydown(event: KeyboardEvent): void {
     if (event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault();
-        void onSend();
+        onSend();
     }
 }
 
-async function onSend(): Promise<void> {
+function onSend(): void {
     const content = userInput.value.trim();
     if (!content || streaming.value || !activeId.value) return;
     userInput.value = '';
-    await sendMessage(activeId.value, { role: 'user', content });
+    sendMessage(activeId.value, { role: 'user', content });
 }
 
 // Load conversations list + active conversation messages when route changes
 watch(
     activeId,
-    async (id) => {
-        if (id) await loadConversation(id);
+    (id) => {
+        if (id) loadConversation(id);
     },
     { immediate: true }
 );
 
-onMounted(async () => {
-    await loadConversations();
+onMounted(() => {
+    loadConversations();
 });
 </script>
