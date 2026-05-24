@@ -171,6 +171,7 @@
         "maxStepsPerStep": "Max steps/step",
         "maxStepsPlaceholder": "Auto",
         "allowWrite": "Allow write",
+        "allowWriteTooltip": "⚠ When enabled, each workflow step agent can create, modify, and delete files on the server's filesystem. Leave off unless needed.",
         "runWorkflow": "Run Workflow",
         "runWorkflowStream": "Run Workflow (Stream)",
         "allSucceeded": "All succeeded",

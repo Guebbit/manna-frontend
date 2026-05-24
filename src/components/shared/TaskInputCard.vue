@@ -3,20 +3,24 @@
     <v-card>
         <v-card-title>{{ title }}</v-card-title>
         <v-card-text>
-            <v-textarea
-                :model-value="modelValue"
-                :label="inputLabel"
-                :placeholder="placeholder"
-                variant="outlined"
-                rows="4"
-                auto-grow
-                :hint="hint"
-                persistent-hint
-                @update:model-value="$emit('update:modelValue', $event)"
-            />
+            <!-- Input area: defaults to textarea, can be replaced (e.g. step list) -->
+            <slot name="input">
+                <v-textarea
+                    :model-value="modelValue"
+                    :label="inputLabel"
+                    :placeholder="placeholder"
+                    variant="outlined"
+                    rows="4"
+                    auto-grow
+                    :hint="hint"
+                    persistent-hint
+                    @update:model-value="$emit('update:modelValue', $event)"
+                />
+            </slot>
 
+            <!-- Options row: profile selector + optional middle fields + write switch -->
             <v-row class="mt-2" align="center">
-                <v-col cols="12" sm="6">
+                <v-col cols="12" :sm="hasOptions ? 4 : 6">
                     <v-select
                         :model-value="profile"
                         :items="profileOptions"
@@ -26,7 +30,11 @@
                         @update:model-value="$emit('update:profile', $event)"
                     />
                 </v-col>
-                <v-col cols="12" sm="6" class="d-flex align-center">
+
+                <!-- Extra option fields injected by consumers (e.g. maxSubtasks, carry mode) -->
+                <slot name="options" />
+
+                <v-col cols="12" :sm="hasOptions ? 4 : 6" class="d-flex align-center">
                     <v-tooltip :text="writeTooltip" location="top" max-width="320">
                         <template #activator="{ props: tooltipProps }">
                             <v-switch
@@ -52,12 +60,13 @@
 </template>
 
 <script setup lang="ts">
+import { useSlots } from 'vue';
 import { useProfileOptions } from '@/utils/constants';
 
 withDefaults(
     defineProps<{
-        /** Task text (v-model) */
-        modelValue: string;
+        /** Task text (v-model) — unused when #input slot is overridden */
+        modelValue?: string;
         /** Current profile selection */
         profile: string;
         /** Allow write mode */
@@ -78,6 +87,7 @@ withDefaults(
         writeTooltip?: string;
     }>(),
     {
+        modelValue: '',
         title: undefined,
         inputLabel: undefined,
         placeholder: undefined,
@@ -89,6 +99,10 @@ withDefaults(
 );
 
 defineEmits(['update:modelValue', 'update:profile', 'update:allowWrite']);
+
+const slots = useSlots();
+/** Detect if #options slot is provided to adjust column sizing */
+const hasOptions = !!slots.options;
 
 const profileOptions = useProfileOptions();
 </script>
