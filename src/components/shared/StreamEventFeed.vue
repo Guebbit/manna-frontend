@@ -3,7 +3,7 @@
     <v-card v-if="visible" class="mt-4">
         <v-card-title class="d-flex align-center">
             <v-icon start>mdi-antenna</v-icon>
-            {{ title }}
+            {{ resolvedTitle }}
             <v-progress-circular v-if="streaming" indeterminate size="16" class="ml-2" />
         </v-card-title>
         <v-card-subtitle v-if="subtitle">{{ subtitle }}</v-card-subtitle>
@@ -66,6 +66,6 @@ const { t } = useI18n();
 /** Show the card when streaming or after stream finishes */
 const visible = computed(() => props.streaming || props.finished);
 
-// Use default title if not provided
-const title = computed(() => props.title ?? t('common.liveEvents'));
+// Resolved card title: use prop if provided, otherwise fall back to i18n default
+const resolvedTitle = computed(() => props.title ?? t('common.liveEvents'));
 </script>

@@ -4,66 +4,36 @@
 
         <v-row>
             <v-col cols="12" md="7">
-                <v-card>
-                    <v-card-title>{{ t('swarm.submitSwarmTask') }}</v-card-title>
-                    <v-card-text>
-                        <v-textarea
-                            v-model="taskInput"
-                            :label="t('swarm.taskDescription')"
-                            :placeholder="t('swarm.taskPlaceholder')"
-                            variant="outlined"
-                            rows="4"
-                            auto-grow
-                            :hint="t('swarm.taskHint')"
-                            persistent-hint
-                        />
-
-                        <v-row class="mt-2">
-                            <v-col cols="12" sm="4">
-                                <v-select
-                                    v-model="selectedProfile"
-                                    :items="profileOptions"
-                                    :label="t('swarm.modelProfile')"
-                                    variant="outlined"
-                                    density="compact"
-                                />
-                            </v-col>
-                            <v-col cols="12" sm="4">
-                                <v-text-field
-                                    v-model.number="maxSubtasks"
-                                    :label="t('swarm.maxSubtasks')"
-                                    type="number"
-                                    variant="outlined"
-                                    density="compact"
-                                    min="1"
-                                    max="20"
-                                    :placeholder="t('swarm.maxSubtasksPlaceholder')"
-                                    clearable
-                                    :hint="t('swarm.maxSubtasksHint')"
-                                    persistent-hint
-                                />
-                            </v-col>
-                            <v-col cols="12" sm="4" class="d-flex align-center">
-                                <v-tooltip
-                                    :text="t('swarm.allowWriteTooltip')"
-                                    location="top"
-                                    max-width="320"
-                                >
-                                    <template #activator="{ props: tooltipProps }">
-                                        <v-switch
-                                            v-bind="tooltipProps"
-                                            v-model="allowWrite"
-                                            :label="t('swarm.allowWrite')"
-                                            color="warning"
-                                            density="compact"
-                                            hide-details
-                                        />
-                                    </template>
-                                </v-tooltip>
-                            </v-col>
-                        </v-row>
-                    </v-card-text>
-                    <v-card-actions>
+                <TaskInputCard
+                    v-model="taskInput"
+                    v-model:profile="selectedProfile"
+                    v-model:allow-write="allowWrite"
+                    :title="t('swarm.submitSwarmTask')"
+                    :input-label="t('swarm.taskDescription')"
+                    :placeholder="t('swarm.taskPlaceholder')"
+                    :hint="t('swarm.taskHint')"
+                    :profile-label="t('swarm.modelProfile')"
+                    :write-label="t('swarm.allowWrite')"
+                    :write-tooltip="t('swarm.allowWriteTooltip')"
+                >
+                    <template #options>
+                        <v-col cols="12" sm="4">
+                            <v-text-field
+                                v-model.number="maxSubtasks"
+                                :label="t('swarm.maxSubtasks')"
+                                type="number"
+                                variant="outlined"
+                                density="compact"
+                                min="1"
+                                max="20"
+                                :placeholder="t('swarm.maxSubtasksPlaceholder')"
+                                clearable
+                                :hint="t('swarm.maxSubtasksHint')"
+                                persistent-hint
+                            />
+                        </v-col>
+                    </template>
+                    <template #actions>
                         <v-tooltip :text="t('swarm.runSwarmTooltip')" location="top">
                             <template #activator="{ props: tooltipProps }">
                                 <v-btn
@@ -95,8 +65,8 @@
                                 </v-btn>
                             </template>
                         </v-tooltip>
-                    </v-card-actions>
-                </v-card>
+                    </template>
+                </TaskInputCard>
 
                 <!-- Stream Event Feed -->
                 <StreamEventFeed
@@ -188,17 +158,16 @@ import { useSwarmStore, type ISwarmHistoryEntry } from '@/stores/swarm';
 import type { SwarmRequestProfileEnum as ModelProfile } from '@api/api';
 import MarkdownRenderer from '@/components/shared/MarkdownRenderer.vue';
 import PageHeader from '@/components/shared/PageHeader.vue';
+import TaskInputCard from '@/components/shared/TaskInputCard.vue';
 import StreamEventFeed from '@/components/shared/StreamEventFeed.vue';
 import ResultCard from '@/components/shared/ResultCard.vue';
 import TaskHistorySidebar from '@/components/shared/TaskHistorySidebar.vue';
 import type { IHistoryItem } from '@/components/shared/TaskHistorySidebar.vue';
-import { useProfileOptions } from '@/utils/constants';
 import { formatTime, formatDuration } from '@/utils/formatting';
 import { swarmEventColor, swarmEventSummary } from '@/utils/eventFormatting';
 
 const { t } = useI18n();
 const swarmStore = useSwarmStore();
-const profileOptions = useProfileOptions();
 
 const taskInput = ref('');
 const selectedProfile = ref<ModelProfile | 'auto'>('auto');

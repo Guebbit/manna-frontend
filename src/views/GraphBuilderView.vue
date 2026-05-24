@@ -226,9 +226,14 @@ function onExecute(): void {
 /** Copies the execution result to the clipboard. */
 function copyResult(): void {
     if (!graphStore.executionResult) return;
-    navigator.clipboard.writeText(graphStore.executionResult).then(() => {
-        notificationStore.addMessage('Copied to clipboard', TOAST_TYPE.SUCCESS);
-    });
+    navigator.clipboard
+        .writeText(graphStore.executionResult)
+        .then(() => {
+            notificationStore.addMessage('Copied to clipboard', TOAST_TYPE.SUCCESS);
+        })
+        .catch(() => {
+            /* clipboard API may not be available */
+        });
 }
 </script>
 

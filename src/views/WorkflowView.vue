@@ -4,10 +4,16 @@
 
         <v-row>
             <v-col cols="12" md="7">
-                <v-card>
-                    <v-card-title>{{ t('workflow.buildWorkflow') }}</v-card-title>
-                    <v-card-text>
-                        <!-- Step list -->
+                <TaskInputCard
+                    v-model:profile="selectedProfile"
+                    v-model:allow-write="allowWrite"
+                    :title="t('workflow.buildWorkflow')"
+                    :profile-label="t('workflow.modelProfile')"
+                    :write-label="t('workflow.allowWrite')"
+                    :write-tooltip="t('workflow.allowWriteTooltip')"
+                >
+                    <!-- Replace textarea with step list -->
+                    <template #input>
                         <div
                             v-for="(step, index) in steps"
                             :key="index"
@@ -43,50 +49,35 @@
                             <v-icon start>mdi-plus</v-icon>
                             {{ t('workflow.addStep') }}
                         </v-btn>
+                    </template>
 
-                        <v-row class="mt-2">
-                            <v-col cols="12" sm="4">
-                                <v-select
-                                    v-model="selectedProfile"
-                                    :items="profileOptions"
-                                    :label="t('workflow.modelProfile')"
-                                    variant="outlined"
-                                    density="compact"
-                                />
-                            </v-col>
-                            <v-col cols="12" sm="4">
-                                <v-select
-                                    v-model="selectedCarry"
-                                    :items="carryOptions"
-                                    :label="t('workflow.contextCarry')"
-                                    variant="outlined"
-                                    density="compact"
-                                />
-                            </v-col>
-                            <v-col cols="12" sm="4">
-                                <v-text-field
-                                    v-model.number="maxStepsPerStep"
-                                    :label="t('workflow.maxStepsPerStep')"
-                                    type="number"
-                                    variant="outlined"
-                                    density="compact"
-                                    min="1"
-                                    max="100"
-                                    :placeholder="t('workflow.maxStepsPlaceholder')"
-                                    clearable
-                                />
-                            </v-col>
-                        </v-row>
+                    <!-- Extra option fields: carry mode + max steps per step -->
+                    <template #options>
+                        <v-col cols="12" sm="4">
+                            <v-select
+                                v-model="selectedCarry"
+                                :items="carryOptions"
+                                :label="t('workflow.contextCarry')"
+                                variant="outlined"
+                                density="compact"
+                            />
+                        </v-col>
+                        <v-col cols="12" sm="4">
+                            <v-text-field
+                                v-model.number="maxStepsPerStep"
+                                :label="t('workflow.maxStepsPerStep')"
+                                type="number"
+                                variant="outlined"
+                                density="compact"
+                                min="1"
+                                max="100"
+                                :placeholder="t('workflow.maxStepsPlaceholder')"
+                                clearable
+                            />
+                        </v-col>
+                    </template>
 
-                        <v-switch
-                            v-model="allowWrite"
-                            :label="t('workflow.allowWrite')"
-                            color="warning"
-                            density="compact"
-                            hide-details
-                        />
-                    </v-card-text>
-                    <v-card-actions>
+                    <template #actions>
                         <v-btn
                             color="primary"
                             :loading="workflowStore.loading && !workflowStore.streaming"
@@ -108,8 +99,8 @@
                             <v-icon start>mdi-antenna</v-icon>
                             {{ t('workflow.runWorkflowStream') }}
                         </v-btn>
-                    </v-card-actions>
-                </v-card>
+                    </template>
+                </TaskInputCard>
 
                 <!-- Stream Event Feed -->
                 <StreamEventFeed
@@ -201,16 +192,15 @@ import type {
 } from '@api/api';
 import MarkdownRenderer from '@/components/shared/MarkdownRenderer.vue';
 import PageHeader from '@/components/shared/PageHeader.vue';
+import TaskInputCard from '@/components/shared/TaskInputCard.vue';
 import StreamEventFeed from '@/components/shared/StreamEventFeed.vue';
 import TaskHistorySidebar from '@/components/shared/TaskHistorySidebar.vue';
 import type { IHistoryItem } from '@/components/shared/TaskHistorySidebar.vue';
-import { useProfileOptions } from '@/utils/constants';
 import { formatTime, formatDuration } from '@/utils/formatting';
 import { workflowEventColor, workflowEventSummary } from '@/utils/eventFormatting';
 
 const { t } = useI18n();
 const workflowStore = useWorkflowStore();
-const profileOptions = useProfileOptions();
 
 const steps = ref<string[]>(['']);
 const selectedProfile = ref<ModelProfile | 'auto'>('auto');

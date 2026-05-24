@@ -240,12 +240,16 @@ function runAnalysis(): void {
     streamFinished.value = false;
     analysisResult.value = '';
 
-    agentStore.submitTaskStream(prompt, 'code', false, workspaceRoot).then((entry) => {
-        streamFinished.value = true;
-        if (entry) {
-            analysisResult.value = entry.result;
-        }
-    });
+    agentStore
+        .submitTaskStream(prompt, 'code', false, workspaceRoot)
+        .then((entry) => {
+            if (entry) {
+                analysisResult.value = entry.result;
+            }
+        })
+        .finally(() => {
+            streamFinished.value = true;
+        });
 }
 </script>
 
