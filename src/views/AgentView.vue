@@ -50,6 +50,16 @@
                                 </v-tooltip>
                             </v-col>
                         </v-row>
+
+                        <!-- Workspace root banner — shown only when configured -->
+                        <v-alert
+                            v-if="workspaceRoot"
+                            type="info"
+                            variant="tonal"
+                            density="compact"
+                            class="mt-3"
+                            :text="t('agent.workspaceActive', { path: workspaceRoot })"
+                        />
                     </v-card-text>
                     <v-card-actions>
                         <v-tooltip :text="t('agent.runTaskTooltip')" location="top">
@@ -132,6 +142,30 @@
                     <v-card-text>
                         <MarkdownRenderer :content="latestResult.result" />
                     </v-card-text>
+
+                    <!-- Citations (non-streaming mode only) -->
+                    <template v-if="latestResult.citations && latestResult.citations.length > 0">
+                        <v-divider />
+                        <v-card-title class="text-body-1">
+                            <v-icon start size="small">mdi-link-variant</v-icon>
+                            {{ t('agent.citations') }}
+                        </v-card-title>
+                        <v-card-text>
+                            <v-list density="compact">
+                                <v-list-item
+                                    v-for="citation in latestResult.citations"
+                                    :key="citation.id"
+                                    :subtitle="citation.text"
+                                >
+                                    <template #title>
+                                        <span class="text-caption font-weight-medium">
+                                            {{ citation.title }}
+                                        </span>
+                                    </template>
+                                </v-list-item>
+                            </v-list>
+                        </v-card-text>
+                    </template>
                 </v-card>
             </v-col>
 
@@ -158,6 +192,15 @@
                                 <v-chip v-if="entry.profile" size="x-small" class="ml-1">
                                     {{ entry.profile }}
                                 </v-chip>
+                                <v-chip
+                                    v-if="entry.workspaceRoot"
+                                    size="x-small"
+                                    color="info"
+                                    class="ml-1"
+                                    :title="entry.workspaceRoot"
+                                >
+                                    <v-icon size="x-small">mdi-folder</v-icon>
+                                </v-chip>
                             </v-list-item-subtitle>
                         </v-list-item>
                     </v-list>
@@ -177,6 +220,7 @@ import CopyButton from '@/components/shared/CopyButton.vue';
 import { useProfileOptions } from '@/utils/constants';
 import { formatTime } from '@/utils/formatting';
 import { agentEventColor, agentEventSummary } from '@/utils/eventFormatting';
+import { getWorkspaceRoot } from '@/config';
 
 const { t } = useI18n();
 const agentStore = useAgentStore();
@@ -187,6 +231,9 @@ const selectedProfile = ref<ModelProfile | 'auto'>('auto');
 const allowWrite = ref(false);
 const latestResult = ref<ITaskHistoryEntry | undefined>(undefined);
 const streamFinished = ref(false);
+
+/** Workspace root from Settings — injected into every run call. */
+const workspaceRoot = getWorkspaceRoot() || undefined;
 
 watch(
     () => agentStore.taskHistory.length,
@@ -203,7 +250,7 @@ async function submit(): Promise<void> {
 
     streamFinished.value = false;
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
-    const result = await agentStore.submitTask(task, profile, allowWrite.value);
+    const result = await agentStore.submitTask(task, profile, allowWrite.value, workspaceRoot);
     if (result) {
         latestResult.value = result;
         taskInput.value = '';
@@ -216,7 +263,12 @@ async function submitStream(): Promise<void> {
 
     streamFinished.value = false;
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
-    const result = await agentStore.submitTaskStream(task, profile, allowWrite.value);
+    const result = await agentStore.submitTaskStream(
+        task,
+        profile,
+        allowWrite.value,
+        workspaceRoot
+    );
     streamFinished.value = true;
     if (result) {
         latestResult.value = result;

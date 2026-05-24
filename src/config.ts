@@ -35,6 +35,26 @@ export function setMannaBaseUrl(url: string): void {
 }
 
 /**
+ * Retrieves the configured workspace root path (the mounted project directory).
+ * This is the path inside the container where the user's code is mounted.
+ * Example: `/workspace/my-project`
+ *
+ * @returns The configured workspace root, or empty string if not set.
+ */
+export function getWorkspaceRoot(): string {
+    return localStorage.getItem('manna-workspace-root') ?? '';
+}
+
+/**
+ * Persists the workspace root path to localStorage.
+ *
+ * @param path - Absolute path to the mounted workspace directory.
+ */
+export function setWorkspaceRoot(path: string): void {
+    localStorage.setItem('manna-workspace-root', path);
+}
+
+/**
  * The Manna backend version this frontend is synced against.
  * Update this constant whenever the frontend is updated to match a new backend version.
  */

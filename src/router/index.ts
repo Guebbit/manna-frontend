@@ -43,6 +43,16 @@ const router = createRouter({
                     component: () => import('@/views/CodeToolsView.vue')
                 },
                 {
+                    path: 'code-chat',
+                    name: 'code-chat',
+                    component: () => import('@/views/CodeChatView.vue')
+                },
+                {
+                    path: 'code-index',
+                    name: 'code-index',
+                    component: () => import('@/views/CodeIndexView.vue')
+                },
+                {
                     path: 'upload',
                     name: 'upload',
                     component: () => import('@/views/UploadAnalyzeView.vue')

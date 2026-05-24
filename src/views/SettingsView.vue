@@ -34,6 +34,28 @@
                     </v-card-text>
                 </v-card>
 
+                <!-- Workspace root — path to the mounted project directory -->
+                <v-card class="mt-4">
+                    <v-card-title>
+                        <v-icon start>mdi-folder-open</v-icon>
+                        {{ t('settings.workspace') }}
+                    </v-card-title>
+                    <v-card-text>
+                        <v-text-field
+                            v-model="workspaceRoot"
+                            :label="t('settings.workspaceRoot')"
+                            variant="outlined"
+                            placeholder="/workspace/my-project"
+                            prepend-inner-icon="mdi-folder"
+                            clearable
+                            :hint="t('settings.workspaceRootHint')"
+                            persistent-hint
+                            @blur="saveWorkspace"
+                            @click:clear="clearWorkspace"
+                        />
+                    </v-card-text>
+                </v-card>
+
                 <v-card class="mt-4">
                     <v-card-title>
                         <v-icon start>mdi-tune</v-icon>
@@ -92,7 +114,13 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { getMannaBaseUrl, setMannaBaseUrl, MANNA_BACKEND_VERSION } from '@/config';
+import {
+    getMannaBaseUrl,
+    setMannaBaseUrl,
+    getWorkspaceRoot,
+    setWorkspaceRoot,
+    MANNA_BACKEND_VERSION
+} from '@/config';
 import { coreApi } from '@/utils/api';
 import { useProfileOptions } from '@/utils/constants';
 
@@ -102,6 +130,7 @@ const apiUrl = ref(getMannaBaseUrl());
 const testing = ref(false);
 const testResult = ref<'ok' | 'fail' | undefined>(undefined);
 
+const workspaceRoot = ref(getWorkspaceRoot());
 const defaultProfile = ref(localStorage.getItem('manna-default-profile') ?? 'auto');
 const defaultWriteMode = ref(localStorage.getItem('manna-default-write') === 'true');
 
@@ -109,6 +138,15 @@ const profileOptions = useProfileOptions();
 
 function saveUrl(): void {
     setMannaBaseUrl(apiUrl.value);
+}
+
+function saveWorkspace(): void {
+    setWorkspaceRoot(workspaceRoot.value ?? '');
+}
+
+function clearWorkspace(): void {
+    workspaceRoot.value = '';
+    setWorkspaceRoot('');
 }
 
 function saveDefaults(): void {

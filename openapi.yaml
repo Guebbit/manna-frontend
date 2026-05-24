@@ -1873,6 +1873,13 @@ components:
                     description: |
                         Force a specific model profile, bypassing automatic routing.
                         If omitted, the router selects a profile based on the task text.
+                workspaceRoot:
+                    type: string
+                    description: |
+                        Absolute path to the mounted workspace directory the agent should operate on.
+                        When set, the agent uses this as the root for all file-system tool calls.
+                        Example: `/workspace/my-project` (Podman/Docker volume mount path).
+                    example: '/workspace/my-project'
 
         RunResponse:
             type: object
