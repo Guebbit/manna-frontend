@@ -54,6 +54,18 @@ export const NAV_ITEMS: readonly INavItem[] = [
         description: 'nav.codeToolsDesc'
     },
     {
+        title: 'nav.codeChat',
+        icon: 'mdi-code-tags',
+        to: { name: 'code-chat' },
+        description: 'nav.codeChatDesc'
+    },
+    {
+        title: 'nav.codeIndex',
+        icon: 'mdi-text-search',
+        to: { name: 'code-index' },
+        description: 'nav.codeIndexDesc'
+    },
+    {
         title: 'nav.uploadAnalyze',
         icon: 'mdi-upload',
         to: { name: 'upload' },

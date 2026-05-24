@@ -2040,6 +2040,13 @@ export interface RunRequest {
      * @memberof RunRequest
      */
     profile?: RunRequestProfileEnum;
+    /**
+     * Absolute path to the mounted workspace directory the agent should operate on.
+     * Example: `/workspace/my-project`
+     * @type {string}
+     * @memberof RunRequest
+     */
+    workspaceRoot?: string;
 }
 
 export const RunRequestProfileEnum = {
