@@ -29,6 +29,8 @@
         "workflowDesc": "Define and execute multi-step pipelines with conditional logic, branching, and sequential or parallel task orchestration.",
         "systemInfo": "System Info",
         "systemInfoDesc": "View routing profiles, loaded Ollama models, and the complete API reference.",
+        "observability": "Observability",
+        "observabilityDesc": "Live stream of backend events for developer debugging and system monitoring.",
         "settings": "Settings",
         "settingsDesc": "Configure backend URL, default model profile, and write-mode defaults.",
         "library": "Library",
@@ -351,5 +353,36 @@
         "step2": "Agent builds a structured overview based on the analysis mode",
         "step3": "Result is displayed here and saved to session history",
         "phase5Note": "Phase 5: A dedicated /code/index endpoint will enable persistent symbol-level indexing and semantic code search. This view is the frontend scaffolding for that future capability."
+    },
+    "observability": {
+        "title": "Observability",
+        "subtitle": "Live stream of all backend lifecycle events. Connect to inspect agent steps, tool calls, routing decisions, errors, and more in real time.",
+        "connect": "Connect",
+        "disconnect": "Disconnect",
+        "pause": "Pause",
+        "resume": "Resume",
+        "clear": "Clear",
+        "search": "Search events…",
+        "filterType": "Event type",
+        "filterSeverity": "Severity",
+        "filterSource": "Source",
+        "resetFilters": "Reset filters",
+        "events": "Events",
+        "noEvents": "No events yet. Connect to the stream to start receiving events.",
+        "inspector": "Event Inspector",
+        "timestamp": "Timestamp",
+        "receivedAt": "Received at",
+        "correlationIds": "Correlation IDs",
+        "rawPayload": "Raw Payload",
+        "colTime": "Time",
+        "colType": "Type",
+        "colSource": "Source",
+        "colSummary": "Summary",
+        "state": {
+            "disconnected": "Disconnected",
+            "connecting": "Connecting…",
+            "connected": "Connected",
+            "error": "Error"
+        }
     }
 }

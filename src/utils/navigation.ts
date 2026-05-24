@@ -102,6 +102,12 @@ export const NAV_ITEMS: readonly INavItem[] = [
         description: 'nav.systemInfoDesc'
     },
     {
+        title: 'nav.observability',
+        icon: 'mdi-monitor-eye',
+        to: { name: 'observability' },
+        description: 'nav.observabilityDesc'
+    },
+    {
         title: 'nav.settings',
         icon: 'mdi-cog',
         to: { name: 'settings' },
