@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h1 class="text-h4 mb-6">{{ t('workflow.title') }}</h1>
+        <PageHeader :title="t('workflow.title')" />
 
         <v-row>
             <v-col cols="12" md="7">
@@ -112,41 +112,13 @@
                 </v-card>
 
                 <!-- Stream Event Feed -->
-                <v-card v-if="workflowStore.streaming || streamFinished" class="mt-4">
-                    <v-card-title class="d-flex align-center">
-                        <v-icon start>mdi-antenna</v-icon>
-                        {{ t('common.liveEvents') }}
-                        <v-progress-circular
-                            v-if="workflowStore.streaming"
-                            indeterminate
-                            size="16"
-                            class="ml-2"
-                        />
-                    </v-card-title>
-                    <v-card-text>
-                        <v-timeline density="compact" side="end">
-                            <v-timeline-item
-                                v-for="(event, index) in workflowStore.streamEvents"
-                                :key="index"
-                                :dot-color="workflowEventColor(event.type)"
-                                size="small"
-                            >
-                                <div class="d-flex align-center ga-2">
-                                    <v-chip
-                                        :color="workflowEventColor(event.type)"
-                                        size="x-small"
-                                        label
-                                    >
-                                        {{ event.type }}
-                                    </v-chip>
-                                    <span class="text-body-2">{{
-                                        workflowEventSummary(event)
-                                    }}</span>
-                                </div>
-                            </v-timeline-item>
-                        </v-timeline>
-                    </v-card-text>
-                </v-card>
+                <StreamEventFeed
+                    :streaming="workflowStore.streaming"
+                    :finished="streamFinished"
+                    :events="workflowStore.streamEvents"
+                    :color-fn="workflowEventColor"
+                    :summary-fn="workflowEventSummary"
+                />
 
                 <!-- JSON Result -->
                 <v-card v-if="latestResult" class="mt-4">
@@ -207,44 +179,13 @@
 
             <!-- History Sidebar -->
             <v-col cols="12" md="5">
-                <v-card>
-                    <v-card-title>{{ t('workflow.workflowHistory') }}</v-card-title>
-                    <v-card-text
-                        v-if="workflowStore.workflowHistory.length === 0"
-                        class="text-grey"
-                    >
-                        {{ t('workflow.noWorkflowsYet') }}
-                    </v-card-text>
-                    <v-list v-else density="compact">
-                        <v-list-item
-                            v-for="entry in workflowStore.workflowHistory"
-                            :key="entry.id"
-                            :active="latestResult?.id === entry.id"
-                            rounded="xl"
-                            @click="latestResult = entry"
-                        >
-                            <v-list-item-title class="text-truncate">
-                                {{ entry.steps[0] ?? t('workflow.emptyWorkflow') }}
-                                <span v-if="entry.steps.length > 1" class="text-grey">
-                                    {{ t('workflow.moreSteps', { n: entry.steps.length - 1 }) }}
-                                </span>
-                            </v-list-item-title>
-                            <v-list-item-subtitle class="text-caption">
-                                {{ formatTime(entry.timestamp) }}
-                                <v-chip v-if="entry.profile" size="x-small" class="ml-1">
-                                    {{ entry.profile }}
-                                </v-chip>
-                                <v-chip
-                                    size="x-small"
-                                    class="ml-1"
-                                    :color="entry.allSucceeded ? 'success' : 'error'"
-                                >
-                                    {{ t('workflow.stepCount', entry.steps.length) }}
-                                </v-chip>
-                            </v-list-item-subtitle>
-                        </v-list-item>
-                    </v-list>
-                </v-card>
+                <TaskHistorySidebar
+                    :title="t('workflow.workflowHistory')"
+                    :empty-text="t('workflow.noWorkflowsYet')"
+                    :items="historyItems"
+                    :active-id="latestResult?.id"
+                    @select="onHistorySelect"
+                />
             </v-col>
         </v-row>
     </div>
@@ -259,6 +200,10 @@ import type {
     WorkflowRequestProfileEnum as ModelProfile
 } from '@api/api';
 import MarkdownRenderer from '@/components/shared/MarkdownRenderer.vue';
+import PageHeader from '@/components/shared/PageHeader.vue';
+import StreamEventFeed from '@/components/shared/StreamEventFeed.vue';
+import TaskHistorySidebar from '@/components/shared/TaskHistorySidebar.vue';
+import type { IHistoryItem } from '@/components/shared/TaskHistorySidebar.vue';
 import { useProfileOptions } from '@/utils/constants';
 import { formatTime, formatDuration } from '@/utils/formatting';
 import { workflowEventColor, workflowEventSummary } from '@/utils/eventFormatting';
@@ -283,6 +228,19 @@ const carryOptions = computed(() => [
     { title: t('workflow.carryOptions.none'), value: 'none' }
 ]);
 
+/** Map store history to generic IHistoryItem format for the sidebar */
+const historyItems = computed<IHistoryItem[]>(() =>
+    workflowStore.workflowHistory.map((entry) => ({
+        id: entry.id,
+        label: entry.steps[0] ?? t('workflow.emptyWorkflow'),
+        subtitle: formatTime(entry.timestamp)
+    }))
+);
+
+function onHistorySelect(item: IHistoryItem): void {
+    latestResult.value = workflowStore.workflowHistory.find((e) => e.id === item.id);
+}
+
 watch(
     () => workflowStore.workflowHistory.length,
     () => {
@@ -304,13 +262,13 @@ function removeStep(index: number): void {
     }
 }
 
-function submitJson(): void {
+function submitJson(): Promise<void> {
     const validSteps = steps.value.map((s) => s.trim()).filter((s) => s.length > 0);
-    if (validSteps.length === 0) return;
+    if (validSteps.length === 0) return Promise.resolve();
 
     streamFinished.value = false;
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
-    workflowStore
+    return workflowStore
         .submitWorkflow(
             validSteps,
             selectedCarry.value,
@@ -326,13 +284,13 @@ function submitJson(): void {
         });
 }
 
-function submitStream(): void {
+function submitStream(): Promise<void> {
     const validSteps = steps.value.map((s) => s.trim()).filter((s) => s.length > 0);
-    if (validSteps.length === 0) return;
+    if (validSteps.length === 0) return Promise.resolve();
 
     streamFinished.value = false;
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
-    workflowStore
+    return workflowStore
         .submitWorkflowStream(
             validSteps,
             selectedCarry.value,

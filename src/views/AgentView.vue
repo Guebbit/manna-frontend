@@ -1,56 +1,22 @@
 <template>
     <div>
-        <h1 class="text-h4 mb-2">{{ t('agent.title') }}</h1>
-        <p class="text-body-2 text-grey mb-6">{{ t('agent.subtitle') }}</p>
+        <PageHeader :title="t('agent.title')" :subtitle="t('agent.subtitle')" />
 
         <v-row>
             <v-col cols="12" md="7">
-                <v-card>
-                    <v-card-title>{{ t('agent.submitTask') }}</v-card-title>
-                    <v-card-text>
-                        <v-textarea
-                            v-model="taskInput"
-                            :label="t('agent.taskDescription')"
-                            :placeholder="t('agent.taskPlaceholder')"
-                            variant="outlined"
-                            rows="4"
-                            auto-grow
-                            :hint="t('agent.taskHint')"
-                            persistent-hint
-                        />
-
-                        <v-row class="mt-2">
-                            <v-col cols="12" sm="6">
-                                <v-select
-                                    v-model="selectedProfile"
-                                    :items="profileOptions"
-                                    :label="t('agent.modelProfile')"
-                                    variant="outlined"
-                                    density="compact"
-                                    :hint="t('agent.profileHint')"
-                                    persistent-hint
-                                />
-                            </v-col>
-                            <v-col cols="12" sm="6" class="d-flex align-center">
-                                <v-tooltip
-                                    :text="t('agent.allowWriteTooltip')"
-                                    location="top"
-                                    max-width="320"
-                                >
-                                    <template #activator="{ props: tooltipProps }">
-                                        <v-switch
-                                            v-bind="tooltipProps"
-                                            v-model="allowWrite"
-                                            :label="t('agent.allowWrite')"
-                                            color="warning"
-                                            density="compact"
-                                            hide-details
-                                        />
-                                    </template>
-                                </v-tooltip>
-                            </v-col>
-                        </v-row>
-
+                <TaskInputCard
+                    v-model="taskInput"
+                    v-model:profile="selectedProfile"
+                    v-model:allow-write="allowWrite"
+                    :title="t('agent.submitTask')"
+                    :input-label="t('agent.taskDescription')"
+                    :placeholder="t('agent.taskPlaceholder')"
+                    :hint="t('agent.taskHint')"
+                    :profile-label="t('agent.modelProfile')"
+                    :write-label="t('agent.allowWrite')"
+                    :write-tooltip="t('agent.allowWriteTooltip')"
+                >
+                    <template #extra>
                         <!-- Workspace root banner — shown only when configured -->
                         <v-alert
                             v-if="workspaceRoot"
@@ -60,8 +26,8 @@
                             class="mt-3"
                             :text="t('agent.workspaceActive', { path: workspaceRoot })"
                         />
-                    </v-card-text>
-                    <v-card-actions>
+                    </template>
+                    <template #actions>
                         <v-tooltip :text="t('agent.runTaskTooltip')" location="top">
                             <template #activator="{ props: tooltipProps }">
                                 <v-btn
@@ -93,138 +59,89 @@
                                 </v-btn>
                             </template>
                         </v-tooltip>
-                    </v-card-actions>
-                </v-card>
+                    </template>
+                </TaskInputCard>
 
                 <!-- Stream Event Feed -->
-                <v-card v-if="agentStore.streaming || streamFinished" class="mt-4">
-                    <v-card-title class="d-flex align-center">
-                        <v-icon start>mdi-antenna</v-icon>
-                        {{ t('common.liveEvents') }}
-                        <v-progress-circular
-                            v-if="agentStore.streaming"
-                            indeterminate
-                            size="16"
-                            class="ml-2"
-                        />
-                    </v-card-title>
-                    <v-card-subtitle>{{ t('agent.liveEventsSubtitle') }}</v-card-subtitle>
-                    <v-card-text>
-                        <v-timeline density="compact" side="end">
-                            <v-timeline-item
-                                v-for="(event, index) in agentStore.streamEvents"
-                                :key="index"
-                                :dot-color="agentEventColor(event.type)"
-                                size="small"
-                            >
-                                <div class="d-flex align-center ga-2">
-                                    <v-chip
-                                        :color="agentEventColor(event.type)"
-                                        size="x-small"
-                                        label
-                                    >
-                                        {{ event.type }}
-                                    </v-chip>
-                                    <span class="text-body-2">{{ agentEventSummary(event) }}</span>
-                                </div>
-                            </v-timeline-item>
-                        </v-timeline>
-                    </v-card-text>
-                </v-card>
+                <StreamEventFeed
+                    :streaming="agentStore.streaming"
+                    :finished="streamFinished"
+                    :events="agentStore.streamEvents"
+                    :color-fn="agentEventColor"
+                    :summary-fn="agentEventSummary"
+                    :subtitle="t('agent.liveEventsSubtitle')"
+                />
 
                 <!-- Result -->
-                <v-card v-if="latestResult" class="mt-4">
-                    <v-card-title class="d-flex align-center">
-                        {{ t('common.result') }}
-                        <v-spacer />
-                        <CopyButton :text="latestResult.result" />
-                    </v-card-title>
-                    <v-card-text>
-                        <MarkdownRenderer :content="latestResult.result" />
-                    </v-card-text>
-
-                    <!-- Citations (non-streaming mode only) -->
-                    <template v-if="latestResult.citations && latestResult.citations.length > 0">
-                        <v-divider />
-                        <v-card-title class="text-body-1">
-                            <v-icon start size="small">mdi-link-variant</v-icon>
-                            {{ t('agent.citations') }}
-                        </v-card-title>
-                        <v-card-text>
-                            <v-list density="compact">
-                                <v-list-item
-                                    v-for="citation in latestResult.citations"
-                                    :key="citation.id"
-                                    :subtitle="citation.text"
-                                >
-                                    <template #title>
-                                        <span class="text-caption font-weight-medium">
-                                            {{ citation.title }}
-                                        </span>
-                                    </template>
-                                </v-list-item>
-                            </v-list>
-                        </v-card-text>
+                <ResultCard v-if="latestResult" :content="latestResult.result">
+                    <template #extra>
+                        <!-- Citations (non-streaming mode only) -->
+                        <template
+                            v-if="latestResult.citations && latestResult.citations.length > 0"
+                        >
+                            <v-divider />
+                            <v-card-title class="text-body-1">
+                                <v-icon start size="small">mdi-link-variant</v-icon>
+                                {{ t('agent.citations') }}
+                            </v-card-title>
+                            <v-card-text>
+                                <v-list density="compact">
+                                    <v-list-item
+                                        v-for="citation in latestResult.citations"
+                                        :key="citation.id"
+                                        :subtitle="citation.text"
+                                    >
+                                        <template #title>
+                                            <span class="text-caption font-weight-medium">
+                                                {{ citation.title }}
+                                            </span>
+                                        </template>
+                                    </v-list-item>
+                                </v-list>
+                            </v-card-text>
+                        </template>
                     </template>
-                </v-card>
+                </ResultCard>
             </v-col>
 
             <!-- Task History -->
             <v-col cols="12" md="5">
-                <v-card>
-                    <v-card-title>{{ t('agent.taskHistory') }}</v-card-title>
-                    <v-card-text v-if="agentStore.taskHistory.length === 0" class="text-grey">
-                        {{ t('agent.noTasksYet') }}
-                    </v-card-text>
-                    <v-list v-else density="compact">
-                        <v-list-item
-                            v-for="entry in agentStore.taskHistory"
-                            :key="entry.id"
-                            :active="latestResult?.id === entry.id"
-                            rounded="xl"
-                            @click="latestResult = entry"
-                        >
-                            <v-list-item-title class="text-truncate">
-                                {{ entry.task }}
-                            </v-list-item-title>
-                            <v-list-item-subtitle class="text-caption">
-                                {{ formatTime(entry.timestamp) }}
-                                <v-chip v-if="entry.profile" size="x-small" class="ml-1">
-                                    {{ entry.profile }}
-                                </v-chip>
-                                <v-chip
-                                    v-if="entry.workspaceRoot"
-                                    size="x-small"
-                                    color="info"
-                                    class="ml-1"
-                                    :title="entry.workspaceRoot"
-                                >
-                                    <v-icon size="x-small">mdi-folder</v-icon>
-                                </v-chip>
-                            </v-list-item-subtitle>
-                        </v-list-item>
-                    </v-list>
-                </v-card>
+                <TaskHistorySidebar
+                    :title="t('agent.taskHistory')"
+                    :empty-text="t('agent.noTasksYet')"
+                    :items="historyItems"
+                    :active-id="latestResult?.id"
+                    @select="onHistorySelect"
+                >
+                    <template #item-title="{ item }">
+                        {{ item.label }}
+                    </template>
+                    <template #item-subtitle="{ item }">
+                        {{ item.subtitle }}
+                    </template>
+                </TaskHistorySidebar>
             </v-col>
         </v-row>
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAgentStore, type ITaskHistoryEntry } from '@/stores/agent';
 import type { RunRequestProfileEnum as ModelProfile } from '@api/api';
-import MarkdownRenderer from '@/components/shared/MarkdownRenderer.vue';
-import CopyButton from '@/components/shared/CopyButton.vue';
-import { useProfileOptions } from '@/utils/constants';
+import PageHeader from '@/components/shared/PageHeader.vue';
+import TaskInputCard from '@/components/shared/TaskInputCard.vue';
+import StreamEventFeed from '@/components/shared/StreamEventFeed.vue';
+import ResultCard from '@/components/shared/ResultCard.vue';
+import TaskHistorySidebar from '@/components/shared/TaskHistorySidebar.vue';
+import type { IHistoryItem } from '@/components/shared/TaskHistorySidebar.vue';
 import { formatTime } from '@/utils/formatting';
 import { agentEventColor, agentEventSummary } from '@/utils/eventFormatting';
 import { getWorkspaceRoot } from '@/config';
 
 const { t } = useI18n();
 const agentStore = useAgentStore();
-const profileOptions = useProfileOptions();
 
 const taskInput = ref('');
 const selectedProfile = ref<ModelProfile | 'auto'>('auto');
@@ -235,6 +152,19 @@ const streamFinished = ref(false);
 /** Workspace root from Settings — injected into every run call. */
 const workspaceRoot = getWorkspaceRoot() || undefined;
 
+/** Map store history to generic IHistoryItem format for the sidebar */
+const historyItems = computed<IHistoryItem[]>(() =>
+    agentStore.taskHistory.map((entry) => ({
+        id: entry.id,
+        label: entry.task,
+        subtitle: formatTime(entry.timestamp)
+    }))
+);
+
+function onHistorySelect(item: IHistoryItem): void {
+    latestResult.value = agentStore.taskHistory.find((e) => e.id === item.id);
+}
+
 watch(
     () => agentStore.taskHistory.length,
     () => {
@@ -244,13 +174,13 @@ watch(
     }
 );
 
-function submit(): void {
+function submit(): Promise<void> {
     const task = taskInput.value.trim();
-    if (!task) return;
+    if (!task) return Promise.resolve();
 
     streamFinished.value = false;
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
-    agentStore.submitTask(task, profile, allowWrite.value, workspaceRoot).then((result) => {
+    return agentStore.submitTask(task, profile, allowWrite.value, workspaceRoot).then((result) => {
         if (result) {
             latestResult.value = result;
             taskInput.value = '';
@@ -258,18 +188,20 @@ function submit(): void {
     });
 }
 
-function submitStream(): void {
+function submitStream(): Promise<void> {
     const task = taskInput.value.trim();
-    if (!task) return;
+    if (!task) return Promise.resolve();
 
     streamFinished.value = false;
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
-    agentStore.submitTaskStream(task, profile, allowWrite.value, workspaceRoot).then((result) => {
-        streamFinished.value = true;
-        if (result) {
-            latestResult.value = result;
-            taskInput.value = '';
-        }
-    });
+    return agentStore
+        .submitTaskStream(task, profile, allowWrite.value, workspaceRoot)
+        .then((result) => {
+            streamFinished.value = true;
+            if (result) {
+                latestResult.value = result;
+                taskInput.value = '';
+            }
+        });
 }
 </script>
