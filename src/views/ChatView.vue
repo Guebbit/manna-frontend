@@ -385,7 +385,7 @@ function saveRename(id: string): void {
     if (!editingConvId.value) return;
     const title = editingConvTitle.value.trim();
     editingConvId.value = undefined;
-    if (title) renameConversation(id, { title });
+    if (title) void renameConversation(id, { title });
 }
 
 function cancelRename(): void {
@@ -422,13 +422,13 @@ function saveEditMessage(messageId: string): void {
 
 function onDeleteMessage(messageId: string): void {
     if (!activeId.value || !confirm(t('chat.deleteMessageConfirm'))) return;
-    deleteMessage(activeId.value, messageId);
+    void deleteMessage(activeId.value, messageId);
 }
 
 function onRunWithAgent(): void {
     if (!activeId.value) return;
     const convProfile = activeConversation.value?.profile as ModelProfile | undefined;
-    runWithAgent(activeId.value, convProfile ?? selectedProfile.value, allowWrite.value);
+    void runWithAgent(activeId.value, convProfile ?? selectedProfile.value, allowWrite.value);
 }
 
 function scrollToBottom(): void {
@@ -447,7 +447,7 @@ watch(
 function onKeydown(event: KeyboardEvent): void {
     if (event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault();
-        onSend();
+        void onSend();
     }
 }
 
@@ -455,19 +455,19 @@ function onSend(): void {
     const content = userInput.value.trim();
     if (!content || streaming.value || !activeId.value) return;
     userInput.value = '';
-    sendMessage(activeId.value, { role: 'user', content });
+    void sendMessage(activeId.value, { role: 'user', content });
 }
 
 // Load conversations list + active conversation messages when route changes
 watch(
     activeId,
     (id) => {
-        if (id) loadConversation(id);
+        if (id) void loadConversation(id);
     },
     { immediate: true }
 );
 
 onMounted(() => {
-    loadConversations();
+    void loadConversations();
 });
 </script>
