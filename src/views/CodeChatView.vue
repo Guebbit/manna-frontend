@@ -1,7 +1,6 @@
 <template>
     <div>
-        <h1 class="text-h4 mb-2">{{ t('codeChat.title') }}</h1>
-        <p class="text-body-2 text-grey mb-4">{{ t('codeChat.subtitle') }}</p>
+        <PageHeader :title="t('codeChat.title')" :subtitle="t('codeChat.subtitle')" />
 
         <!-- Workspace context bar -->
         <v-alert
@@ -31,52 +30,19 @@
 
         <v-row>
             <v-col cols="12" md="7">
-                <!-- Task input card -->
-                <v-card>
-                    <v-card-title>{{ t('codeChat.askAboutCode') }}</v-card-title>
-                    <v-card-text>
-                        <v-textarea
-                            v-model="taskInput"
-                            :label="t('codeChat.taskLabel')"
-                            :placeholder="t('codeChat.taskPlaceholder')"
-                            variant="outlined"
-                            rows="4"
-                            auto-grow
-                            :hint="t('codeChat.taskHint')"
-                            persistent-hint
-                        />
-
-                        <v-row class="mt-2" align="center">
-                            <v-col cols="12" sm="6">
-                                <v-select
-                                    v-model="selectedProfile"
-                                    :items="profileOptions"
-                                    :label="t('codeChat.modelProfile')"
-                                    variant="outlined"
-                                    density="compact"
-                                />
-                            </v-col>
-                            <v-col cols="auto">
-                                <v-tooltip
-                                    :text="t('codeChat.allowWriteTooltip')"
-                                    location="top"
-                                    max-width="320"
-                                >
-                                    <template #activator="{ props: tooltipProps }">
-                                        <v-switch
-                                            v-bind="tooltipProps"
-                                            v-model="allowWrite"
-                                            :label="t('codeChat.allowWrite')"
-                                            color="warning"
-                                            density="compact"
-                                            hide-details
-                                        />
-                                    </template>
-                                </v-tooltip>
-                            </v-col>
-                        </v-row>
-                    </v-card-text>
-                    <v-card-actions>
+                <TaskInputCard
+                    v-model="taskInput"
+                    v-model:profile="selectedProfile"
+                    v-model:allow-write="allowWrite"
+                    :title="t('codeChat.askAboutCode')"
+                    :input-label="t('codeChat.taskLabel')"
+                    :placeholder="t('codeChat.taskPlaceholder')"
+                    :hint="t('codeChat.taskHint')"
+                    :profile-label="t('codeChat.modelProfile')"
+                    :write-label="t('codeChat.allowWrite')"
+                    :write-tooltip="t('codeChat.allowWriteTooltip')"
+                >
+                    <template #actions>
                         <v-btn
                             color="primary"
                             :loading="agentStore.streaming"
@@ -105,160 +71,108 @@
                                 />
                             </v-list>
                         </v-menu>
-                    </v-card-actions>
-                </v-card>
+                    </template>
+                </TaskInputCard>
 
-                <!-- Live stream event feed -->
-                <v-card v-if="agentStore.streaming || streamFinished" class="mt-4">
-                    <v-card-title class="d-flex align-center">
-                        <v-icon start>mdi-antenna</v-icon>
-                        {{ t('common.liveEvents') }}
-                        <v-progress-circular
-                            v-if="agentStore.streaming"
-                            indeterminate
-                            size="16"
-                            class="ml-2"
-                        />
-                    </v-card-title>
-                    <v-card-text>
-                        <v-timeline density="compact" side="end">
-                            <v-timeline-item
-                                v-for="(event, index) in agentStore.streamEvents"
-                                :key="index"
-                                :dot-color="agentEventColor(event.type)"
-                                size="small"
-                            >
-                                <!-- Tool events get an expandable result panel -->
-                                <template v-if="event.type === 'tool'">
-                                    <v-expansion-panels variant="accordion" class="tool-panel">
-                                        <v-expansion-panel>
-                                            <v-expansion-panel-title>
-                                                <v-chip
-                                                    color="orange"
-                                                    size="x-small"
-                                                    label
-                                                    class="mr-2"
-                                                >
-                                                    tool
-                                                </v-chip>
-                                                <span class="text-body-2">{{
-                                                    event.data.tool
-                                                }}</span>
-                                                <v-chip
-                                                    v-if="event.data.error"
-                                                    color="error"
-                                                    size="x-small"
-                                                    class="ml-2"
-                                                >
-                                                    error
-                                                </v-chip>
-                                            </v-expansion-panel-title>
-                                            <v-expansion-panel-text>
-                                                <pre
-                                                    v-if="event.data.result"
-                                                    class="tool-result-pre"
-                                                    >{{ event.data.result }}</pre
-                                                >
-                                                <p
-                                                    v-else-if="event.data.error"
-                                                    class="text-error text-caption"
-                                                >
-                                                    {{ event.data.error }}
-                                                </p>
-                                                <p v-else class="text-grey text-caption">
-                                                    {{ t('codeChat.noOutput') }}
-                                                </p>
-                                            </v-expansion-panel-text>
-                                        </v-expansion-panel>
-                                    </v-expansion-panels>
-                                </template>
-
-                                <!-- All other events: compact summary -->
-                                <template v-else>
-                                    <div class="d-flex align-center ga-2">
-                                        <v-chip
-                                            :color="agentEventColor(event.type)"
-                                            size="x-small"
-                                            label
-                                        >
-                                            {{ event.type }}
+                <!-- Live stream event feed with tool expansion panels -->
+                <StreamEventFeed
+                    :streaming="agentStore.streaming"
+                    :finished="streamFinished"
+                    :events="agentStore.streamEvents"
+                    :color-fn="agentEventColor"
+                    :summary-fn="agentEventSummary"
+                >
+                    <template #event="{ event }">
+                        <!-- Tool events get an expandable result panel -->
+                        <template v-if="event.type === 'tool'">
+                            <v-expansion-panels variant="accordion" class="tool-panel">
+                                <v-expansion-panel>
+                                    <v-expansion-panel-title>
+                                        <v-chip color="orange" size="x-small" label class="mr-2">
+                                            tool
                                         </v-chip>
-                                        <span class="text-body-2">
-                                            {{ agentEventSummary(event) }}
-                                        </span>
-                                    </div>
-                                </template>
-                            </v-timeline-item>
-                        </v-timeline>
-                    </v-card-text>
-                </v-card>
+                                        <span class="text-body-2">{{ event.data.tool }}</span>
+                                        <v-chip
+                                            v-if="event.data.error"
+                                            color="error"
+                                            size="x-small"
+                                            class="ml-2"
+                                        >
+                                            error
+                                        </v-chip>
+                                    </v-expansion-panel-title>
+                                    <v-expansion-panel-text>
+                                        <pre v-if="event.data.result" class="tool-result-pre">{{
+                                            event.data.result
+                                        }}</pre>
+                                        <p
+                                            v-else-if="event.data.error"
+                                            class="text-error text-caption"
+                                        >
+                                            {{ event.data.error }}
+                                        </p>
+                                        <p v-else class="text-grey text-caption">
+                                            {{ t('codeChat.noOutput') }}
+                                        </p>
+                                    </v-expansion-panel-text>
+                                </v-expansion-panel>
+                            </v-expansion-panels>
+                        </template>
+
+                        <!-- All other events: compact summary -->
+                        <template v-else>
+                            <div class="d-flex align-center ga-2">
+                                <v-chip
+                                    :color="agentEventColor(event.type as AgentStreamEvent['type'])"
+                                    size="x-small"
+                                    label
+                                >
+                                    {{ event.type }}
+                                </v-chip>
+                                <span class="text-body-2">
+                                    {{ agentEventSummary(event as AgentStreamEvent) }}
+                                </span>
+                            </div>
+                        </template>
+                    </template>
+                </StreamEventFeed>
 
                 <!-- Result -->
-                <v-card v-if="latestResult" class="mt-4">
-                    <v-card-title class="d-flex align-center">
-                        {{ t('common.result') }}
-                        <v-spacer />
-                        <CopyButton :text="latestResult.result" />
-                    </v-card-title>
-                    <v-card-text>
-                        <MarkdownRenderer :content="latestResult.result" />
-                    </v-card-text>
-                </v-card>
+                <ResultCard v-if="latestResult" :content="latestResult.result" />
             </v-col>
 
             <!-- Session history -->
             <v-col cols="12" md="5">
-                <v-card>
-                    <v-card-title>{{ t('codeChat.history') }}</v-card-title>
-                    <v-card-text v-if="agentStore.taskHistory.length === 0" class="text-grey">
-                        {{ t('codeChat.noHistoryYet') }}
-                    </v-card-text>
-                    <v-list v-else density="compact">
-                        <v-list-item
-                            v-for="entry in agentStore.taskHistory"
-                            :key="entry.id"
-                            :active="latestResult?.id === entry.id"
-                            rounded="xl"
-                            @click="latestResult = entry"
-                        >
-                            <v-list-item-title class="text-truncate">
-                                {{ entry.task }}
-                            </v-list-item-title>
-                            <v-list-item-subtitle class="text-caption">
-                                {{ formatTime(entry.timestamp) }}
-                                <v-chip
-                                    v-if="entry.workspaceRoot"
-                                    size="x-small"
-                                    color="info"
-                                    class="ml-1"
-                                    :title="entry.workspaceRoot"
-                                >
-                                    <v-icon size="x-small">mdi-folder</v-icon>
-                                </v-chip>
-                            </v-list-item-subtitle>
-                        </v-list-item>
-                    </v-list>
-                </v-card>
+                <TaskHistorySidebar
+                    :title="t('codeChat.history')"
+                    :empty-text="t('codeChat.noHistoryYet')"
+                    :items="historyItems"
+                    :active-id="latestResult?.id"
+                    @select="onHistorySelect"
+                />
             </v-col>
         </v-row>
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAgentStore, type ITaskHistoryEntry } from '@/stores/agent';
 import type { RunRequestProfileEnum as ModelProfile } from '@api/api';
-import MarkdownRenderer from '@/components/shared/MarkdownRenderer.vue';
-import CopyButton from '@/components/shared/CopyButton.vue';
-import { useProfileOptions } from '@/utils/constants';
+import PageHeader from '@/components/shared/PageHeader.vue';
+import TaskInputCard from '@/components/shared/TaskInputCard.vue';
+import StreamEventFeed from '@/components/shared/StreamEventFeed.vue';
+import ResultCard from '@/components/shared/ResultCard.vue';
+import TaskHistorySidebar from '@/components/shared/TaskHistorySidebar.vue';
+import type { IHistoryItem } from '@/components/shared/TaskHistorySidebar.vue';
 import { formatTime } from '@/utils/formatting';
 import { agentEventColor, agentEventSummary } from '@/utils/eventFormatting';
+import type { AgentStreamEvent } from '@/api/sseEvents';
 import { getWorkspaceRoot } from '@/config';
 
 const { t } = useI18n();
 const agentStore = useAgentStore();
-const profileOptions = useProfileOptions();
 
 const taskInput = ref('');
 /** Default to 'code' profile for code-focused tasks */
@@ -295,6 +209,19 @@ const quickPrompts = [
     }
 ];
 
+/** Map store history to generic IHistoryItem format for the sidebar */
+const historyItems = computed<IHistoryItem[]>(() =>
+    agentStore.taskHistory.map((entry) => ({
+        id: entry.id,
+        label: entry.task,
+        subtitle: formatTime(entry.timestamp)
+    }))
+);
+
+function onHistorySelect(item: IHistoryItem): void {
+    latestResult.value = agentStore.taskHistory.find((e) => e.id === item.id);
+}
+
 watch(
     () => agentStore.taskHistory.length,
     () => {
@@ -309,23 +236,21 @@ function applyQuickPrompt(template: string): void {
     taskInput.value = template.replace('{workspace}', workspaceRoot ?? '<workspace-path>');
 }
 
-async function submitStream(): Promise<void> {
+function submitStream(): Promise<void> {
     const task = taskInput.value.trim();
-    if (!task) return;
+    if (!task) return Promise.resolve();
 
     streamFinished.value = false;
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
-    const result = await agentStore.submitTaskStream(
-        task,
-        profile,
-        allowWrite.value,
-        workspaceRoot
-    );
-    streamFinished.value = true;
-    if (result) {
-        latestResult.value = result;
-        taskInput.value = '';
-    }
+    return agentStore
+        .submitTaskStream(task, profile, allowWrite.value, workspaceRoot)
+        .then((result) => {
+            streamFinished.value = true;
+            if (result) {
+                latestResult.value = result;
+                taskInput.value = '';
+            }
+        });
 }
 </script>
 

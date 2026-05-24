@@ -1,7 +1,6 @@
 <template>
     <div>
-        <h1 class="text-h4 mb-2">{{ t('swarm.title') }}</h1>
-        <p class="text-body-2 text-grey mb-6">{{ t('swarm.subtitle') }}</p>
+        <PageHeader :title="t('swarm.title')" :subtitle="t('swarm.subtitle')" />
 
         <v-row>
             <v-col cols="12" md="7">
@@ -100,57 +99,25 @@
                 </v-card>
 
                 <!-- Stream Event Feed -->
-                <v-card v-if="swarmStore.streaming || streamFinished" class="mt-4">
-                    <v-card-title class="d-flex align-center">
-                        <v-icon start>mdi-antenna</v-icon>
-                        {{ t('common.liveEvents') }}
-                        <v-progress-circular
-                            v-if="swarmStore.streaming"
-                            indeterminate
-                            size="16"
-                            class="ml-2"
-                        />
-                    </v-card-title>
-                    <v-card-text>
-                        <v-timeline density="compact" side="end">
-                            <v-timeline-item
-                                v-for="(event, index) in swarmStore.streamEvents"
-                                :key="index"
-                                :dot-color="swarmEventColor(event.type)"
-                                size="small"
-                            >
-                                <div class="d-flex align-center ga-2">
-                                    <v-chip
-                                        :color="swarmEventColor(event.type)"
-                                        size="x-small"
-                                        label
-                                    >
-                                        {{ event.type }}
-                                    </v-chip>
-                                    <span class="text-body-2">{{ swarmEventSummary(event) }}</span>
-                                </div>
-                            </v-timeline-item>
-                        </v-timeline>
-                    </v-card-text>
-                </v-card>
+                <StreamEventFeed
+                    :streaming="swarmStore.streaming"
+                    :finished="streamFinished"
+                    :events="swarmStore.streamEvents"
+                    :color-fn="swarmEventColor"
+                    :summary-fn="swarmEventSummary"
+                />
 
                 <!-- JSON Result -->
-                <v-card v-if="latestResult" class="mt-4">
-                    <v-card-title class="d-flex align-center">
-                        {{ t('common.result') }}
-                        <v-spacer />
+                <ResultCard v-if="latestResult" :content="latestResult.result">
+                    <template #chips>
                         <v-chip size="small" color="primary" class="mr-2">
                             {{ t('swarm.subtaskCount', latestResult.subtaskCount) }}
                         </v-chip>
                         <v-chip size="small" color="secondary">
                             {{ formatDuration(latestResult.totalDurationMs) }}
                         </v-chip>
-                        <CopyButton :text="latestResult.result" class="ml-2" />
-                    </v-card-title>
-                    <v-card-text>
-                        <MarkdownRenderer :content="latestResult.result" />
-                    </v-card-text>
-                </v-card>
+                    </template>
+                </ResultCard>
 
                 <!-- Subtask Breakdown -->
                 <v-card
@@ -198,46 +165,33 @@
 
             <!-- History Sidebar -->
             <v-col cols="12" md="5">
-                <v-card>
-                    <v-card-title>{{ t('swarm.swarmHistory') }}</v-card-title>
-                    <v-card-text v-if="swarmStore.swarmHistory.length === 0" class="text-grey">
-                        {{ t('swarm.noSwarmYet') }}
-                    </v-card-text>
-                    <v-list v-else density="compact">
-                        <v-list-item
-                            v-for="entry in swarmStore.swarmHistory"
-                            :key="entry.id"
-                            :active="latestResult?.id === entry.id"
-                            rounded="xl"
-                            @click="latestResult = entry"
-                        >
-                            <v-list-item-title class="text-truncate">
-                                {{ entry.task }}
-                            </v-list-item-title>
-                            <v-list-item-subtitle class="text-caption">
-                                {{ formatTime(entry.timestamp) }}
-                                <v-chip v-if="entry.profile" size="x-small" class="ml-1">
-                                    {{ entry.profile }}
-                                </v-chip>
-                                <v-chip size="x-small" class="ml-1" color="primary">
-                                    {{ t('swarm.subtaskCount', entry.subtaskCount) }}
-                                </v-chip>
-                            </v-list-item-subtitle>
-                        </v-list-item>
-                    </v-list>
-                </v-card>
+                <TaskHistorySidebar
+                    :title="t('swarm.swarmHistory')"
+                    :empty-text="t('swarm.noSwarmYet')"
+                    :items="historyItems"
+                    :active-id="latestResult?.id"
+                    @select="onHistorySelect"
+                >
+                    <template #item-subtitle="{ item }">
+                        {{ item.subtitle }}
+                    </template>
+                </TaskHistorySidebar>
             </v-col>
         </v-row>
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useSwarmStore, type ISwarmHistoryEntry } from '@/stores/swarm';
 import type { SwarmRequestProfileEnum as ModelProfile } from '@api/api';
 import MarkdownRenderer from '@/components/shared/MarkdownRenderer.vue';
-import CopyButton from '@/components/shared/CopyButton.vue';
+import PageHeader from '@/components/shared/PageHeader.vue';
+import StreamEventFeed from '@/components/shared/StreamEventFeed.vue';
+import ResultCard from '@/components/shared/ResultCard.vue';
+import TaskHistorySidebar from '@/components/shared/TaskHistorySidebar.vue';
+import type { IHistoryItem } from '@/components/shared/TaskHistorySidebar.vue';
 import { useProfileOptions } from '@/utils/constants';
 import { formatTime, formatDuration } from '@/utils/formatting';
 import { swarmEventColor, swarmEventSummary } from '@/utils/eventFormatting';
@@ -253,6 +207,19 @@ const maxSubtasks = ref<number | undefined>(undefined);
 const latestResult = ref<ISwarmHistoryEntry | undefined>(undefined);
 const streamFinished = ref(false);
 
+/** Map store history to generic IHistoryItem format for the sidebar */
+const historyItems = computed<IHistoryItem[]>(() =>
+    swarmStore.swarmHistory.map((entry) => ({
+        id: entry.id,
+        label: entry.task,
+        subtitle: formatTime(entry.timestamp)
+    }))
+);
+
+function onHistorySelect(item: IHistoryItem): void {
+    latestResult.value = swarmStore.swarmHistory.find((e) => e.id === item.id);
+}
+
 watch(
     () => swarmStore.swarmHistory.length,
     () => {
@@ -262,35 +229,36 @@ watch(
     }
 );
 
-async function submitJson(): Promise<void> {
+function submitJson(): Promise<void> {
     const task = taskInput.value.trim();
-    if (!task) return;
+    if (!task) return Promise.resolve();
 
     streamFinished.value = false;
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
-    const result = await swarmStore.submitSwarm(task, profile, allowWrite.value, maxSubtasks.value);
-    if (result) {
-        latestResult.value = result;
-        taskInput.value = '';
-    }
+    return swarmStore
+        .submitSwarm(task, profile, allowWrite.value, maxSubtasks.value)
+        .then((result) => {
+            if (result) {
+                latestResult.value = result;
+                taskInput.value = '';
+            }
+        });
 }
 
-async function submitStream(): Promise<void> {
+function submitStream(): Promise<void> {
     const task = taskInput.value.trim();
-    if (!task) return;
+    if (!task) return Promise.resolve();
 
     streamFinished.value = false;
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
-    const result = await swarmStore.submitSwarmStream(
-        task,
-        profile,
-        allowWrite.value,
-        maxSubtasks.value
-    );
-    streamFinished.value = true;
-    if (result) {
-        latestResult.value = result;
-        taskInput.value = '';
-    }
+    return swarmStore
+        .submitSwarmStream(task, profile, allowWrite.value, maxSubtasks.value)
+        .then((result) => {
+            streamFinished.value = true;
+            if (result) {
+                latestResult.value = result;
+                taskInput.value = '';
+            }
+        });
 }
 </script>
