@@ -1,71 +1,87 @@
 /**
  * @module api/observabilityEvents
  *
- * Types for the normalized `/events/stream` SSE endpoint.
- * This endpoint emits a unified stream of all backend lifecycle events
- * (agent steps, tool calls, routing decisions, errors, etc.) for
- * developer observability.
+ * Types for the persistent activity-history surface.
+ * The backend stores all lifecycle events (agent steps, tool calls,
+ * routing decisions, errors, etc.) in MongoDB and exposes them via
+ * GET /history, GET /history/poll, GET /history/export, DELETE /history.
  *
- * The frontend normalizes each raw event into a local view-model
- * (`IObservabilityEvent`) for filtering, searching, and inspection.
+ * The frontend normalizes each ActivityLogEntry into a local view-model
+ * (`IHistoryEntry`) for filtering, searching, and detail inspection.
  */
 
-/* ─── Raw SSE event from backend ─────────────────────────── */
+/* ─── Re-export the generated API schema types ────────────── */
 
-/**
- * Raw event envelope arriving over the `/events/stream` SSE connection.
- * The backend sends typed events with arbitrary JSON payloads.
- */
-export interface IRawObservabilityEvent {
-    type: string;
-    data: Record<string, unknown>;
-}
+export type {
+    ActivityLogEntry,
+    ActivityLogListResponse,
+    ActivityLogExportResponse,
+    ActivityLogPollResponse,
+    ActivityLogDeleteResponse
+} from '@api/api';
+
+/* ─── UI helpers ─────────────────────────────────────────── */
+
+/** Severity levels used for coloring entries in the history view. */
+export type ObservabilitySeverity = 'info' | 'warning' | 'error' | 'success';
+
+/** Source category derived from an entry's category/kind for display. */
+export type ObservabilitySource = 'agent' | 'swarm' | 'workflow' | 'chat' | 'system' | 'unknown';
 
 /* ─── Normalized frontend view-model ─────────────────────── */
 
-/** Severity levels for observability events. */
-export type ObservabilitySeverity = 'info' | 'warning' | 'error' | 'success';
-
-/** Source category describing which subsystem emitted the event. */
-export type ObservabilitySource = 'agent' | 'swarm' | 'workflow' | 'chat' | 'system' | 'unknown';
-
 /**
- * Normalized observability event — the local view-model used by the store
- * and UI components. Created once on ingestion from the raw SSE frame.
+ * Normalized history entry — the local view-model used by the store and UI.
+ * Created once on ingestion from an ActivityLogEntry.
  */
-export interface IObservabilityEvent {
-    /** Locally generated unique ID (for keying in lists). */
-    localId: string;
-    /** Timestamp when the frontend received this event. */
-    receivedAt: string;
-    /** Canonical backend timestamp if present in payload, else receivedAt. */
+export interface IHistoryEntry {
+    /** Mongo ObjectId string (used as stable list key). */
+    id: string;
+    /** ISO timestamp from the backend record. */
     timestamp: string;
-    /** SSE event type (e.g. 'step', 'tool', 'route', 'done', 'error'). */
+    /** Full internal event kind (e.g. `agent:step`, `tool:result`). */
+    kind: string;
+    /** Broad category (`run`, `tool`, `swarm`, `workflow`, `system`). */
+    category: string;
+    /** Specific type within category (e.g. `step`, `completed`, `failed`). */
     type: string;
-    /** Derived severity for filtering and coloring. */
+    /** Derived severity for coloring. */
     severity: ObservabilitySeverity;
-    /** Derived source subsystem. */
+    /** Derived source subsystem for filtering. */
     source: ObservabilitySource;
-    /** Correlation IDs extracted from payload (runId, conversationId, etc.). */
+    /** Correlation IDs (runId, conversationId, subtaskId, etc.). */
     correlationIds: Record<string, string>;
-    /** Short one-line summary for the event list. */
+    /** Optional tool name for tool entries. */
+    toolName?: string;
+    /** Optional status string (e.g. `completed`, `failed`). */
+    status?: string;
+    /** Short one-line summary for the list view. */
     summary: string;
-    /** Full raw payload — kept untouched for the inspector pane. */
-    rawPayload: Record<string, unknown>;
-    /** Pre-computed lowercase searchable string (type + summary + JSON keys). */
+    /** Full raw data payload — kept for the inspector pane. */
+    rawData: Record<string, unknown>;
+    /** Optional metadata (metrics, durations, etc.) from the backend. */
+    rawMeta?: Record<string, unknown>;
+    /** Pre-computed lowercase searchable string. */
     searchText: string;
 }
 
 /* ─── Filter state ───────────────────────────────────────── */
 
-/** Filter criteria applied to the event buffer in the observability store. */
-export interface IObservabilityFilters {
+/** Filter criteria applied to the history buffer. */
+export interface IHistoryFilters {
     /** Free-text search matched against `searchText`. */
     query: string;
-    /** Filter by event type(s); empty = show all. */
-    types: string[];
+    /** Filter by kind/category; empty = show all. */
+    kinds: string[];
     /** Filter by severity; empty = show all. */
     severities: ObservabilitySeverity[];
     /** Filter by source; empty = show all. */
     sources: ObservabilitySource[];
 }
+
+/* ─── Backward-compat aliases (for any code referencing old names) ─ */
+
+/** @deprecated Use IHistoryEntry. */
+export type IObservabilityEvent = IHistoryEntry;
+/** @deprecated Use IHistoryFilters. */
+export type IObservabilityFilters = IHistoryFilters;

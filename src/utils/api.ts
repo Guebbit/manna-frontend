@@ -2,6 +2,7 @@ import { Configuration } from '@api/configuration';
 import {
     ChatApi,
     CoreApi,
+    HistoryApi,
     IdeApi,
     InfoApi,
     LibraryApi,
@@ -20,6 +21,7 @@ const apiConfig = new Configuration({ basePath: '' });
 
 export const chatApi = new ChatApi(apiConfig, '', httpClient);
 export const coreApi = new CoreApi(apiConfig, '', httpClient);
+export const historyApi = new HistoryApi(apiConfig, '', httpClient);
 export const ideApi = new IdeApi(apiConfig, '', httpClient);
 export const infoApi = new InfoApi(apiConfig, '', httpClient);
 export const libraryApi = new LibraryApi(apiConfig, '', httpClient);

@@ -7384,3 +7384,371 @@ export class WorkflowApi extends BaseAPI implements WorkflowApiInterface {
             .then((request) => request(this.axios, this.basePath));
     }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// History API — persistent activity log
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Single activity-log entry as returned by the /history endpoints.
+ * @export
+ * @interface ActivityLogEntry
+ */
+export interface ActivityLogEntry {
+    /** Mongo ObjectId string. */
+    id: string;
+    timestamp: string;
+    /** Full internal event kind (e.g. `agent:step`, `tool:result`). */
+    kind: string;
+    category: string;
+    type: string;
+    conversationId?: string;
+    messageId?: string;
+    requestId?: string;
+    runId?: string;
+    workflowId?: string;
+    subtaskId?: string;
+    parentId?: string;
+    profile?: string;
+    toolName?: string;
+    status?: string;
+    data: Record<string, unknown>;
+    meta?: Record<string, unknown>;
+}
+
+/**
+ * Response shape for GET /history and GET /history/poll.
+ * @export
+ * @interface ActivityLogListResponse
+ */
+export interface ActivityLogListResponse {
+    entries: ActivityLogEntry[];
+    count: number;
+    nextCursor?: string | null;
+    hasMore: boolean;
+}
+
+/**
+ * Response shape for GET /history/export.
+ * @export
+ * @interface ActivityLogExportResponse
+ */
+export interface ActivityLogExportResponse {
+    exportedAt: string;
+    count: number;
+    entries: ActivityLogEntry[];
+}
+
+/**
+ * Response shape for GET /history/poll (extends list response).
+ * @export
+ * @interface ActivityLogPollResponse
+ */
+export interface ActivityLogPollResponse extends ActivityLogListResponse {
+    timedOut: boolean;
+    pollDurationMs: number;
+    pollTimeoutMs: number;
+}
+
+/**
+ * Response shape for DELETE /history.
+ * @export
+ * @interface ActivityLogDeleteResponse
+ */
+export interface ActivityLogDeleteResponse {
+    deletedCount: number;
+    scoped: boolean;
+}
+
+/**
+ * HistoryApi - axios parameter creator
+ * @export
+ */
+export const HistoryApiAxiosParamCreator = function (configuration?: Configuration) {
+    return {
+        /**
+         * Cursor-based incremental fetch from the persistent activity_log.
+         * @summary List persistent activity history
+         */
+        getHistory: async (
+            since?: string,
+            limit?: number,
+            runId?: string,
+            requestId?: string,
+            conversationId?: string,
+            options: RawAxiosRequestConfig = {}
+        ): Promise<RequestArgs> => {
+            const localVarPath = `/history`;
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options };
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            if (since !== undefined) localVarQueryParameter['since'] = since;
+            if (limit !== undefined) localVarQueryParameter['limit'] = limit;
+            if (runId !== undefined) localVarQueryParameter['runId'] = runId;
+            if (requestId !== undefined) localVarQueryParameter['requestId'] = requestId;
+            if (conversationId !== undefined)
+                localVarQueryParameter['conversationId'] = conversationId;
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            const headersFromBaseOptions = baseOptions?.headers ?? {};
+            localVarRequestOptions.headers = {
+                ...localVarHeaderParameter,
+                ...headersFromBaseOptions,
+                ...options.headers
+            };
+            return { url: toPathString(localVarUrlObj), options: localVarRequestOptions };
+        },
+
+        /**
+         * Deletes all activity-log records, or only records matching optional filters.
+         * @summary Clear history
+         */
+        deleteHistory: async (
+            runId?: string,
+            requestId?: string,
+            conversationId?: string,
+            options: RawAxiosRequestConfig = {}
+        ): Promise<RequestArgs> => {
+            const localVarPath = `/history`;
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'DELETE', ...baseOptions, ...options };
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            if (runId !== undefined) localVarQueryParameter['runId'] = runId;
+            if (requestId !== undefined) localVarQueryParameter['requestId'] = requestId;
+            if (conversationId !== undefined)
+                localVarQueryParameter['conversationId'] = conversationId;
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            const headersFromBaseOptions = baseOptions?.headers ?? {};
+            localVarRequestOptions.headers = {
+                ...localVarHeaderParameter,
+                ...headersFromBaseOptions,
+                ...options.headers
+            };
+            return { url: toPathString(localVarUrlObj), options: localVarRequestOptions };
+        },
+
+        /**
+         * Returns a download-friendly JSON envelope with exported history records.
+         * @summary Export persistent activity history
+         */
+        getHistoryExport: async (
+            since?: string,
+            options: RawAxiosRequestConfig = {}
+        ): Promise<RequestArgs> => {
+            const localVarPath = `/history/export`;
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options };
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            if (since !== undefined) localVarQueryParameter['since'] = since;
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            const headersFromBaseOptions = baseOptions?.headers ?? {};
+            localVarRequestOptions.headers = {
+                ...localVarHeaderParameter,
+                ...headersFromBaseOptions,
+                ...options.headers
+            };
+            return { url: toPathString(localVarUrlObj), options: localVarRequestOptions };
+        },
+
+        /**
+         * Long-poll endpoint: waits until new records appear or timeout expires.
+         * @summary Long-poll for incremental history
+         */
+        getHistoryPoll: async (
+            since?: string,
+            limit?: number,
+            timeoutMs?: number,
+            options: RawAxiosRequestConfig = {}
+        ): Promise<RequestArgs> => {
+            const localVarPath = `/history/poll`;
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options };
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            if (since !== undefined) localVarQueryParameter['since'] = since;
+            if (limit !== undefined) localVarQueryParameter['limit'] = limit;
+            if (timeoutMs !== undefined) localVarQueryParameter['timeoutMs'] = timeoutMs;
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            const headersFromBaseOptions = baseOptions?.headers ?? {};
+            localVarRequestOptions.headers = {
+                ...localVarHeaderParameter,
+                ...headersFromBaseOptions,
+                ...options.headers
+            };
+            return { url: toPathString(localVarUrlObj), options: localVarRequestOptions };
+        }
+    };
+};
+
+/**
+ * HistoryApi - functional programming interface
+ * @export
+ */
+export const HistoryApiFp = function (configuration?: Configuration) {
+    const localVarAxiosParamCreator = HistoryApiAxiosParamCreator(configuration);
+    return {
+        async getHistory(
+            since?: string,
+            limit?: number,
+            runId?: string,
+            requestId?: string,
+            conversationId?: string,
+            options?: RawAxiosRequestConfig
+        ): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<unknown>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getHistory(
+                since,
+                limit,
+                runId,
+                requestId,
+                conversationId,
+                options
+            );
+            return (axios, basePath) =>
+                createRequestFunction(
+                    localVarAxiosArgs,
+                    globalAxios,
+                    BASE_PATH,
+                    configuration
+                )(axios, basePath);
+        },
+        async deleteHistory(
+            runId?: string,
+            requestId?: string,
+            conversationId?: string,
+            options?: RawAxiosRequestConfig
+        ): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<unknown>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.deleteHistory(
+                runId,
+                requestId,
+                conversationId,
+                options
+            );
+            return (axios, basePath) =>
+                createRequestFunction(
+                    localVarAxiosArgs,
+                    globalAxios,
+                    BASE_PATH,
+                    configuration
+                )(axios, basePath);
+        },
+        async getHistoryExport(
+            since?: string,
+            options?: RawAxiosRequestConfig
+        ): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<unknown>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getHistoryExport(
+                since,
+                options
+            );
+            return (axios, basePath) =>
+                createRequestFunction(
+                    localVarAxiosArgs,
+                    globalAxios,
+                    BASE_PATH,
+                    configuration
+                )(axios, basePath);
+        },
+        async getHistoryPoll(
+            since?: string,
+            limit?: number,
+            timeoutMs?: number,
+            options?: RawAxiosRequestConfig
+        ): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<unknown>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getHistoryPoll(
+                since,
+                limit,
+                timeoutMs,
+                options
+            );
+            return (axios, basePath) =>
+                createRequestFunction(
+                    localVarAxiosArgs,
+                    globalAxios,
+                    BASE_PATH,
+                    configuration
+                )(axios, basePath);
+        }
+    };
+};
+
+/**
+ * HistoryApi - object-oriented interface
+ * @export
+ * @class HistoryApi
+ * @extends {BaseAPI}
+ */
+export class HistoryApi extends BaseAPI {
+    /** Fetch history entries, optionally starting after `since` cursor. */
+    public getHistory(
+        since?: string,
+        limit?: number,
+        runId?: string,
+        requestId?: string,
+        conversationId?: string,
+        options?: RawAxiosRequestConfig
+    ) {
+        return HistoryApiFp(this.configuration)
+            .getHistory(since, limit, runId, requestId, conversationId, options)
+            .then((request) => request(this.axios, this.basePath));
+    }
+
+    /** Delete all history (or filtered subset). */
+    public deleteHistory(
+        runId?: string,
+        requestId?: string,
+        conversationId?: string,
+        options?: RawAxiosRequestConfig
+    ) {
+        return HistoryApiFp(this.configuration)
+            .deleteHistory(runId, requestId, conversationId, options)
+            .then((request) => request(this.axios, this.basePath));
+    }
+
+    /** Export all history as a download-friendly JSON envelope. */
+    public getHistoryExport(since?: string, options?: RawAxiosRequestConfig) {
+        return HistoryApiFp(this.configuration)
+            .getHistoryExport(since, options)
+            .then((request) => request(this.axios, this.basePath));
+    }
+
+    /** Long-poll for new history entries since `since` cursor. */
+    public getHistoryPoll(
+        since?: string,
+        limit?: number,
+        timeoutMs?: number,
+        options?: RawAxiosRequestConfig
+    ) {
+        return HistoryApiFp(this.configuration)
+            .getHistoryPoll(since, limit, timeoutMs, options)
+            .then((request) => request(this.axios, this.basePath));
+    }
+}
