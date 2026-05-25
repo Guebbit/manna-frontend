@@ -109,3 +109,43 @@ export async function* sendChatMessageStream(
     const response = await openSse(url, request);
     yield* parseSseStream<ChatStreamEvent>(response);
 }
+
+/* ─── GET-based SSE (for long-lived observability streams) ──── */
+
+/**
+ * Opens a GET SSE connection with AbortController support.
+ * Unlike `openSse` (POST, fire-and-forget), this is designed for
+ * long-lived streams that the caller can cancel at any time.
+ *
+ * @param url    - Full URL including query params.
+ * @param signal - AbortSignal to cancel the connection.
+ */
+async function openSseGet(url: string, signal: AbortSignal): Promise<Response> {
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: { Accept: 'text/event-stream' },
+        signal
+    });
+
+    if (!response.ok) {
+        const bodyText = await response.text();
+        throw new Error(getErrorMessage(response.status, response.statusText, bodyText));
+    }
+
+    return response;
+}
+
+/**
+ * Connects to a GET-based SSE endpoint and yields parsed events.
+ * The caller passes an `AbortController` to cleanly disconnect.
+ *
+ * @param url    - Full URL with query string filters.
+ * @param signal - AbortSignal for cancellation.
+ */
+export async function* openEventStream<T extends { type: string; data: unknown }>(
+    url: string,
+    signal: AbortSignal
+): AsyncGenerator<T> {
+    const response = await openSseGet(url, signal);
+    yield* parseSseStream<T>(response);
+}

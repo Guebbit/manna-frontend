@@ -84,6 +84,11 @@ const router = createRouter({
                     component: () => import('@/views/SystemInfoView.vue')
                 },
                 {
+                    path: 'observability',
+                    name: 'observability',
+                    component: () => import('@/views/ObservabilityView.vue')
+                },
+                {
                     path: 'settings',
                     name: 'settings',
                     component: () => import('@/views/SettingsView.vue')
