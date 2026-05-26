@@ -1,108 +1,127 @@
 /**
  * @module utils/observabilityFormatting
  *
- * Pure helpers that normalize raw SSE events from `/events/stream`
- * into the `IObservabilityEvent` view-model used by the store and UI.
+ * Pure helpers that normalize ActivityLogEntry records from the /history API
+ * into the `IHistoryEntry` view-model used by the store and UI.
  */
 
-import { v4 as uuidv4 } from 'uuid';
+import type { ActivityLogEntry } from '@api/api';
 import type {
-    IRawObservabilityEvent,
-    IObservabilityEvent,
+    IHistoryEntry,
     ObservabilitySeverity,
     ObservabilitySource
 } from '@/api/observabilityEvents';
 
 /* ─── Severity derivation ──────────────────────────────────── */
 
-/** Maps event type to a severity level. */
-export function deriveSeverity(type: string, data: Record<string, unknown>): ObservabilitySeverity {
-    if (type === 'error' || type === 'hard_stop' || type === 'subtask_error') return 'error';
-    if (type === 'max_steps' || type === 'warning') return 'warning';
-    if (type === 'done' || type === 'subtask_done' || type === 'step_done') return 'success';
-    if (data['error']) return 'error';
+/** Maps entry kind/type/status to a severity level. */
+export function deriveSeverity(
+    kind: string,
+    type: string,
+    status?: string,
+    data?: Record<string, unknown>
+): ObservabilitySeverity {
+    if (
+        type === 'failed' ||
+        type === 'error' ||
+        type === 'hard_stop' ||
+        kind.endsWith(':error') ||
+        kind.endsWith(':hard_stop')
+    )
+        return 'error';
+    if (type === 'max_steps' || status === 'max_steps') return 'warning';
+    if (type === 'completed' || type === 'done' || status === 'completed' || kind.endsWith(':done'))
+        return 'success';
+    if (data?.['error']) return 'error';
     return 'info';
 }
 
 /* ─── Source derivation ────────────────────────────────────── */
 
-/** Infers the source subsystem from event type and payload fields. */
-export function deriveSource(type: string, data: Record<string, unknown>): ObservabilitySource {
-    if (data['conversationId'] || type === 'message' || type === 'reply') return 'chat';
-    if (data['subtaskId'] || type === 'decomposed' || type === 'subtask_start') return 'swarm';
-    if (data['workflowIndex'] !== undefined || type === 'workflow_start' || type === 'step_start')
-        return 'workflow';
-    if (type === 'step' || type === 'tool' || type === 'route' || type === 'done') return 'agent';
-    if (type === 'health' || type === 'heartbeat') return 'system';
+/** Infers the source subsystem from the entry's category and kind. */
+export function deriveSource(
+    category: string,
+    kind: string,
+    conversationId?: string
+): ObservabilitySource {
+    if (conversationId || category === 'chat') return 'chat';
+    if (category === 'swarm' || kind.startsWith('swarm:')) return 'swarm';
+    if (category === 'workflow' || kind.startsWith('workflow:')) return 'workflow';
+    if (category === 'run' || kind.startsWith('agent:')) return 'agent';
+    if (category === 'system' || kind.startsWith('system:')) return 'system';
     return 'unknown';
 }
 
 /* ─── Summary text ─────────────────────────────────────────── */
 
-/** Produces a concise one-line summary from an event type and payload. */
-export function deriveSummary(type: string, data: Record<string, unknown>): string {
-    switch (type) {
-        case 'step': {
-            return `Step ${String(data['step'] ?? '?')}: ${String(data['action'] ?? '')}`;
-        }
-        case 'tool': {
-            return data['error']
-                ? `Tool ${String(data['tool'])} error`
-                : `Tool ${String(data['tool'])} executed`;
-        }
-        case 'route': {
-            return `Routed → ${String(data['profile'])} (${String(data['model'])})`;
-        }
-        case 'done': {
-            return 'Completed';
-        }
-        case 'error': {
-            return `Error: ${String(data['error'] ?? 'unknown')}`;
-        }
-        case 'hard_stop': {
-            return `Hard stop (${String(data['code'])}): ${String(data['reason'])}`;
-        }
-        case 'max_steps': {
-            return `Max steps: ${String(data['summary'] ?? '')}`;
-        }
-        case 'decomposed': {
-            return `Decomposed into ${String(data['subtaskCount'])} subtasks`;
-        }
-        case 'subtask_start': {
-            return `Subtask ${String(data['subtaskId'])} started`;
-        }
-        case 'subtask_done': {
-            return `Subtask ${String(data['subtaskId'])} done`;
-        }
-        case 'subtask_error': {
-            return `Subtask ${String(data['subtaskId'])} failed`;
-        }
-        case 'workflow_start': {
-            return `Workflow started (${String(data['stepCount'])} steps)`;
-        }
-        case 'step_start': {
-            return `Step ${String((data['index'] as number) + 1)} started`;
-        }
-        case 'step_done': {
-            return `Step ${String(((data['index'] as number) ?? 0) + 1)} done`;
-        }
-        case 'heartbeat': {
-            return 'Heartbeat';
-        }
-        default: {
-            return type;
-        }
+/** Produces a concise one-line summary for an activity log entry. */
+export function deriveSummary(entry: ActivityLogEntry): string {
+    const { kind, type, toolName, status, data, subtaskId } = entry;
+
+    // Tool events
+    if (toolName || kind.startsWith('tool:')) {
+        const name = toolName ?? String(data['tool'] ?? '');
+        if (type === 'failed' || data['error']) return `Tool ${name} failed`;
+        return `Tool ${name} ${type === 'succeeded' ? 'succeeded' : type}`;
     }
+
+    // Agent step
+    if (kind === 'agent:step') {
+        return `Step ${String(data['step'] ?? '?')}: ${String(data['action'] ?? '')}`;
+    }
+
+    // Agent routing
+    if (kind === 'agent:model_routed') {
+        return `Routed → ${String(data['profile'] ?? '')} (${String(data['model'] ?? '')})`;
+    }
+
+    // Agent hard stop
+    if (kind === 'agent:hard_stop') {
+        return `Hard stop (${String(data['code'] ?? '')}): ${String(data['reason'] ?? '')}`;
+    }
+
+    // Agent max steps
+    if (kind === 'agent:max_steps') {
+        return `Max steps: ${String(data['summary'] ?? '')}`;
+    }
+
+    // Swarm events
+    if (kind === 'swarm:decomposed') {
+        return `Decomposed into ${String(data['subtaskCount'] ?? '?')} subtasks`;
+    }
+    if (kind === 'swarm:subtask_start' || kind === 'swarm:subtask_started') {
+        return `Subtask ${subtaskId ?? String(data['subtaskId'] ?? '?')} started`;
+    }
+    if (kind === 'swarm:subtask_done' || kind === 'swarm:subtask_completed') {
+        return `Subtask ${subtaskId ?? String(data['subtaskId'] ?? '?')} done`;
+    }
+    if (kind === 'swarm:subtask_error' || kind === 'swarm:subtask_failed') {
+        return `Subtask ${subtaskId ?? String(data['subtaskId'] ?? '?')} failed`;
+    }
+
+    // Generic fallback using status or type
+    if (status) return `${type} — ${status}`;
+    if (type) return type;
+    return kind;
 }
 
 /* ─── Correlation ID extraction ────────────────────────────── */
 
-/** Extracts any correlation IDs from the payload. */
-export function extractCorrelationIds(data: Record<string, unknown>): Record<string, string> {
+/** Collects all non-empty correlation IDs from an entry. */
+export function extractCorrelationIds(entry: ActivityLogEntry): Record<string, string> {
     const ids: Record<string, string> = {};
-    const keys = ['runId', 'conversationId', 'subtaskId', 'requestId', 'sessionId'];
-    for (const key of keys) {
-        if (typeof data[key] === 'string') ids[key] = data[key] as string;
+    const { runId, conversationId, subtaskId, requestId, messageId, workflowId, parentId } = entry;
+    const candidates: Record<string, string | undefined> = {
+        runId,
+        conversationId,
+        subtaskId,
+        requestId,
+        messageId,
+        workflowId,
+        parentId
+    };
+    for (const [key, value] of Object.entries(candidates)) {
+        if (typeof value === 'string' && value) ids[key] = value;
     }
     return ids;
 }
@@ -120,47 +139,96 @@ export function severityColor(severity: ObservabilitySeverity): string {
     return map[severity] ?? 'grey';
 }
 
-/** Returns a Vuetify color name for a given event type. */
-export function eventTypeColor(type: string): string {
-    const map: Record<string, string> = {
-        step: 'purple',
-        tool: 'orange',
-        route: 'teal',
-        done: 'success',
-        error: 'error',
-        hard_stop: 'error',
-        max_steps: 'warning',
-        decomposed: 'blue',
-        subtask_start: 'cyan',
-        subtask_done: 'green',
-        subtask_error: 'red',
-        workflow_start: 'blue',
-        step_start: 'cyan',
-        step_done: 'green',
-        heartbeat: 'grey'
-    };
-    return map[type] ?? 'grey';
+/** Returns a Vuetify color name for a given event kind/type. */
+export function eventTypeColor(kind: string): string {
+    switch (kind) {
+        case 'agent:step': {
+            return 'purple';
+        }
+        case 'agent:start': {
+            return 'blue-lighten-2';
+        }
+        case 'agent:done': {
+            return 'success';
+        }
+        case 'agent:error': {
+            return 'error';
+        }
+        case 'agent:hard_stop': {
+            return 'error';
+        }
+        case 'agent:max_steps': {
+            return 'warning';
+        }
+        case 'agent:model_routed': {
+            return 'teal';
+        }
+        case 'tool:result': {
+            return 'orange';
+        }
+        case 'tool:error': {
+            return 'red';
+        }
+        case 'tool:verification_failed': {
+            return 'deep-orange';
+        }
+        case 'swarm:start': {
+            return 'blue';
+        }
+        case 'swarm:decomposed': {
+            return 'blue';
+        }
+        case 'swarm:subtask_start': {
+            return 'cyan';
+        }
+        case 'swarm:subtask_done': {
+            return 'green';
+        }
+        case 'swarm:subtask_error': {
+            return 'red';
+        }
+        case 'swarm:done': {
+            return 'success';
+        }
+        case 'system:heartbeat':
+        case 'system:health': {
+            return 'grey';
+        }
+        default: {
+            return 'grey';
+        }
+    }
 }
 
 /* ─── Main normalizer ──────────────────────────────────────── */
 
-/** Transforms a raw SSE frame into the normalized view-model. */
-export function normalizeEvent(raw: IRawObservabilityEvent): IObservabilityEvent {
-    const now = new Date().toISOString();
-    const data = raw.data;
-    const timestamp = typeof data['timestamp'] === 'string' ? data['timestamp'] : now;
-    const summary = deriveSummary(raw.type, data);
+/** Transforms a raw ActivityLogEntry into the normalized IHistoryEntry view-model. */
+export function normalizeHistoryEntry(entry: ActivityLogEntry): IHistoryEntry {
+    const summary = deriveSummary(entry);
+    const severity = deriveSeverity(entry.kind, entry.type, entry.status, entry.data);
+    const source = deriveSource(entry.category, entry.kind, entry.conversationId);
+    const correlationIds = extractCorrelationIds(entry);
 
     return {
-        localId: uuidv4(),
-        receivedAt: now,
-        timestamp,
-        type: raw.type,
-        severity: deriveSeverity(raw.type, data),
-        source: deriveSource(raw.type, data),
-        correlationIds: extractCorrelationIds(data),
+        id: entry.id,
+        timestamp: entry.timestamp,
+        kind: entry.kind,
+        category: entry.category,
+        type: entry.type,
+        severity,
+        source,
+        correlationIds,
+        toolName: entry.toolName,
+        status: entry.status,
         summary,
-        rawPayload: data,
-        searchText: `${raw.type} ${summary} ${JSON.stringify(data)}`.toLowerCase()
+        rawData: entry.data,
+        rawMeta: entry.meta,
+        searchText:
+            `${entry.kind} ${entry.type} ${summary} ${JSON.stringify(entry.data)}`.toLowerCase()
     };
 }
+
+/* ─── Legacy alias (kept for backward-compat with any surviving references) ─ */
+
+/** @deprecated Use normalizeHistoryEntry. */
+export const normalizeEvent = normalizeHistoryEntry;

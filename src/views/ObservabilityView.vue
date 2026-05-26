@@ -3,11 +3,11 @@
         <h1 class="text-h4 mb-2">{{ t('observability.title') }}</h1>
         <p class="text-body-2 text-grey mb-4">{{ t('observability.subtitle') }}</p>
 
-        <!-- Connection + filter toolbar -->
+        <!-- Toolbar: status + actions + severity counters -->
         <v-card class="mb-4">
             <v-card-text>
                 <div class="d-flex align-center flex-wrap ga-3">
-                    <!-- Connection status chip -->
+                    <!-- Status chip -->
                     <v-chip
                         :color="connectionChipColor"
                         size="small"
@@ -16,49 +16,52 @@
                         {{ t(`observability.state.${store.connectionState}`) }}
                     </v-chip>
 
-                    <!-- Connect / Disconnect -->
+                    <!-- Load / Refresh -->
                     <v-btn
-                        v-if="
-                            store.connectionState === 'disconnected' ||
-                            store.connectionState === 'error'
-                        "
                         color="primary"
                         variant="tonal"
                         size="small"
-                        prepend-icon="mdi-connection"
-                        @click="store.connect()"
+                        prepend-icon="mdi-refresh"
+                        :loading="store.connectionState === 'connecting'"
+                        @click="store.loadHistory()"
                     >
-                        {{ t('observability.connect') }}
-                    </v-btn>
-                    <v-btn
-                        v-else
-                        color="error"
-                        variant="tonal"
-                        size="small"
-                        prepend-icon="mdi-close-circle"
-                        @click="store.disconnect()"
-                    >
-                        {{ t('observability.disconnect') }}
+                        {{ t('observability.refresh') }}
                     </v-btn>
 
-                    <!-- Pause / Resume -->
+                    <!-- Enable / Disable long-poll -->
                     <v-btn
-                        :disabled="store.connectionState !== 'connected'"
+                        :color="store.pollingEnabled ? 'warning' : 'secondary'"
                         variant="tonal"
                         size="small"
-                        :prepend-icon="store.paused ? 'mdi-play' : 'mdi-pause'"
-                        @click="store.togglePause()"
+                        :prepend-icon="store.pollingEnabled ? 'mdi-pause' : 'mdi-sync'"
+                        @click="store.pollingEnabled ? store.stopPolling() : store.startPolling()"
                     >
-                        {{ store.paused ? t('observability.resume') : t('observability.pause') }}
+                        {{
+                            store.pollingEnabled
+                                ? t('observability.stopPolling')
+                                : t('observability.startPolling')
+                        }}
+                    </v-btn>
+
+                    <!-- Export -->
+                    <v-btn
+                        variant="tonal"
+                        size="small"
+                        prepend-icon="mdi-download"
+                        :disabled="store.entries.length === 0"
+                        @click="store.exportHistory()"
+                    >
+                        {{ t('observability.export') }}
                     </v-btn>
 
                     <!-- Clear -->
                     <v-btn
                         variant="tonal"
                         size="small"
+                        color="error"
                         prepend-icon="mdi-delete-sweep"
-                        :disabled="store.events.length === 0"
-                        @click="store.clearEvents()"
+                        :disabled="store.entries.length === 0"
+                        @click="store.clearHistory()"
                     >
                         {{ t('observability.clear') }}
                     </v-btn>
@@ -92,9 +95,9 @@
                     </v-col>
                     <v-col cols="12" sm="3">
                         <v-select
-                            v-model="store.filters.types"
-                            :items="availableTypes"
-                            :label="t('observability.filterType')"
+                            v-model="store.filters.kinds"
+                            :items="availableKinds"
+                            :label="t('observability.filterKind')"
                             variant="outlined"
                             density="compact"
                             multiple
@@ -142,21 +145,21 @@
             {{ store.connectionError }}
         </v-alert>
 
-        <!-- Two-pane body: event list + inspector -->
+        <!-- Two-pane body: entry list + inspector -->
         <v-row>
-            <!-- Left: Event list -->
-            <v-col cols="12" :md="store.selectedEvent ? 7 : 12">
+            <!-- Left: Entry list -->
+            <v-col cols="12" :md="store.selectedEntry ? 7 : 12">
                 <v-card>
                     <v-card-title class="d-flex align-center">
                         <v-icon start>mdi-format-list-bulleted</v-icon>
-                        {{ t('observability.events') }}
+                        {{ t('observability.entries') }}
                         <v-chip class="ml-2" size="small" color="primary">
-                            {{ store.filteredEvents.length }}
+                            {{ store.filteredEntries.length }}
                         </v-chip>
                         <v-spacer />
                         <v-btn
                             v-if="
-                                store.filters.types.length > 0 ||
+                                store.filters.kinds.length > 0 ||
                                 store.filters.severities.length > 0 ||
                                 store.filters.sources.length > 0 ||
                                 store.filters.query
@@ -168,15 +171,15 @@
                             {{ t('observability.resetFilters') }}
                         </v-btn>
                     </v-card-title>
-                    <v-card-text class="event-list-container">
-                        <v-table v-if="store.filteredEvents.length > 0" density="compact" hover>
+                    <v-card-text class="entry-list-container">
+                        <v-table v-if="store.filteredEntries.length > 0" density="compact" hover>
                             <thead>
                                 <tr>
                                     <th style="width: 130px">
                                         {{ t('observability.colTime') }}
                                     </th>
-                                    <th style="width: 100px">
-                                        {{ t('observability.colType') }}
+                                    <th style="width: 160px">
+                                        {{ t('observability.colKind') }}
                                     </th>
                                     <th style="width: 80px">
                                         {{ t('observability.colSource') }}
@@ -186,42 +189,50 @@
                             </thead>
                             <tbody>
                                 <tr
-                                    v-for="event in displayedEvents"
-                                    :key="event.localId"
+                                    v-for="entry in displayedEntries"
+                                    :key="entry.id"
                                     :class="{
-                                        'bg-blue-lighten-5': event.localId === store.selectedEventId
+                                        'bg-blue-lighten-5': entry.id === store.selectedEntryId
                                     }"
                                     class="cursor-pointer"
-                                    @click="store.selectEvent(event.localId)"
+                                    @click="store.selectEntry(entry.id)"
                                 >
                                     <td class="text-caption text-no-wrap">
-                                        {{ formatEventTime(event.receivedAt) }}
+                                        {{ formatEntryTime(entry.timestamp) }}
                                     </td>
                                     <td>
                                         <v-chip
-                                            :color="eventTypeColor(event.type)"
+                                            :color="eventTypeColor(entry.kind)"
                                             size="x-small"
                                             label
                                         >
-                                            {{ event.type }}
+                                            {{ entry.kind }}
                                         </v-chip>
                                     </td>
-                                    <td class="text-caption">{{ event.source }}</td>
+                                    <td class="text-caption">{{ entry.source }}</td>
                                     <td class="text-body-2 text-truncate" style="max-width: 400px">
-                                        {{ event.summary }}
+                                        {{ entry.summary }}
                                     </td>
                                 </tr>
                             </tbody>
                         </v-table>
-                        <p v-else class="text-center text-grey pa-6">
-                            {{ t('observability.noEvents') }}
-                        </p>
+                        <!-- Empty state -->
+                        <div v-else class="text-center pa-6">
+                            <v-icon size="48" color="grey-lighten-1">mdi-history</v-icon>
+                            <p class="text-grey mt-2">
+                                {{
+                                    store.connectionState === 'disconnected'
+                                        ? t('observability.noEntriesHint')
+                                        : t('observability.noEntries')
+                                }}
+                            </p>
+                        </div>
                     </v-card-text>
                 </v-card>
             </v-col>
 
             <!-- Right: Inspector pane -->
-            <v-col v-if="store.selectedEvent" cols="12" md="5">
+            <v-col v-if="store.selectedEntry" cols="12" md="5">
                 <v-card>
                     <v-card-title class="d-flex align-center">
                         <v-icon start>mdi-magnify-scan</v-icon>
@@ -231,59 +242,75 @@
                             icon
                             variant="text"
                             size="small"
-                            @click="store.selectEvent(undefined)"
+                            @click="store.selectEntry(undefined)"
                         >
                             <v-icon>mdi-close</v-icon>
                         </v-btn>
                     </v-card-title>
                     <v-card-text>
-                        <!-- Summary chips -->
+                        <!-- Kind / severity / source chips -->
                         <div class="d-flex flex-wrap ga-2 mb-3">
                             <v-chip
-                                :color="eventTypeColor(store.selectedEvent.type)"
+                                :color="eventTypeColor(store.selectedEntry.kind)"
                                 size="small"
                                 label
                             >
-                                {{ store.selectedEvent.type }}
+                                {{ store.selectedEntry.kind }}
                             </v-chip>
                             <v-chip
-                                :color="severityColor(store.selectedEvent.severity)"
+                                :color="severityColor(store.selectedEntry.severity)"
                                 size="small"
                             >
-                                {{ store.selectedEvent.severity }}
+                                {{ store.selectedEntry.severity }}
                             </v-chip>
                             <v-chip size="small" variant="outlined">
-                                {{ store.selectedEvent.source }}
+                                {{ store.selectedEntry.source }}
+                            </v-chip>
+                            <v-chip
+                                v-if="store.selectedEntry.status"
+                                size="small"
+                                variant="tonal"
+                                color="secondary"
+                            >
+                                {{ store.selectedEntry.status }}
+                            </v-chip>
+                            <v-chip
+                                v-if="store.selectedEntry.toolName"
+                                size="small"
+                                color="orange"
+                                label
+                            >
+                                {{ store.selectedEntry.toolName }}
                             </v-chip>
                         </div>
 
-                        <!-- Metadata -->
+                        <!-- Metadata list -->
                         <v-list density="compact" class="mb-3">
                             <v-list-item>
                                 <v-list-item-title class="text-caption">
                                     {{ t('observability.timestamp') }}
                                 </v-list-item-title>
                                 <v-list-item-subtitle>
-                                    {{ store.selectedEvent.timestamp }}
+                                    {{ store.selectedEntry.timestamp }}
                                 </v-list-item-subtitle>
                             </v-list-item>
                             <v-list-item>
                                 <v-list-item-title class="text-caption">
-                                    {{ t('observability.receivedAt') }}
+                                    {{ t('observability.entryId') }}
                                 </v-list-item-title>
-                                <v-list-item-subtitle>
-                                    {{ store.selectedEvent.receivedAt }}
+                                <v-list-item-subtitle class="text-caption font-weight-medium">
+                                    {{ store.selectedEntry.id }}
                                 </v-list-item-subtitle>
                             </v-list-item>
                             <v-list-item
-                                v-if="Object.keys(store.selectedEvent.correlationIds).length > 0"
+                                v-if="Object.keys(store.selectedEntry.correlationIds).length > 0"
                             >
                                 <v-list-item-title class="text-caption">
                                     {{ t('observability.correlationIds') }}
                                 </v-list-item-title>
                                 <v-list-item-subtitle>
                                     <v-chip
-                                        v-for="(value, key) in store.selectedEvent.correlationIds"
+                                        v-for="(value, key) in store.selectedEntry.correlationIds"
                                         :key="key"
                                         size="x-small"
                                         variant="outlined"
@@ -295,7 +322,7 @@
                             </v-list-item>
                         </v-list>
 
-                        <!-- Raw JSON payload -->
+                        <!-- Raw data payload -->
                         <div class="d-flex align-center mb-1">
                             <span class="text-caption font-weight-bold">
                                 {{ t('observability.rawPayload') }}
@@ -304,6 +331,16 @@
                             <CopyButton :text="formattedPayload" />
                         </div>
                         <pre class="json-block">{{ formattedPayload }}</pre>
+
+                        <!-- Meta / metrics block -->
+                        <template v-if="store.selectedEntry.rawMeta">
+                            <div class="d-flex align-center mb-1 mt-3">
+                                <span class="text-caption font-weight-bold">
+                                    {{ t('observability.meta') }}
+                                </span>
+                            </div>
+                            <pre class="json-block">{{ formattedMeta }}</pre>
+                        </template>
                     </v-card-text>
                 </v-card>
             </v-col>
@@ -312,7 +349,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onUnmounted } from 'vue';
+import { computed, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useObservabilityStore } from '@/stores/observability';
 import { eventTypeColor, severityColor } from '@/utils/observabilityFormatting';
@@ -321,29 +358,34 @@ import CopyButton from '@/components/shared/CopyButton.vue';
 const { t } = useI18n();
 const store = useObservabilityStore();
 
-/** Max events shown in the table at once (avoids DOM overload). */
+/** Max entries shown in the table at once (avoids DOM overload). */
 const DISPLAY_LIMIT = 500;
 
-/** Display only the most recent N filtered events (newest at bottom). */
-const displayedEvents = computed(() => {
-    const all = store.filteredEvents;
+/** Display only the most recent N filtered entries (newest at bottom). */
+const displayedEntries = computed(() => {
+    const all = store.filteredEntries;
     return all.length > DISPLAY_LIMIT ? all.slice(-DISPLAY_LIMIT) : all;
 });
 
 /** Format time for the table column. */
-function formatEventTime(iso: string): string {
+function formatEntryTime(iso: string): string {
     return new Date(iso).toLocaleTimeString();
 }
 
-/** Pretty-printed JSON for the inspector. */
+/** Pretty-printed JSON for the data inspector block. */
 const formattedPayload = computed(() =>
-    store.selectedEvent ? JSON.stringify(store.selectedEvent.rawPayload, undefined, 2) : ''
+    store.selectedEntry ? JSON.stringify(store.selectedEntry.rawData, undefined, 2) : ''
 );
 
-/** Available event types derived from current buffer for filter options. */
-const availableTypes = computed(() => {
-    const types = new Set(store.events.map((e) => e.type));
-    return [...types].toSorted();
+/** Pretty-printed JSON for the meta inspector block. */
+const formattedMeta = computed(() =>
+    store.selectedEntry?.rawMeta ? JSON.stringify(store.selectedEntry.rawMeta, undefined, 2) : ''
+);
+
+/** Available event kinds derived from current buffer for filter options. */
+const availableKinds = computed(() => {
+    const kinds = new Set(store.entries.map((e) => e.kind));
+    return [...kinds].toSorted();
 });
 
 /** Static filter options. */
@@ -371,14 +413,19 @@ const connectionChipIcon = computed(() => {
     return map[store.connectionState] ?? 'mdi-circle-outline';
 });
 
-// Clean up SSE connection when leaving the page
+// Auto-load history on mount for a non-empty landing page
+onMounted(() => {
+    store.loadHistory();
+});
+
+// Stop polling when leaving the page
 onUnmounted(() => {
-    store.disconnect();
+    store.stopPolling();
 });
 </script>
 
 <style scoped>
-.event-list-container {
+.entry-list-container {
     max-height: 600px;
     overflow-y: auto;
 }
