@@ -1,14 +1,10 @@
 <template>
     <div class="graph-builder">
-        <h1 class="text-h4 mb-2">Graph Builder</h1>
-        <p class="text-body-2 text-grey mb-4">
-            Build visual pipelines with a node graph editor. Connect nodes to define multi-step
-            workflows, then execute them on the backend via the agent loop.
-        </p>
+        <PageHeader :title="t('graphBuilder.title')" :subtitle="t('graphBuilder.subtitle')" />
 
         <!-- Toolbar -->
         <v-toolbar flat density="compact" color="surface" class="mb-4 rounded" border>
-            <v-tooltip text="Download the current graph as a JSON file." location="top">
+            <v-tooltip :text="t('graphBuilder.saveTooltip')" location="top">
                 <template #activator="{ props: tooltipProps }">
                     <v-btn
                         v-bind="tooltipProps"
@@ -17,11 +13,11 @@
                         class="mr-2"
                         @click="onSave"
                     >
-                        Save
+                        {{ t('graphBuilder.save') }}
                     </v-btn>
                 </template>
             </v-tooltip>
-            <v-tooltip text="Import a previously saved graph JSON file." location="top">
+            <v-tooltip :text="t('graphBuilder.loadTooltip')" location="top">
                 <template #activator="{ props: tooltipProps }">
                     <v-btn
                         v-bind="tooltipProps"
@@ -30,11 +26,11 @@
                         class="mr-2"
                         @click="onLoad"
                     >
-                        Load
+                        {{ t('graphBuilder.load') }}
                     </v-btn>
                 </template>
             </v-tooltip>
-            <v-tooltip text="Remove all nodes and connections from the canvas." location="top">
+            <v-tooltip :text="t('graphBuilder.clearTooltip')" location="top">
                 <template #activator="{ props: tooltipProps }">
                     <v-btn
                         v-bind="tooltipProps"
@@ -43,32 +39,12 @@
                         class="mr-2"
                         @click="onClear"
                     >
-                        Clear
+                        {{ t('graphBuilder.clear') }}
                     </v-btn>
                 </template>
             </v-tooltip>
             <v-divider vertical class="mx-2" />
-            <v-tooltip
-                text="⚠ When enabled, the agent executing this graph can create, modify, and delete files on the server's filesystem."
-                location="top"
-                max-width="320"
-            >
-                <template #activator="{ props: tooltipProps }">
-                    <v-switch
-                        v-bind="tooltipProps"
-                        v-model="allowWrite"
-                        label="Allow write"
-                        color="warning"
-                        density="compact"
-                        hide-details
-                        class="mr-4"
-                    />
-                </template>
-            </v-tooltip>
-            <v-tooltip
-                text="Serialises the graph and sends it to the agent for execution. Results appear in the panel below."
-                location="top"
-            >
+            <v-tooltip :text="t('graphBuilder.executeTooltip')" location="top">
                 <template #activator="{ props: tooltipProps }">
                     <v-btn
                         v-bind="tooltipProps"
@@ -77,7 +53,7 @@
                         :loading="graphStore.isExecuting"
                         @click="onExecute"
                     >
-                        Execute
+                        {{ t('graphBuilder.execute') }}
                     </v-btn>
                 </template>
             </v-tooltip>
@@ -87,9 +63,17 @@
                 :prepend-icon="showResults ? 'mdi-chevron-up' : 'mdi-chevron-down'"
                 @click="showResults = !showResults"
             >
-                Results
+                {{ t('graphBuilder.results') }}
             </v-btn>
         </v-toolbar>
+
+        <!-- Node type reference -->
+        <v-alert type="info" variant="tonal" density="compact" class="mb-4" :icon="false">
+            <span class="text-caption">
+                <strong>{{ t('graphBuilder.nodesLabel') }}</strong>
+                {{ t('graphBuilder.nodesHint') }}
+            </span>
+        </v-alert>
 
         <!-- Canvas -->
         <v-card border>
@@ -100,7 +84,7 @@
         <v-expand-transition>
             <v-card v-if="showResults" class="mt-4" border>
                 <v-card-title class="d-flex align-center">
-                    Execution Result
+                    {{ t('graphBuilder.executionResult') }}
                     <v-spacer />
                     <v-btn
                         v-if="graphStore.executionResult"
@@ -117,8 +101,7 @@
                         {{ graphStore.executionResult }}
                     </div>
                     <span v-else class="text-grey">
-                        No result yet. Build a graph with nodes and edges, then click
-                        <strong>Execute</strong> to run the pipeline on the backend.
+                        {{ t('graphBuilder.noResult') }}
                     </span>
                 </v-card-text>
             </v-card>
@@ -137,18 +120,20 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import LiteGraphCanvas from '@/components/shared/LiteGraphCanvas.vue';
+import PageHeader from '@/components/shared/PageHeader.vue';
 import { useGraphStore } from '@/stores/graph';
 import type { IGraphData } from '@/stores/graph';
 import { useNotificationsStore, TOAST_TYPE } from '@/stores/notification';
 
+const { t } = useI18n();
 const graphStore = useGraphStore();
 const notificationStore = useNotificationsStore();
 
 const canvasReference = ref<InstanceType<typeof LiteGraphCanvas>>();
 const fileInputReference = ref<HTMLInputElement>();
 
-const allowWrite = ref(false);
 const showResults = ref(false);
 
 /** Vertical space (px) occupied by the app-bar, toolbar, page heading, and padding. */
@@ -177,7 +162,7 @@ function onSave(): void {
     anchor.download = 'manna-graph.json';
     anchor.click();
     URL.revokeObjectURL(url);
-    notificationStore.addMessage('Graph saved', TOAST_TYPE.SUCCESS);
+    notificationStore.addMessage(t('graphBuilder.savedMessage'), TOAST_TYPE.SUCCESS);
 }
 
 /** Opens the file picker so the user can load a graph JSON. */
@@ -196,10 +181,10 @@ function onFileSelected(event: Event): void {
             const graph = canvasReference.value?.graph;
             if (!graph) return;
             graphStore.loadGraph(graph, data);
-            notificationStore.addMessage('Graph loaded', TOAST_TYPE.SUCCESS);
+            notificationStore.addMessage(t('graphBuilder.loadedMessage'), TOAST_TYPE.SUCCESS);
         })
         .catch(() => {
-            notificationStore.addMessage('Failed to parse graph JSON', TOAST_TYPE.DANGER);
+            notificationStore.addMessage(t('graphBuilder.loadErrorMessage'), TOAST_TYPE.DANGER);
         })
         .finally(() => {
             input.value = '';
@@ -220,7 +205,7 @@ function onExecute(): void {
     graphStore.saveGraph(graph);
     if (!graphStore.graphData) return;
     showResults.value = true;
-    graphStore.executeGraph(graphStore.graphData, allowWrite.value);
+    graphStore.executeGraph(graphStore.graphData, true);
 }
 
 /** Copies the execution result to the clipboard. */
@@ -229,7 +214,7 @@ function copyResult(): void {
     navigator.clipboard
         .writeText(graphStore.executionResult)
         .then(() => {
-            notificationStore.addMessage('Copied to clipboard', TOAST_TYPE.SUCCESS);
+            notificationStore.addMessage(t('graphBuilder.copiedMessage'), TOAST_TYPE.SUCCESS);
         })
         .catch(() => {
             /* clipboard API may not be available */

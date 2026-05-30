@@ -1,16 +1,13 @@
 <template>
     <div>
-        <PageHeader :title="t('workflow.title')" />
+        <PageHeader :title="t('workflow.title')" :subtitle="t('workflow.subtitle')" />
 
         <v-row>
             <v-col cols="12" md="7">
                 <TaskInputCard
                     v-model:profile="selectedProfile"
-                    v-model:allow-write="allowWrite"
                     :title="t('workflow.buildWorkflow')"
                     :profile-label="t('workflow.modelProfile')"
-                    :write-label="t('workflow.allowWrite')"
-                    :write-tooltip="t('workflow.allowWriteTooltip')"
                 >
                     <!-- Replace textarea with step list -->
                     <template #input>
@@ -60,6 +57,8 @@
                                 :label="t('workflow.contextCarry')"
                                 variant="outlined"
                                 density="compact"
+                                :hint="t('workflow.contextCarryHint')"
+                                persistent-hint
                             />
                         </v-col>
                         <v-col cols="12" sm="4">
@@ -73,6 +72,8 @@
                                 max="100"
                                 :placeholder="t('workflow.maxStepsPlaceholder')"
                                 clearable
+                                :hint="t('workflow.maxStepsPerStepHint')"
+                                persistent-hint
                             />
                         </v-col>
                     </template>
@@ -205,7 +206,6 @@ const workflowStore = useWorkflowStore();
 const steps = ref<string[]>(['']);
 const selectedProfile = ref<ModelProfile | 'auto'>('auto');
 const selectedCarry = ref<WorkflowCarryMode>('summary');
-const allowWrite = ref(false);
 const maxStepsPerStep = ref<number | undefined>(undefined);
 const latestResult = ref<IWorkflowHistoryEntry | undefined>(undefined);
 const streamFinished = ref(false);
@@ -263,7 +263,7 @@ function submitJson(): Promise<void> {
             validSteps,
             selectedCarry.value,
             profile,
-            allowWrite.value,
+            true,
             maxStepsPerStep.value
         )
         .then((result) => {
@@ -285,7 +285,7 @@ function submitStream(): Promise<void> {
             validSteps,
             selectedCarry.value,
             profile,
-            allowWrite.value,
+            true,
             maxStepsPerStep.value
         )
         .then((result) => {
