@@ -33,14 +33,11 @@
                 <TaskInputCard
                     v-model="taskInput"
                     v-model:profile="selectedProfile"
-                    v-model:allow-write="allowWrite"
                     :title="t('codeChat.askAboutCode')"
                     :input-label="t('codeChat.taskLabel')"
                     :placeholder="t('codeChat.taskPlaceholder')"
                     :hint="t('codeChat.taskHint')"
                     :profile-label="t('codeChat.modelProfile')"
-                    :write-label="t('codeChat.allowWrite')"
-                    :write-tooltip="t('codeChat.allowWriteTooltip')"
                 >
                     <template #actions>
                         <v-btn
@@ -177,7 +174,6 @@ const agentStore = useAgentStore();
 const taskInput = ref('');
 /** Default to 'code' profile for code-focused tasks */
 const selectedProfile = ref<ModelProfile | 'auto'>('code');
-const allowWrite = ref(false);
 const latestResult = ref<ITaskHistoryEntry | undefined>(undefined);
 const streamFinished = ref(false);
 
@@ -243,7 +239,7 @@ function submitStream(): Promise<void> {
     streamFinished.value = false;
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
     return agentStore
-        .submitTaskStream(task, profile, allowWrite.value, workspaceRoot)
+        .submitTaskStream(task, profile, true, workspaceRoot)
         .then((result) => {
             streamFinished.value = true;
             if (result) {

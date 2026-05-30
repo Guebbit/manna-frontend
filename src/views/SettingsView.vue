@@ -72,15 +72,6 @@
                             persistent-hint
                             @update:model-value="saveDefaults"
                         />
-
-                        <v-switch
-                            v-model="defaultWriteMode"
-                            :label="t('settings.defaultWriteMode')"
-                            color="warning"
-                            :hint="t('settings.defaultWriteModeHint')"
-                            persistent-hint
-                            @update:model-value="saveDefaults"
-                        />
                     </v-card-text>
                 </v-card>
             </v-col>
@@ -132,7 +123,6 @@ const testResult = ref<'ok' | 'fail' | undefined>(undefined);
 
 const workspaceRoot = ref(getWorkspaceRoot());
 const defaultProfile = ref(localStorage.getItem('manna-default-profile') ?? 'auto');
-const defaultWriteMode = ref(localStorage.getItem('manna-default-write') === 'true');
 
 const profileOptions = useProfileOptions();
 
@@ -151,7 +141,6 @@ function clearWorkspace(): void {
 
 function saveDefaults(): void {
     localStorage.setItem('manna-default-profile', defaultProfile.value);
-    localStorage.setItem('manna-default-write', String(defaultWriteMode.value));
 }
 
 function testConnection(): void {

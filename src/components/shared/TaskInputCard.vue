@@ -1,5 +1,5 @@
 <template>
-    <!-- Shared task input card with profile selector and write mode switch -->
+    <!-- Shared task input card with profile selector -->
     <v-card>
         <v-card-title>{{ title }}</v-card-title>
         <v-card-text>
@@ -18,9 +18,9 @@
                 />
             </slot>
 
-            <!-- Options row: profile selector + optional middle fields + write switch -->
+            <!-- Options row: profile selector + optional middle fields -->
             <v-row class="mt-2" align="center">
-                <v-col cols="12" :sm="hasOptions ? 4 : 6">
+                <v-col cols="12" :sm="hasOptions ? 4 : 12">
                     <v-select
                         :model-value="profile"
                         :items="profileOptions"
@@ -33,22 +33,6 @@
 
                 <!-- Extra option fields injected by consumers (e.g. maxSubtasks, carry mode) -->
                 <slot name="options" />
-
-                <v-col cols="12" :sm="hasOptions ? 4 : 6" class="d-flex align-center">
-                    <v-tooltip :text="writeTooltip" location="top" max-width="320">
-                        <template #activator="{ props: tooltipProps }">
-                            <v-switch
-                                v-bind="tooltipProps"
-                                :model-value="allowWrite"
-                                :label="writeLabel"
-                                color="warning"
-                                density="compact"
-                                hide-details
-                                @update:model-value="$emit('update:allowWrite', $event ?? false)"
-                            />
-                        </template>
-                    </v-tooltip>
-                </v-col>
             </v-row>
 
             <slot name="extra" />
@@ -69,8 +53,6 @@ withDefaults(
         modelValue?: string;
         /** Current profile selection */
         profile: string;
-        /** Allow write mode */
-        allowWrite: boolean;
         /** Card title */
         title?: string;
         /** Textarea label */
@@ -81,10 +63,6 @@ withDefaults(
         hint?: string;
         /** Profile selector label */
         profileLabel?: string;
-        /** Write switch label */
-        writeLabel?: string;
-        /** Write switch tooltip */
-        writeTooltip?: string;
     }>(),
     {
         modelValue: '',
@@ -92,13 +70,11 @@ withDefaults(
         inputLabel: undefined,
         placeholder: undefined,
         hint: undefined,
-        profileLabel: undefined,
-        writeLabel: undefined,
-        writeTooltip: undefined
+        profileLabel: undefined
     }
 );
 
-defineEmits(['update:modelValue', 'update:profile', 'update:allowWrite']);
+defineEmits(['update:modelValue', 'update:profile']);
 
 const slots = useSlots();
 /** Detect if #options slot is provided to adjust column sizing */
