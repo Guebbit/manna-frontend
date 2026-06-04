@@ -42,7 +42,6 @@ Open `http://localhost:8080`.
 | Code Tools       | `/code`     | Autocomplete, linting, and page review              |
 | Upload & Analyze | `/upload`   | Image classify, speech-to-text, PDF text extraction |
 | Graph Builder    | `/graph`    | Visual LiteGraph pipelines executed through Manna   |
-| Swarm            | `/swarm`    | Multi-agent task decomposition                      |
 | Workflow         | `/workflow` | Sequential multi-step pipelines                     |
 | System Info      | `/system`   | Modes, models, health, backend help                 |
 | Settings         | `/settings` | Backend URL and default runtime preferences         |
@@ -126,5 +125,5 @@ Do not edit files in `api/` manually.
 ## API runtime rule
 
 - All non-streaming HTTP calls must use generated axios clients from `src/utils/api.ts`.
-- SSE streaming endpoints (`/run/stream`, `/run/swarm/stream`, `/workflow/stream`) use `src/utils/sse.ts`.
+- SSE streaming endpoints (`/run/stream`, `/workflow/stream`) use `src/utils/sse.ts`.
 - Do not add new fetch-based API wrappers for non-SSE endpoints.

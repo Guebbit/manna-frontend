@@ -30,12 +30,12 @@ If you only want one rule: start from the [README](../README.md), then use this 
 
 | Tool | Why it is here | Where it shows up | Official docs |
 | --- | --- | --- | --- |
-| Server-Sent Events (concept) | Live timelines for Agent, Swarm, and Workflow | `src/utils/sse.ts`, `src/api/sseEvents.ts`, streaming stores | https://developer.mozilla.org/docs/Web/API/Server-sent_events |
+| Server-Sent Events (concept) | Live timelines for Agent and Workflow | `src/utils/sse.ts`, `src/api/sseEvents.ts`, streaming stores | https://developer.mozilla.org/docs/Web/API/Server-sent_events |
 | marked | Markdown rendering | `src/components/shared/MarkdownRenderer.vue` | https://marked.js.org/ |
 | marked-highlight | Bridges marked and code highlighting | `src/components/shared/MarkdownRenderer.vue` | https://github.com/markedjs/marked-highlight |
 | highlight.js | Syntax highlighting for rendered Markdown | `src/components/shared/MarkdownRenderer.vue` | https://highlightjs.org/ |
 | litegraph.js | Node-based visual graph editor | `src/litegraph/`, `GraphBuilderView.vue` | https://github.com/jagenjo/litegraph.js |
-| uuid | Stable IDs for local history entries | agent/swarm/workflow stores | https://www.npmjs.com/package/uuid |
+| uuid | Stable IDs for local history entries | agent/workflow stores | https://www.npmjs.com/package/uuid |
 
 ## Repo-specific support libraries
 

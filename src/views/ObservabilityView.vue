@@ -390,7 +390,7 @@ const availableKinds = computed(() => {
 
 /** Static filter options. */
 const severityOptions = ['info', 'warning', 'error', 'success'];
-const sourceOptions = ['agent', 'swarm', 'workflow', 'chat', 'system', 'unknown'];
+const sourceOptions = ['agent', 'workflow', 'chat', 'system', 'unknown'];
 
 /** Connection chip coloring. */
 const connectionChipColor = computed(() => {

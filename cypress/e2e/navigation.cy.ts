@@ -11,7 +11,6 @@ describe('Sidebar navigation', () => {
         { path: '/agent', heading: /agent/i },
         { path: '/code', heading: /code/i },
         { path: '/upload', heading: /upload/i },
-        { path: '/swarm', heading: /swarm/i },
         { path: '/workflow', heading: /workflow/i },
         { path: '/system', heading: /system/i },
         { path: '/settings', heading: /settings/i }
@@ -36,10 +35,6 @@ describe('Sidebar navigation', () => {
 
         cy.visit('/#/code');
         cy.url().should('include', '#/code');
-        cy.get('h1, .text-h4').should('be.visible');
-
-        cy.visit('/#/swarm');
-        cy.url().should('include', '#/swarm');
         cy.get('h1, .text-h4').should('be.visible');
     });
 

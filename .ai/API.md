@@ -11,7 +11,7 @@ Generated types (`api/`)
 SSE event types (`src/api/sseEvents.ts`)
 
 - Hand-written; cannot be generated from OpenAPI
-- Covers: `AgentStreamEvent`, `SwarmStreamEvent`, `WorkflowStreamEvent`
+- Covers: `AgentStreamEvent`, `WorkflowStreamEvent`
 - Import via: `import type { AgentStreamEvent } from '@/api/sseEvents'`
 
 Runtime HTTP client (`src/utils/api.ts` + `src/utils/http.ts`)
@@ -28,7 +28,7 @@ SSE runtime helper (`src/utils/sse.ts`)
 Stores → API boundary
 
 - Stores import generated clients from `@/utils/api` for non-streaming calls
-- Stores import `runTaskStream`/`runSwarmStream`/`runWorkflowStream` from `@/utils/sse` for streaming calls
+- Stores import `runTaskStream`/`runWorkflowStream` from `@/utils/sse` for streaming calls
 - `WorkflowRequest.steps` is `StepDefinition[]`; stores mapping `string[]` → `StepDefinition[]` internally
 
 Deprecated / removed

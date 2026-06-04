@@ -1,7 +1,7 @@
 /**
  * @module utils/eventFormatting
  *
- * Shared helpers for formatting SSE stream events from the Agent, Swarm, and
+ * Shared helpers for formatting SSE stream events from the Agent and
  * Workflow views.  Each event type is given a colour (for timeline dot/chip)
  * and a human-readable summary string.
  *
@@ -9,7 +9,7 @@
  * TypeScript narrows the `data` field automatically in each case branch.
  */
 
-import type { AgentStreamEvent, SwarmStreamEvent, WorkflowStreamEvent } from '@/api/sseEvents';
+import type { AgentStreamEvent, WorkflowStreamEvent } from '@/api/sseEvents';
 import { formatDuration } from './formatting';
 
 /* ─── Colour maps ────────────────────────────────────────────── */
@@ -22,20 +22,6 @@ const AGENT_EVENT_COLORS: Record<AgentStreamEvent['type'], string> = {
     done: 'success',
     error: 'error',
     max_steps: 'warning',
-    hard_stop: 'error'
-};
-
-/** Colour map for swarm stream event types. */
-const SWARM_EVENT_COLORS: Record<SwarmStreamEvent['type'], string> = {
-    decomposed: 'blue',
-    subtask_start: 'cyan',
-    subtask_done: 'green',
-    subtask_error: 'red',
-    step: 'purple',
-    tool: 'orange',
-    route: 'teal',
-    done: 'success',
-    error: 'error',
     hard_stop: 'error'
 };
 
@@ -58,12 +44,7 @@ export function agentEventColor(type: AgentStreamEvent['type']): string {
     return AGENT_EVENT_COLORS[type] ?? 'grey';
 }
 
-/** Returns the timeline colour for a swarm stream event type. */
-export function swarmEventColor(type: SwarmStreamEvent['type']): string {
-    return SWARM_EVENT_COLORS[type] ?? 'grey';
-}
-
-/** Returns the timeline colour for a workflow stream event type. */
+/** Returns a one-line summary string for a workflow stream event. */
 export function workflowEventColor(type: WorkflowStreamEvent['type']): string {
     return WORKFLOW_EVENT_COLORS[type] ?? 'grey';
 }
@@ -92,47 +73,6 @@ export function agentEventSummary(event: AgentStreamEvent): string {
         }
         case 'max_steps': {
             return `Max steps reached: ${event.data.summary}`;
-        }
-        case 'hard_stop': {
-            return `Hard stop (${event.data.code}): ${event.data.reason}`;
-        }
-        default: {
-            return '';
-        }
-    }
-}
-
-/** Returns a one-line summary string for a swarm stream event. */
-export function swarmEventSummary(event: SwarmStreamEvent): string {
-    switch (event.type) {
-        case 'decomposed': {
-            return `Decomposed into ${event.data.subtaskCount} subtasks`;
-        }
-        case 'subtask_start': {
-            return `Subtask ${event.data.subtaskId} started (${event.data.profile})`;
-        }
-        case 'subtask_done': {
-            return `Subtask ${event.data.subtaskId} done in ${formatDuration(event.data.durationMs)}`;
-        }
-        case 'subtask_error': {
-            return `Subtask ${event.data.subtaskId} failed: ${event.data.error}`;
-        }
-        case 'step': {
-            return `Step ${event.data.step}: ${event.data.action}`;
-        }
-        case 'tool': {
-            return event.data.error
-                ? `Tool ${event.data.tool} error: ${event.data.error}`
-                : `Tool ${event.data.tool} executed`;
-        }
-        case 'route': {
-            return `Routed to ${event.data.profile} (${event.data.model})`;
-        }
-        case 'done': {
-            return `Completed in ${formatDuration(event.data.totalDurationMs)}`;
-        }
-        case 'error': {
-            return `Error: ${event.data.error}`;
         }
         case 'hard_stop': {
             return `Hard stop (${event.data.code}): ${event.data.reason}`;

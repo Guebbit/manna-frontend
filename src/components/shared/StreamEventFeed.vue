@@ -1,5 +1,5 @@
 <template>
-    <!-- Shared SSE stream event timeline used by Agent, CodeChat, Swarm, Workflow views -->
+    <!-- Shared SSE stream event timeline used by Agent, CodeChat, Workflow views -->
     <v-card v-if="visible" class="mt-4">
         <v-card-title class="d-flex align-center">
             <v-icon start>mdi-antenna</v-icon>

@@ -84,12 +84,6 @@ export const NAV_ITEMS: readonly INavItem[] = [
         description: 'nav.graphBuilderDesc'
     },
     {
-        title: 'nav.swarm',
-        icon: 'mdi-sitemap',
-        to: { name: 'swarm' },
-        description: 'nav.swarmDesc'
-    },
-    {
         title: 'nav.workflow',
         icon: 'mdi-list-status',
         to: { name: 'workflow' },

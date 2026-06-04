@@ -23,8 +23,6 @@
         "uploadAnalyzeDesc": "Classify images, transcribe audio, or extract text from PDFs using specialised AI models.",
         "graphBuilder": "Graph Builder",
         "graphBuilderDesc": "Build visual pipelines with a node graph editor and execute them on the backend.",
-        "swarm": "Swarm",
-        "swarmDesc": "Break a complex task into subtasks, run them across multiple agents in parallel, and synthesise the results.",
         "workflow": "Workflow",
         "workflowDesc": "Define and execute multi-step pipelines with conditional logic, branching, and sequential or parallel task orchestration.",
         "systemInfo": "System Info",
@@ -57,7 +55,7 @@
     },
     "dashboard": {
         "title": "Dashboard",
-        "welcomeHtml": "<strong>Welcome to Manna</strong> — a local-first AI agent platform. Use the sidebar to access different tools: <strong>Chat</strong> for conversations, <strong>Agent</strong> for autonomous task execution, <strong>Swarm</strong> for multi-agent complex tasks, <strong>Code Tools</strong> for IDE features, and <strong>Upload</strong> for file analysis.",
+        "welcomeHtml": "<strong>Welcome to Manna</strong> — a local-first AI agent platform. Use the sidebar to access different tools: <strong>Chat</strong> for conversations, <strong>Agent</strong> for autonomous task execution, <strong>Code Tools</strong> for IDE features, and <strong>Upload</strong> for file analysis.",
         "systemHealth": "System Health",
         "lastCheck": "Last check: {timestamp}",
         "notConnected": "Not connected",
@@ -136,27 +134,6 @@
         "review": "Review",
         "noFindingsReturned": "No findings returned."
     },
-    "swarm": {
-        "title": "Swarm Orchestration",
-        "subtitle": "Swarm decomposes a complex task into subtasks, runs them in parallel across multiple agents, then synthesises a final answer. Best for multi-part research or analysis tasks.",
-        "submitSwarmTask": "Submit a Swarm Task",
-        "taskDescription": "Task description",
-        "taskPlaceholder": "Describe a complex task to decompose across multiple agents…",
-        "taskHint": "Works best with complex, multi-part tasks: e.g. ‘Research Vue 3, React, and Svelte — compare performance, DX, and ecosystem size’.",
-        "modelProfile": "Model profile",
-        "maxSubtasks": "Max subtasks",
-        "maxSubtasksHint": "Limits how many subtasks are created. Leave empty to let the system decide. Lower = faster but less thorough.",
-        "maxSubtasksPlaceholder": "Auto",
-        "runSwarm": "Run Swarm",
-        "runSwarmTooltip": "Waits for all subtasks to complete, then returns the full result with per-subtask breakdowns.",
-        "runSwarmStream": "Run Swarm (Stream)",
-        "runSwarmStreamTooltip": "Shows live events as subtasks start, complete, and the final synthesis happens.",
-        "subtaskBreakdown": "Subtask Breakdown",
-        "subtaskBreakdownSubtitle": "Each subtask ran independently with its own agent loop. Expand a row to see the individual answer.",
-        "swarmHistory": "Swarm History",
-        "noSwarmYet": "No swarm tasks yet. Submit your first task!",
-        "subtaskCount": "0 subtasks | 1 subtask | {n} subtasks"
-    },
     "workflow": {
         "title": "Workflow Orchestration",
         "buildWorkflow": "Build a Workflow",
@@ -223,7 +200,7 @@
     "systemInfo": {
         "title": "System Info",
         "agentRoutingProfiles": "Agent Routing Profiles",
-        "routingProfilesSubtitle": "Each profile maps to a specific Ollama model optimised for different workloads. The model router automatically selects the best profile per agent step, or you can force one manually in Agent / Swarm views.",
+        "routingProfilesSubtitle": "Each profile maps to a specific Ollama model optimised for different workloads. The model router automatically selects the best profile per agent step, or you can force one manually in the Agent view.",
         "noRoutingProfiles": "No routing profiles loaded. Click refresh to fetch.",
         "colProfile": "Profile",
         "colModel": "Model",
@@ -347,7 +324,7 @@
     },
     "observability": {
         "title": "Activity History",
-        "subtitle": "Persistent log of all backend lifecycle events — agent steps, tool calls, routing decisions, swarm activity, and more.",
+        "subtitle": "Persistent log of all backend lifecycle events — agent steps, tool calls, routing decisions, and more.",
         "refresh": "Refresh",
         "startPolling": "Auto-refresh",
         "stopPolling": "Stop auto-refresh",
