@@ -116,20 +116,6 @@
                         </template>
                     </v-select>
 
-                    <v-tooltip :text="t('chat.writeModeTooltip')" location="top" max-width="280">
-                        <template #activator="{ props: tooltipProps }">
-                            <v-switch
-                                v-bind="tooltipProps"
-                                v-model="allowWrite"
-                                :label="t('chat.writeMode')"
-                                density="compact"
-                                color="warning"
-                                hide-details
-                                class="flex-grow-0"
-                            />
-                        </template>
-                    </v-tooltip>
-
                     <v-spacer />
 
                     <v-btn
@@ -321,7 +307,6 @@ const {
 
 const messagesContainer = ref<HTMLElement | undefined>(undefined);
 const userInput = ref('');
-const allowWrite = ref(false);
 
 // Sidebar rename state
 const editingConvId = ref<string | undefined>(undefined);
@@ -428,7 +413,7 @@ function onDeleteMessage(messageId: string): void {
 function onRunWithAgent(): void {
     if (!activeId.value) return;
     const convProfile = activeConversation.value?.profile as ModelProfile | undefined;
-    void runWithAgent(activeId.value, convProfile ?? selectedProfile.value, allowWrite.value);
+    void runWithAgent(activeId.value, convProfile ?? selectedProfile.value, false);
 }
 
 function scrollToBottom(): void {

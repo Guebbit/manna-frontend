@@ -7,14 +7,11 @@
                 <TaskInputCard
                     v-model="taskInput"
                     v-model:profile="selectedProfile"
-                    v-model:allow-write="allowWrite"
                     :title="t('agent.submitTask')"
                     :input-label="t('agent.taskDescription')"
                     :placeholder="t('agent.taskPlaceholder')"
                     :hint="t('agent.taskHint')"
                     :profile-label="t('agent.modelProfile')"
-                    :write-label="t('agent.allowWrite')"
-                    :write-tooltip="t('agent.allowWriteTooltip')"
                 >
                     <template #extra>
                         <!-- Workspace root banner — shown only when configured -->
@@ -145,7 +142,6 @@ const agentStore = useAgentStore();
 
 const taskInput = ref('');
 const selectedProfile = ref<ModelProfile | 'auto'>('auto');
-const allowWrite = ref(false);
 const latestResult = ref<ITaskHistoryEntry | undefined>(undefined);
 const streamFinished = ref(false);
 
@@ -180,7 +176,7 @@ function submit(): Promise<void> {
 
     streamFinished.value = false;
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
-    return agentStore.submitTask(task, profile, allowWrite.value, workspaceRoot).then((result) => {
+    return agentStore.submitTask(task, profile, true, workspaceRoot).then((result) => {
         if (result) {
             latestResult.value = result;
             taskInput.value = '';
@@ -195,7 +191,7 @@ function submitStream(): Promise<void> {
     streamFinished.value = false;
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
     return agentStore
-        .submitTaskStream(task, profile, allowWrite.value, workspaceRoot)
+        .submitTaskStream(task, profile, true, workspaceRoot)
         .then((result) => {
             streamFinished.value = true;
             if (result) {

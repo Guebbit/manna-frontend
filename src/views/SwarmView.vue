@@ -7,14 +7,11 @@
                 <TaskInputCard
                     v-model="taskInput"
                     v-model:profile="selectedProfile"
-                    v-model:allow-write="allowWrite"
                     :title="t('swarm.submitSwarmTask')"
                     :input-label="t('swarm.taskDescription')"
                     :placeholder="t('swarm.taskPlaceholder')"
                     :hint="t('swarm.taskHint')"
                     :profile-label="t('swarm.modelProfile')"
-                    :write-label="t('swarm.allowWrite')"
-                    :write-tooltip="t('swarm.allowWriteTooltip')"
                 >
                     <template #options>
                         <v-col cols="12" sm="4">
@@ -171,7 +168,6 @@ const swarmStore = useSwarmStore();
 
 const taskInput = ref('');
 const selectedProfile = ref<ModelProfile | 'auto'>('auto');
-const allowWrite = ref(false);
 const maxSubtasks = ref<number | undefined>(undefined);
 const latestResult = ref<ISwarmHistoryEntry | undefined>(undefined);
 const streamFinished = ref(false);
@@ -205,7 +201,7 @@ function submitJson(): Promise<void> {
     streamFinished.value = false;
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
     return swarmStore
-        .submitSwarm(task, profile, allowWrite.value, maxSubtasks.value)
+        .submitSwarm(task, profile, true, maxSubtasks.value)
         .then((result) => {
             if (result) {
                 latestResult.value = result;
@@ -221,7 +217,7 @@ function submitStream(): Promise<void> {
     streamFinished.value = false;
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
     return swarmStore
-        .submitSwarmStream(task, profile, allowWrite.value, maxSubtasks.value)
+        .submitSwarmStream(task, profile, true, maxSubtasks.value)
         .then((result) => {
             streamFinished.value = true;
             if (result) {
