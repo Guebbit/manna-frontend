@@ -69,11 +69,6 @@ const router = createRouter({
                     component: () => import('@/views/GraphBuilderView.vue')
                 },
                 {
-                    path: 'swarm',
-                    name: 'swarm',
-                    component: () => import('@/views/SwarmView.vue')
-                },
-                {
                     path: 'workflow',
                     name: 'workflow',
                     component: () => import('@/views/WorkflowView.vue')

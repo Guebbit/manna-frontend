@@ -6,7 +6,6 @@ import {
     IdeApi,
     InfoApi,
     LibraryApi,
-    SwarmApi,
     UploadApi,
     WorkflowApi
 } from '@api/api';
@@ -25,6 +24,5 @@ export const historyApi = new HistoryApi(apiConfig, '', httpClient);
 export const ideApi = new IdeApi(apiConfig, '', httpClient);
 export const infoApi = new InfoApi(apiConfig, '', httpClient);
 export const libraryApi = new LibraryApi(apiConfig, '', httpClient);
-export const swarmApi = new SwarmApi(apiConfig, '', httpClient);
 export const uploadApi = new UploadApi(apiConfig, '', httpClient);
 export const workflowApi = new WorkflowApi(apiConfig, '', httpClient);

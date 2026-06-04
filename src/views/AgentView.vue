@@ -190,14 +190,12 @@ function submitStream(): Promise<void> {
 
     streamFinished.value = false;
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
-    return agentStore
-        .submitTaskStream(task, profile, true, workspaceRoot)
-        .then((result) => {
-            streamFinished.value = true;
-            if (result) {
-                latestResult.value = result;
-                taskInput.value = '';
-            }
-        });
+    return agentStore.submitTaskStream(task, profile, true, workspaceRoot).then((result) => {
+        streamFinished.value = true;
+        if (result) {
+            latestResult.value = result;
+            taskInput.value = '';
+        }
+    });
 }
 </script>

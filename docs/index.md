@@ -33,7 +33,6 @@ mindmap
     Features
       chat
       agent
-      swarm
       workflow
       upload
       graph builder

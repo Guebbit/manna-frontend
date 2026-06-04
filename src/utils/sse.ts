@@ -1,11 +1,6 @@
-import type { RunRequest, SwarmRequest, WorkflowRequest, CreateMessageRequest } from '@api';
+import type { RunRequest, WorkflowRequest, CreateMessageRequest } from '@api';
 import { getMannaBaseUrl } from '@/config';
-import type {
-    AgentStreamEvent,
-    ChatStreamEvent,
-    SwarmStreamEvent,
-    WorkflowStreamEvent
-} from '@/api/sseEvents';
+import type { AgentStreamEvent, ChatStreamEvent, WorkflowStreamEvent } from '@/api/sseEvents';
 
 const JSON_HEADERS = {
     // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -77,11 +72,6 @@ async function openSse(url: string, payload: unknown): Promise<Response> {
 export async function* runTaskStream(parameters: RunRequest): AsyncGenerator<AgentStreamEvent> {
     const response = await openSse(`${getMannaBaseUrl()}/run/stream`, parameters);
     yield* parseSseStream<AgentStreamEvent>(response);
-}
-
-export async function* runSwarmStream(parameters: SwarmRequest): AsyncGenerator<SwarmStreamEvent> {
-    const response = await openSse(`${getMannaBaseUrl()}/run/swarm/stream`, parameters);
-    yield* parseSseStream<SwarmStreamEvent>(response);
 }
 
 export async function* runWorkflowStream(

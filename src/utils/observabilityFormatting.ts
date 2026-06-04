@@ -45,7 +45,6 @@ export function deriveSource(
     conversationId?: string
 ): ObservabilitySource {
     if (conversationId || category === 'chat') return 'chat';
-    if (category === 'swarm' || kind.startsWith('swarm:')) return 'swarm';
     if (category === 'workflow' || kind.startsWith('workflow:')) return 'workflow';
     if (category === 'run' || kind.startsWith('agent:')) return 'agent';
     if (category === 'system' || kind.startsWith('system:')) return 'system';
@@ -83,20 +82,6 @@ export function deriveSummary(entry: ActivityLogEntry): string {
     // Agent max steps
     if (kind === 'agent:max_steps') {
         return `Max steps: ${String(data['summary'] ?? '')}`;
-    }
-
-    // Swarm events
-    if (kind === 'swarm:decomposed') {
-        return `Decomposed into ${String(data['subtaskCount'] ?? '?')} subtasks`;
-    }
-    if (kind === 'swarm:subtask_start' || kind === 'swarm:subtask_started') {
-        return `Subtask ${subtaskId ?? String(data['subtaskId'] ?? '?')} started`;
-    }
-    if (kind === 'swarm:subtask_done' || kind === 'swarm:subtask_completed') {
-        return `Subtask ${subtaskId ?? String(data['subtaskId'] ?? '?')} done`;
-    }
-    if (kind === 'swarm:subtask_error' || kind === 'swarm:subtask_failed') {
-        return `Subtask ${subtaskId ?? String(data['subtaskId'] ?? '?')} failed`;
     }
 
     // Generic fallback using status or type
@@ -171,24 +156,6 @@ export function eventTypeColor(kind: string): string {
         }
         case 'tool:verification_failed': {
             return 'deep-orange';
-        }
-        case 'swarm:start': {
-            return 'blue';
-        }
-        case 'swarm:decomposed': {
-            return 'blue';
-        }
-        case 'swarm:subtask_start': {
-            return 'cyan';
-        }
-        case 'swarm:subtask_done': {
-            return 'green';
-        }
-        case 'swarm:subtask_error': {
-            return 'red';
-        }
-        case 'swarm:done': {
-            return 'success';
         }
         case 'system:heartbeat':
         case 'system:health': {

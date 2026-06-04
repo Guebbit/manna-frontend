@@ -26,7 +26,7 @@ export type {
 export type ObservabilitySeverity = 'info' | 'warning' | 'error' | 'success';
 
 /** Source category derived from an entry's category/kind for display. */
-export type ObservabilitySource = 'agent' | 'swarm' | 'workflow' | 'chat' | 'system' | 'unknown';
+export type ObservabilitySource = 'agent' | 'workflow' | 'chat' | 'system' | 'unknown';
 
 /* ─── Normalized frontend view-model ─────────────────────── */
 
@@ -41,7 +41,7 @@ export interface IHistoryEntry {
     timestamp: string;
     /** Full internal event kind (e.g. `agent:step`, `tool:result`). */
     kind: string;
-    /** Broad category (`run`, `tool`, `swarm`, `workflow`, `system`). */
+    /** Broad category (`run`, `tool`, `workflow`, `system`). */
     category: string;
     /** Specific type within category (e.g. `step`, `completed`, `failed`). */
     type: string;

@@ -3,7 +3,7 @@
  *
  * Pinia store for the three direct IDE code-intelligence endpoints.
  *
- * Unlike the agent and swarm stores, these endpoints bypass the agentic loop
+ * Unlike the agent store, these endpoints bypass the agentic loop
  * entirely and call specialised backend routes directly:
  * - `/autocomplete`     — Fill-in-the-middle code completion (code-specialised model).
  * - `/lint-conventions` — Deterministic linting + optional LLM review pass.

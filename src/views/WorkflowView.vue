@@ -259,13 +259,7 @@ function submitJson(): Promise<void> {
     streamFinished.value = false;
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
     return workflowStore
-        .submitWorkflow(
-            validSteps,
-            selectedCarry.value,
-            profile,
-            true,
-            maxStepsPerStep.value
-        )
+        .submitWorkflow(validSteps, selectedCarry.value, profile, true, maxStepsPerStep.value)
         .then((result) => {
             if (result) {
                 latestResult.value = result;
@@ -281,13 +275,7 @@ function submitStream(): Promise<void> {
     streamFinished.value = false;
     const profile = selectedProfile.value === 'auto' ? undefined : selectedProfile.value;
     return workflowStore
-        .submitWorkflowStream(
-            validSteps,
-            selectedCarry.value,
-            profile,
-            true,
-            maxStepsPerStep.value
-        )
+        .submitWorkflowStream(validSteps, selectedCarry.value, profile, true, maxStepsPerStep.value)
         .then((result) => {
             streamFinished.value = true;
             if (result) {

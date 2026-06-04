@@ -81,7 +81,7 @@ sequenceDiagram
 
 ### 1. Views stay presentation-focused
 
-The pages in `src/views/` are route-level screens such as Chat, Agent, Swarm, Workflow, and Graph Builder.
+The pages in `src/views/` are route-level screens such as Chat, Agent, Workflow, and Graph Builder.
 
 Their job is mostly to:
 
@@ -97,7 +97,6 @@ The files in `src/stores/` are the operational center of the app.
 Examples:
 
 - `agent.ts` manages normal and streaming task execution
-- `swarm.ts` manages multi-agent execution
 - `workflow.ts` manages sequential workflow runs
 - `system.ts` manages health, modes, models, and backend help
 - `graph.ts` serializes and executes LiteGraph graphs
@@ -134,7 +133,7 @@ That logic lives in [`src/config.ts`](../src/config.ts).
 
 ## Streaming model
 
-Agent, Swarm, and Workflow all support live streaming via Server-Sent Events.
+Agent and Workflow all support live streaming via Server-Sent Events.
 
 ```mermaid
 flowchart LR

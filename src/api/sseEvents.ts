@@ -68,54 +68,6 @@ export type AgentStreamEvent =
     | { type: 'max_steps'; data: IAgentMaxStepsEvent }
     | { type: 'hard_stop'; data: IAgentHardStopEvent };
 
-/* ─── Swarm /run/swarm/stream ──────────────────────────────────── */
-
-/** SSE event emitted when the swarm has decomposed the task. */
-export interface ISwarmDecomposedEvent {
-    subtaskCount: number;
-    reasoning: string;
-    subtasks: Array<{ id: string; description: string; profile: string }>;
-}
-
-/** SSE event emitted when a subtask agent loop begins. */
-export interface ISwarmSubtaskStartEvent {
-    subtaskId: string;
-    profile: string;
-}
-
-/** SSE event emitted when a subtask agent loop completes. */
-export interface ISwarmSubtaskDoneEvent {
-    subtaskId: string;
-    durationMs: number;
-}
-
-/** SSE event emitted when a subtask agent loop fails. */
-export interface ISwarmSubtaskErrorEvent {
-    subtaskId: string;
-    error: string;
-}
-
-/** SSE event emitted when the swarm synthesis produces the final answer. */
-export interface ISwarmDoneEvent {
-    result: string;
-    totalDurationMs: number;
-    subtaskCount: number;
-    meta?: ResponseMeta;
-}
-
-/** Discriminated union of all SSE events from POST /run/swarm/stream. */
-export type SwarmStreamEvent =
-    | { type: 'decomposed'; data: ISwarmDecomposedEvent }
-    | { type: 'subtask_start'; data: ISwarmSubtaskStartEvent }
-    | { type: 'subtask_done'; data: ISwarmSubtaskDoneEvent }
-    | { type: 'subtask_error'; data: ISwarmSubtaskErrorEvent }
-    | { type: 'step'; data: IAgentStepEvent }
-    | { type: 'tool'; data: IAgentToolEvent }
-    | { type: 'route'; data: IAgentRouteEvent }
-    | { type: 'done'; data: ISwarmDoneEvent }
-    | { type: 'error'; data: IAgentErrorEvent }
-    | { type: 'hard_stop'; data: IAgentHardStopEvent };
-
 /* ─── Workflow /workflow/stream ────────────────────────────────── */
 
 /** SSE event: workflow started. */
